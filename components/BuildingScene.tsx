@@ -423,7 +423,7 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
   const out: Label[] = [];
   for (const s of FLOORS[active].shapes) {
     const mine = focus !== undefined && s.ref === selectedRef;
-    if (!s.label || (mine && callouts.length > 0)) continue;
+    if (!s.label || (mine && s.kind === "room")) continue;
     const [px, py] = s.at ?? centre(s.poly);
     out.push({
       key: s.label,
@@ -503,9 +503,14 @@ function Sun() {
   );
 }
 
+const FRAME = { left: 110, top: 190, bottom: 90 }; // px covered by the level rail, heading and caption
+const FILL = 0.62; // share of the free area an opened space fills; the rest is floor to click off onto
+const MAX_FOCUS_ZOOM = 95; // so the smallest rooms don't fill the panel
+
 /** Frames the whole building, the open level, or the open room, whenever the selection changes. */
 function Rig({ active, focus }: { active: number | null; focus: Shape | null }) {
   const size = useThree((s) => s.size);
+  const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls);
   const invalidate = useThree((s) => s.invalidate);
   const moving = useRef(true);
@@ -519,17 +524,28 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
     const poly = focus?.poly ?? FLOORS[active].plate;
     const xs = poly.map((p) => wx(p[0]));
     const zs = poly.map((p) => wz(p[1]));
-    const w = Math.max(...xs) - Math.min(...xs);
-    const d = Math.max(...zs) - Math.min(...zs);
-    // A room keeps some of its neighbours in view; a big zone just fills the frame.
-    const [k, pad] = focus?.kind === "zone" ? [1.1, 2] : [1.5, 3];
-    return {
-      at: new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, (active - 1) * RISE, (Math.min(...zs) + Math.max(...zs)) / 2),
-      zoom: focus
-        ? Math.min(80, Math.min(size.width * 0.6, size.height * 0.6) / (Math.max(w, d) * k + pad))
-        : Math.min((size.width - 110) / (w * 1.08), size.height / 62), // the margin keeps clear of the level rail
+    const y = (active - 1) * RISE;
+    const at = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, y, (Math.min(...zs) + Math.max(...zs)) / 2);
+    if (!focus) {
+      const w = Math.max(...xs) - Math.min(...xs);
+      return { at, zoom: Math.min((size.width - 110) / (w * 1.08), size.height / 62) }; // the margin keeps clear of the level rail
+    }
+    // Measure the space as it will appear on screen from the current viewing angle,
+    // then let it fill a fixed share of the area not covered by the heading, rail and caption.
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3();
+    camera.updateMatrixWorld(); // not yet current on a page that opens straight onto a space
+    camera.matrixWorld.extractBasis(right, up, new THREE.Vector3());
+    const span = (axis: THREE.Vector3) => {
+      const ds = poly.flatMap((p) => [0, WALL_H].map((h) => axis.dot(scratch.set(wx(p[0]), y + h, wz(p[1])))));
+      return Math.max(...ds) - Math.min(...ds);
     };
-  }, [active, focus, size]);
+    const free = { w: size.width - FRAME.left, h: size.height - FRAME.top - FRAME.bottom };
+    const zoom = Math.min(MAX_FOCUS_ZOOM, FILL * Math.min(free.w / span(right), free.h / span(up)));
+    // Centre it in that free area, not in the whole panel.
+    at.addScaledVector(right, -FRAME.left / 2 / zoom).addScaledVector(up, (FRAME.top - FRAME.bottom) / 2 / zoom);
+    return { at, zoom };
+  }, [active, focus, size, camera]);
 
   useEffect(() => {
     moving.current = true;
