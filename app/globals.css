@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* Drafting table: warm paper, graphite ink, and the yellow of Hunt's stair
+   used only to mark "this one". */
+@theme {
+  --color-paper: #f5f3ee;
+  --color-sheet: #fcfbf8;
+  --color-vellum: #ebe8e0;
+  --color-ink: #1d1c1a;
+  --color-graphite: #55524c;
+  --color-pencil: #6f6b64;
+  --color-faint: #a8a399;
+  --color-rule: rgb(29 28 26 / 0.1);
+  --color-rule-soft: rgb(29 28 26 / 0.06);
+  --color-rule-strong: rgb(29 28 26 / 0.22);
+  --color-stair: #f2c230;
+  --color-stair-wash: #fbf0c6;
+  --color-slab: #e9e5dc;
+  --color-slab-side: #d8d3c8;
+  --color-slab-end: #cbc5b8;
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-lift:
+    0 0 0 1px rgb(29 28 26 / 0.06), 0 1px 2px -1px rgb(29 28 26 / 0.08),
+    0 3px 8px rgb(29 28 26 / 0.05);
+
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+
+  --animate-enter: enter 220ms var(--ease-out-quint) both;
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Condensed width of the same typeface: room numbers read like door plaques. */
+.plaque {
+  font-stretch: 78%;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Small tracked caps used for section labels, like drawing annotations. */
+.annot {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dot-grid {
+  background-image: radial-gradient(var(--color-rule) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
