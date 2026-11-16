@@ -14,7 +14,7 @@ export type Shape = {
   label?: string;
   /** Where to put the label, if the middle of the shape is a bad spot for it. */
   at?: Pt;
-  /** Index of the edge with the glass front and door (edge i goes from point i to i+1). */
+  /** Index of the edge with the glass front and door, or for a stair the edge you step on from (edge i goes from point i to i+1). */
   front?: number;
   /** What to furnish it as. Rooms default to a meeting table. */
   fit?: "meeting" | "lab" | "commons" | "empty";
@@ -165,9 +165,10 @@ const level3: Floor = {
         [1025, 300],
       ],
     },
-    { kind: "stair", ref: "Monumental Stair with Roman Seating", poly: rect(545, 360, 612, 437) },
+    { kind: "stair", ref: "Monumental Stair with Roman Seating", front: E, poly: rect(545, 360, 612, 437) },
     {
       kind: "stair",
+      front: N,
       poly: [
         [908, 460],
         [1005, 450],
@@ -175,8 +176,8 @@ const level3: Floor = {
         [910, 548],
       ],
     },
-    { kind: "stair", poly: rect(523, 447, 627, 550) },
-    { kind: "stair", poly: rect(125, 225, 180, 305) },
+    { kind: "stair", front: E, poly: rect(523, 447, 627, 550) },
+    { kind: "stair", front: E, poly: rect(125, 225, 180, 305) },
     { kind: "core", poly: rect(527, 157, 588, 287) },
     { kind: "core", poly: rect(673, 447, 780, 550) },
     { kind: "core", poly: rect(1130, 447, 1200, 550) },

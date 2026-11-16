@@ -220,19 +220,36 @@ function commons(zone: Pt[], avoid: Pt[][]): Piece[] {
   });
 }
 
-/** A flight of steps rising along the stair's long side. */
-export function steps(poly: Pt[]): Piece[] {
-  const fr = frame(poly);
-  const n = Math.max(4, Math.round(fr.L / 6));
-  return Array.from({ length: n }, (_, i) => ({
-    ...at(fr.at(-fr.L / 2 + ((i + 0.5) * fr.L) / n, 0)),
-    w: fr.L / n,
-    d: fr.W,
-    rot: fr.rot,
-    h: 0.06 + ((i + 1) * 0.7) / n,
-    base: 0,
-    tone: "stair" as const,
-  }));
+/**
+ * A switchback stair up to the next floor: one flight goes in from the `entry` edge to a
+ * landing at the back, the second comes back next to it and ends above the entry edge.
+ * Heights are fractions of the floor-to-floor rise (1 = the floor above) so the scene sets the scale.
+ */
+export function steps(poly: Pt[], entry = 0): Piece[] {
+  const a = poly[entry % poly.length];
+  const ex = norm(sub(poly[(entry + 1) % poly.length], a));
+  let into: Pt = [-ex[1], ex[0]];
+  if (dot(sub(centroid(poly), a), into) < 0) into = mul(into, -1);
+  const us = poly.map((q) => dot(sub(q, a), ex));
+  const vs = poly.map((q) => dot(sub(q, a), into));
+  // slightly inside the outline so a slanted edge never pushes a tread off the floor
+  const u0 = Math.min(...us), W = (Math.max(...us) - u0) * 0.9, D = Math.max(...vs) * 0.92;
+  const mid = u0 + (Math.max(...us) - u0) / 2;
+  const place = (u: number, v: number) => at(add(a, add(mul(ex, mid + u), mul(into, v + D * 0.04))));
+  const rot = Math.atan2(ex[1], ex[0]);
+  const land = Math.min(D * 0.28, W / 2);
+  const run = D - land;
+  const n = Math.max(4, Math.round(run / 7));
+  const T = 0.14; // tread thickness, thick so the flight looks like one piece
+  const tread = (u: number, v: number, top: number, w: number, d: number): Piece => ({
+    ...place(u, v), w, d, rot, h: Math.min(T, top), base: Math.max(0, top - T), tone: "stair",
+  });
+  const lane = W / 2 - 1;
+  return [
+    ...Array.from({ length: n }, (_, i) => tread(-W / 4, ((i + 0.5) * run) / n, ((i + 1) / (n + 1)) * 0.5, lane, run / n)),
+    tread(0, run + land / 2, 0.5, W, land),
+    ...Array.from({ length: n }, (_, i) => tread(W / 4, run - ((i + 0.5) * run) / n, 0.5 + ((i + 1) / n) * 0.5, lane, run / n)),
+  ];
 }
 
 export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null): FloorFit {
@@ -250,7 +267,7 @@ export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null)
       out.detail[s.ref] = { walls: roomWalls(room, front, f.window !== null), ...m };
     } else if (s.kind === "zone" && s.fit === "commons" && s.ref)
       out.detail[s.ref] = { walls: [], pieces: commons(s.poly, solids), callouts: [] };
-    else if (s.kind === "stair") out.stairs.push(...steps(s.poly));
+    else if (s.kind === "stair") out.stairs.push(...steps(s.poly, s.front));
   }
   return out;
 }

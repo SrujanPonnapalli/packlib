@@ -19,6 +19,8 @@ const DROP = 9; // and how far the floors below it sink
 const HOME: [number, number, number] = [0, 2 * RISE, 0];
 const ROOM_H = 0.5; // closed room: just a block
 const WALL_H = 0.55; // open room: low cut-away walls so you can see inside
+const STAIR_FULL = RISE - 0.4; // a stair reaches the underside of the floor above...
+const STAIR_OPEN = 2.2; // ...and folds down low while a level is open so it doesn't tower over the rooms
 const FLAT = 0.25; // how flat closed rooms get while another room is open
 const WALL_T = 2.5; // px
 
@@ -48,7 +50,7 @@ const P = {
   soft: "#cdc4b2",
   screen: "#34322e",
   desk: "#e8dfcc",
-  stair: "#e3dccd",
+  stair: "#d6cdb9",
   edge: "#9d978a",
 };
 
@@ -269,7 +271,9 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const targetY = (n - 1) * RISE + (away ? LIFT : under ? -DROP : 0);
   const targetOpacity = away ? 0 : under ? 0.05 : 1;
   // start assembled so opening a level on page load still animates
-  const now = useRef({ y: (n - 1) * RISE, opacity: 1, flat: 1 });
+  const now = useRef({ y: (n - 1) * RISE, opacity: 1, flat: 1, stair: STAIR_FULL });
+  const flights = useRef<THREE.Group>(null);
+  const targetStair = active === null ? STAIR_FULL : STAIR_OPEN;
   const blocks = useRef<THREE.Group>(null!);
   const targetFlat = opened ? FLAT : 1;
 
@@ -280,6 +284,12 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       if (Math.abs(targetFlat - s.flat) < 0.002) s.flat = targetFlat;
       else state.invalidate();
       blocks.current.scale.y = s.flat;
+    }
+    if (s.stair !== targetStair) {
+      s.stair += (targetStair - s.stair) * ease(dt, 0.11);
+      if (Math.abs(targetStair - s.stair) < 0.005) s.stair = targetStair;
+      else state.invalidate();
+      if (flights.current) flights.current.scale.y = s.stair;
     }
     if (s.y === targetY && s.opacity === targetOpacity) return;
     const k = ease(dt, 0.11);
@@ -398,7 +408,9 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
         })}
       </group>
 
-      <Blocks geometry={BOX} material={mats.piece} items={stairs} />
+      <group ref={flights} scale-y={STAIR_FULL}>
+        <Blocks geometry={BOX} material={mats.piece} items={stairs} />
+      </group>
       {opened && <Inside key={selectedRef} detail={opened} mats={mats} />}
     </group>
   );
@@ -411,7 +423,6 @@ type Label = {
   style: "room" | "name" | "callout";
   dim: boolean;
   picked: boolean;
-  flip?: boolean;
 };
 
 /** Labels for the open level, plus callouts for the open room. */
@@ -434,7 +445,7 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
       picked: mine,
     });
   }
-  callouts.forEach((c, i) =>
+  callouts.forEach((c) =>
     out.push({
       key: `${selectedRef}-${c.text}`,
       text: c.text,
@@ -442,7 +453,6 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
       style: "callout",
       dim: false,
       picked: false,
-      flip: i % 2 === 1,
     }),
   );
   return out;
@@ -450,20 +460,38 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
 
 const scratch = new THREE.Vector3();
 
+// callout label: offset from its dot, plus its box (px) that other labels have to avoid
+const PILL = { dx: 22, dy: -18, w: 200, h: 24 };
+
 /** Keeps the HTML labels (one overlay outside the canvas) pinned to their spots in the scene. */
 function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLElement | null)[]> }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => invalidate(), [labels, invalidate]);
   useFrame(({ camera, size }) => {
     camera.updateMatrixWorld();
+    const pills: { x: number; y: number }[] = []; // where each callout label ended up, so the next one can avoid it
     labels.forEach((label, i) => {
       const el = els.current[i];
       if (!el) return;
       scratch.copy(label.at).project(camera);
-      const x = ((scratch.x * 0.5 + 0.5) * size.width).toFixed(1);
-      const y = ((-scratch.y * 0.5 + 0.5) * size.height).toFixed(1);
-      el.style.transform = label.style === "callout" ? `translate(${x}px, ${y}px)` : `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+      const x = (scratch.x * 0.5 + 0.5) * size.width;
+      const y = (-scratch.y * 0.5 + 0.5) * size.height;
       el.style.opacity = label.dim ? "0.35" : "1";
+      if (label.style !== "callout") {
+        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
+        return;
+      }
+      el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      // label goes up and to the right of its dot, then moves down until it's clear of the others
+      const px = x + PILL.dx;
+      let py = y + PILL.dy;
+      for (let hit; (hit = pills.find((q) => Math.abs(q.x - px) < PILL.w && Math.abs(q.y - py) < PILL.h)); ) py = hit.y + PILL.h;
+      pills.push({ x: px, y: py });
+      const [, line, pill] = el.children as unknown as HTMLElement[];
+      const dy = py - y;
+      line.style.width = `${Math.hypot(PILL.dx, dy).toFixed(1)}px`;
+      line.style.transform = `rotate(${Math.atan2(dy, PILL.dx).toFixed(3)}rad)`;
+      pill.style.transform = `translate(${PILL.dx}px, ${dy.toFixed(1)}px) translateY(-50%)`;
     });
   });
   return null;
@@ -634,15 +662,8 @@ export default function BuildingScene(props: Common) {
             {label.style === "callout" ? (
               <>
                 <span className="absolute size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink ring-2 ring-sheet" />
-                {/* every other callout leans down instead of up so neighbors don't collide */}
-                <span
-                  className={`absolute left-0 top-0 h-px w-[22px] origin-left bg-ink ${label.flip ? "rotate-[38deg]" : "-rotate-[38deg]"}`}
-                />
-                <span
-                  className={`annot absolute left-[16px] whitespace-nowrap rounded-[4px] bg-sheet px-1.5 py-[3px] text-[10px] leading-none text-ink shadow-lift ${
-                    label.flip ? "top-[11px]" : "top-[-27px]"
-                  }`}
-                >
+                <span className="absolute left-0 top-0 h-px origin-left bg-ink" />
+                <span className="annot absolute left-0 top-0 whitespace-nowrap rounded-[4px] bg-sheet px-1.5 py-[3px] text-[10px] leading-none text-ink shadow-lift">
                   {label.text}
                 </span>
               </>
