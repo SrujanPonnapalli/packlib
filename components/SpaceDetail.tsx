@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { KINDS, levelName, type Space } from "@/data/hunt";
+import { KINDS, type Space } from "@/data/hunt";
 
 const EVERYONE = ["Faculty", "Graduate Students", "Staff", "Students"];
 
@@ -16,7 +16,7 @@ type Props = { space: Space; onBack: () => void };
 export default function SpaceDetail({ space: s, onBack }: Props) {
   const kind = KINDS.find((k) => k.id === s.kind)!.label;
   const facts: [string, string][] = [];
-  if (s.level !== null) facts.push(["Level", `${s.level} · ${levelName(s.level)}`]);
+  if (s.level !== null) facts.push(["Level", String(s.level)]);
   if (s.reservableBy.length) facts.push([s.reservable ? "Who can reserve" : "Open to", audience(s.reservableBy)]);
   if (s.bookAhead) facts.push(["Book ahead", `Up to ${s.bookAhead}`]);
   if (s.maxBooking) facts.push(["Longest booking", s.maxBooking]);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LEVELS } from "@/data/hunt";
+import { LevelButton } from "./LevelRail";
 
 // Schematic footprint per level as [length, depth]; not to scale.
 const FOOTPRINT: Record<number, [number, number]> = {
@@ -92,39 +93,23 @@ export default function LevelStack({ active, counts, onSelect }: Props) {
       </svg>
 
       <ul className="absolute inset-y-0 left-0 w-[31%]">
-        {LEVELS.map(({ n, name }) => {
-          const on = active === n;
+        {LEVELS.map(({ n, landmark }) => {
           const count = counts[n] ?? 0;
-          const dim = (active !== null && !on) || count === 0;
           return (
             <li
               key={n}
               className="absolute left-0 right-0 -translate-y-1/2"
               style={{ top: `${((slab(n).anchorY - VB.y) / VB.h) * 100}%` }}
             >
-              <button
-                type="button"
-                aria-pressed={on}
-                aria-label={`Level ${n}, ${name}, ${count} ${count === 1 ? "space" : "spaces"}`}
+              <LevelButton
+                n={n}
+                landmark={landmark}
+                count={count}
+                on={active === n}
+                dim={(active !== null && active !== n) || count === 0}
                 onClick={() => toggle(n)}
-                onPointerEnter={() => setHover(n)}
-                onPointerLeave={() => setHover(null)}
-                className={`group flex w-full items-center gap-2.5 rounded-md py-1 text-left transition-opacity duration-200 ${dim ? "opacity-50" : ""}`}
-              >
-                <span
-                  className={`plaque grid size-7 shrink-0 place-items-center rounded-md text-[18px] sm:size-9 sm:text-[22px] font-semibold leading-none transition-colors duration-200 ${
-                    on ? "bg-stair text-ink" : "text-ink group-hover:bg-vellum"
-                  }`}
-                >
-                  {n}
-                </span>
-                <span className="hidden min-w-0 sm:block">
-                  <span className="block whitespace-nowrap text-[13px] font-medium leading-tight">{name}</span>
-                  <span className="block text-[12px] leading-tight tabular-nums text-pencil">
-                    {count} {count === 1 ? "space" : "spaces"}
-                  </span>
-                </span>
-              </button>
+                onHover={setHover}
+              />
             </li>
           );
         })}

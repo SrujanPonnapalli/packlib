@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { KINDS, LEVELS, levelName, type Kind, type Space } from "@/data/hunt";
+import { KINDS, LEVELS, type Kind, type Space } from "@/data/hunt";
 
 // Numbered rooms of these kinds are near-identical, so they show as a grid of
 // door plaques instead of sixty rows that differ by one number.
@@ -19,8 +19,7 @@ export default function SpaceList({ spaces, onOpen }: Props) {
       {groups.map(({ n, items }) => (
         <section key={n ?? "around"} aria-labelledby={`level-${n}`}>
           <h2 id={`level-${n}`} className="flex items-baseline gap-2 border-b border-rule pb-2">
-            {n !== null && <span className="annot text-pencil">Level {n}</span>}
-            <span className="text-[14px] font-semibold">{levelName(n)}</span>
+            <span className="text-[14px] font-semibold">{n === null ? "Around Hunt" : `Level ${n}`}</span>
             <span className="ml-auto text-[12px] tabular-nums text-pencil">{items.length}</span>
           </h2>
 

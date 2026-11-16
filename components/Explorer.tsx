@@ -1,13 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { KINDS, LEVELS, levelName, snapshotDate, spaces, type Kind } from "@/data/hunt";
+import { KINDS, LEVELS, landmark, snapshotDate, spaces, type Kind } from "@/data/hunt";
+import LevelRail from "./LevelRail";
 import LevelStack from "./LevelStack";
 import SpaceList from "./SpaceList";
 import SpaceDetail from "./SpaceDetail";
 
+// three.js is only fetched where the 3D model is shown.
+const BuildingScene = dynamic(() => import("./BuildingScene"), { ssr: false });
+
+// Phones get the flat stack: a draggable 3D canvas would fight page scrolling.
+const WIDE = "(min-width: 1024px)";
+const subscribeWide = (fn: () => void) => {
+  const mq = window.matchMedia(WIDE);
+  mq.addEventListener("change", fn);
+  return () => mq.removeEventListener("change", fn);
+};
+
 export default function Explorer() {
+  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
   // Level and open space live in the URL so a view can be shared and Back works.
   const params = useSearchParams();
   const selected = spaces.find((s) => s.id === params.get("space")) ?? null;
@@ -15,7 +29,7 @@ export default function Explorer() {
   const level = LEVELS.some((l) => l.n === levelParam) ? levelParam : null;
 
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<Kind | "all">("all");
+  const [kind, setKind] = useState<Kind | "all">("study"); // most visitors want a study room
 
   function go(patch: Record<string, string | number | null>, push = false) {
     const next = new URLSearchParams(params.toString());
@@ -42,38 +56,58 @@ export default function Explorer() {
 
   const listed = level === null ? matching : matching.filter((s) => s.level === level);
   const stackLevel = selected ? selected.level : level;
+  // Picking a level while a space is open leaves the space.
+  const selectLevel = (n: number | null) => go({ level: n, space: null }, selected !== null);
 
   return (
     <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]">
       <section aria-label="Building" className="dot-grid relative flex min-w-0 flex-col px-5 pb-5 pt-6 sm:px-10 lg:pb-8 lg:pt-9">
-        <div>
+        <div className="pointer-events-none relative z-10 [&_button]:pointer-events-auto">
           <p className="annot text-pencil">James B. Hunt Jr. Library</p>
           <h1 className="mt-1.5 text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[36px]">
-            {selected ? selected.title : level !== null ? `Level ${level} · ${levelName(level)}` : "Pick a level, find a place."}
+            {selected ? selected.title : level !== null ? `Level ${level}` : "Pick a level, find a place."}
           </h1>
           <p className="mt-2 text-[14px] text-graphite">
-            {selected
-              ? selected.level !== null
-                ? `Level ${selected.level} · ${levelName(selected.level)}`
-                : "Not tied to a single level"
-              : level !== null
-                ? (
-                  <button type="button" onClick={() => go({ level: null })} className="underline decoration-rule-strong underline-offset-4 transition-colors duration-150 hover:decoration-ink">
-                    Show all five levels
-                  </button>
-                )
-                : matching.length === spaces.length
-                  ? `${spaces.length} rooms and spaces across five levels.`
-                  : `${matching.length} of ${spaces.length} spaces match your filters.`}
+            {selected ? (
+              selected.level !== null ? `Level ${selected.level}` : "Not tied to a single level"
+            ) : level !== null ? (
+              <>
+                Home of the {landmark(level)}.{" "}
+                <button type="button" onClick={() => go({ level: null })} className="underline decoration-rule-strong underline-offset-4 transition-colors duration-150 hover:decoration-ink">
+                  Show all five levels
+                </button>
+              </>
+            ) : kind === "all" && !query.trim() ? (
+              `${spaces.length} rooms and spaces across five levels.`
+            ) : (
+              `Showing ${matching.length} of ${spaces.length} rooms and spaces.`
+            )}
           </p>
         </div>
 
-        <div className="flex flex-1 items-center py-2 lg:py-4">
-          <LevelStack active={stackLevel} counts={counts} onSelect={(n) => go({ level: n, space: null }, selected !== null)} />
-        </div>
+        {wide ? (
+          <>
+            {/* The model fills the whole panel; the heading and caption float over it. */}
+            <BuildingScene
+              active={stackLevel}
+              selectedRef={selected ? (selected.room ?? selected.title) : null}
+              onSelectLevel={selectLevel}
+              onOpenSpace={(id) => go({ space: id }, true)}
+            />
+            <div className="absolute left-10 top-1/2 z-10 -translate-y-1/2">
+              <LevelRail active={stackLevel} counts={counts} onSelect={selectLevel} />
+            </div>
+            <div className="min-h-[360px] flex-1" />
+          </>
+        ) : (
+          <div className="flex flex-1 items-center py-2">
+            <LevelStack active={stackLevel} counts={counts} onSelect={selectLevel} />
+          </div>
+        )}
 
-        <p className="text-[12px] leading-relaxed text-pencil">
-          Schematic, not to scale. Space details from NC State Libraries, captured{" "}
+        <p className="pointer-events-none relative z-10 max-w-[60ch] text-[12px] leading-relaxed text-pencil">
+          Schematic, not to scale. {wide && "Level 3 is traced from the Libraries' floor map; the other levels are placeholders. Drag to turn, scroll to zoom. "}
+          Space details from NC State Libraries, captured{" "}
           {snapshotDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.
         </p>
       </section>
@@ -99,7 +133,7 @@ export default function Explorer() {
                 />
               </label>
               <div className="-mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-7 sm:px-7" role="group" aria-label="Filter by type">
-                {[{ id: "all" as const, label: "All" }, ...KINDS].map((k) => {
+                {[...KINDS, { id: "all" as const, label: "Everything" }].map((k) => {
                   const on = kind === k.id;
                   return (
                     <button
