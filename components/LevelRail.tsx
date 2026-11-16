@@ -26,7 +26,7 @@ export function LevelButton({ n, landmark, count, on, dim, onClick, onHover, com
     >
       <span
         className={`plaque grid size-7 shrink-0 place-items-center rounded-md text-[18px] font-semibold leading-none transition-colors duration-200 sm:size-9 sm:text-[22px] ${
-          on ? "bg-stair text-ink" : "text-ink group-hover:bg-vellum"
+          on ? "bg-accent text-ink" : "text-ink group-hover:bg-vellum"
         }`}
       >
         {n}

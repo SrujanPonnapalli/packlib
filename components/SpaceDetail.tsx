@@ -57,7 +57,7 @@ export default function SpaceDetail({ space: s, onBack }: Props) {
 
       <header className="mt-6 flex items-start gap-4">
         {s.room && (
-          <span className="plaque mt-0.5 rounded-lg bg-stair px-2.5 py-1.5 text-[26px] font-semibold leading-none">
+          <span className="plaque mt-0.5 rounded-lg bg-accent px-2.5 py-1.5 text-[26px] font-semibold leading-none">
             {s.room}
           </span>
         )}

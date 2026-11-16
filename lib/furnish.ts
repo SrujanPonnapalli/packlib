@@ -17,12 +17,14 @@ export type Tone = "table" | "chair" | "soft" | "screen" | "desk" | "stair";
 export type Piece = { x: number; y: number; w: number; d: number; rot: number; h: number; base: number; tone: Tone; round?: boolean };
 export type Wall = { a: Pt; b: Pt; glass: boolean };
 export type Callout = { at: Pt; height: number; text: string };
+/** What appears when one room or zone is opened up. */
+export type Detail = { walls: Wall[]; pieces: Piece[]; callouts: Callout[] };
 export type FloorFit = {
-  walls: Wall[];
-  pieces: Piece[];
   /** Room floors, shrunk by half a wall so neighbours' walls sit side by side. */
   rooms: { ref?: string; poly: Pt[] }[];
-  callouts: Record<string, Callout[]>;
+  /** Steps are drawn at every zoom; everything else waits until its room is opened. */
+  stairs: Piece[];
+  detail: Record<string, Detail>;
 };
 
 const WALL_IN = 1.5;
@@ -190,28 +192,29 @@ function lab(room: Pt[]): Piece[] {
 
 /** Open study furniture, varied so the floor reads as a commons, not a grid. */
 function commons(zone: Pt[], avoid: Pt[][]): Piece[] {
-  return gridIn(zone, 30, 13, avoid).flatMap(([x, y], k): Piece[] => {
-    const rot = (k * 7) % 3 === 0 ? Math.PI / 2 : 0;
-    const p = (u: number, v: number) => at(add([x, y], [u * Math.cos(rot) - v * Math.sin(rot), u * Math.sin(rot) + v * Math.cos(rot)]));
-    switch (k % 3) {
-      case 0: // four-top
+  // Few, large, aligned groups, one kind per row: a calm rhythm reads better than a varied scatter.
+  const STEP = 46;
+  return gridIn(zone, STEP, 18, avoid).flatMap(([x, y]): Piece[] => {
+    const p = (u: number, v: number) => at([x + u, y + v]);
+    switch (Math.round(y / (STEP * 0.87)) % 3) {
+      case 0: // six-top
         return [
-          { x, y, w: 18, d: 11, rot, h: 0.3, base: 0, tone: "table" },
-          ...[-5, 5].flatMap((u) => [-9.5, 9.5].map((v): Piece => ({ ...p(u, v), w: 5, d: 5, rot, h: 0.2, base: 0, tone: "chair" }))),
+          { x, y, w: 28, d: 13, rot: 0, h: 0.3, base: 0, tone: "table" },
+          ...[-9, 0, 9].flatMap((u) => [-11, 11].map((v): Piece => ({ ...p(u, v), w: 6, d: 6, rot: 0, h: 0.2, base: 0, tone: "chair" }))),
         ];
       case 1: // round table with stools
         return [
-          { x, y, w: 11, d: 11, rot: 0, h: 0.3, base: 0, tone: "table", round: true },
-          ...[0, 1, 2].map((i): Piece => {
-            const a = rot + (i * 2 * Math.PI) / 3;
-            return { x: x + 9 * Math.cos(a), y: y + 9 * Math.sin(a), w: 5, d: 5, rot: 0, h: 0.2, base: 0, tone: "chair", round: true };
+          { x, y, w: 16, d: 16, rot: 0, h: 0.3, base: 0, tone: "table", round: true },
+          ...[0, 1, 2, 3].map((i): Piece => {
+            const a = Math.PI / 4 + (i * Math.PI) / 2;
+            return { ...p(13 * Math.cos(a), 13 * Math.sin(a)), w: 6, d: 6, rot: 0, h: 0.2, base: 0, tone: "chair", round: true };
           }),
         ];
       default: // two soft chairs and a side table
         return [
-          { ...p(-8, 0), w: 9, d: 9, rot, h: 0.18, base: 0, tone: "soft" },
-          { ...p(8, 0), w: 9, d: 9, rot, h: 0.18, base: 0, tone: "soft" },
-          { x, y, w: 5, d: 5, rot: 0, h: 0.22, base: 0, tone: "table", round: true },
+          { ...p(-11, 0), w: 12, d: 12, rot: 0, h: 0.18, base: 0, tone: "soft" },
+          { ...p(11, 0), w: 12, d: 12, rot: 0, h: 0.18, base: 0, tone: "soft" },
+          { x, y, w: 6, d: 6, rot: 0, h: 0.22, base: 0, tone: "table", round: true },
         ];
     }
   });
@@ -233,7 +236,7 @@ export function steps(poly: Pt[]): Piece[] {
 }
 
 export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null): FloorFit {
-  const out: FloorFit = { walls: [], pieces: [], rooms: [], callouts: {} };
+  const out: FloorFit = { rooms: [], stairs: [], detail: {} };
   const solids = floor.shapes.filter((s) => s.kind !== "zone").map((s) => s.poly);
   for (const s of floor.shapes) {
     if (s.kind === "room") {
@@ -241,15 +244,13 @@ export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null)
       const f = (s.ref && fitoutOf(s.ref)) || NO_FITOUT;
       const front = s.front ?? 0;
       out.rooms.push({ ref: s.ref, poly: room });
-      out.walls.push(...roomWalls(room, front, f.window !== null));
+      if (!s.ref) continue;
       const fit = s.fit ?? "meeting";
-      if (fit === "meeting") {
-        const m = meetingRoom(room, front, f);
-        out.pieces.push(...m.pieces);
-        if (s.ref) out.callouts[s.ref] = m.callouts;
-      } else if (fit === "lab") out.pieces.push(...lab(room));
-    } else if (s.kind === "zone" && s.fit === "commons") out.pieces.push(...commons(s.poly, solids));
-    else if (s.kind === "stair") out.pieces.push(...steps(s.poly));
+      const m = fit === "meeting" ? meetingRoom(room, front, f) : { pieces: fit === "lab" ? lab(room) : [], callouts: [] };
+      out.detail[s.ref] = { walls: roomWalls(room, front, f.window !== null), ...m };
+    } else if (s.kind === "zone" && s.fit === "commons" && s.ref)
+      out.detail[s.ref] = { walls: [], pieces: commons(s.poly, solids), callouts: [] };
+    else if (s.kind === "stair") out.stairs.push(...steps(s.poly));
   }
   return out;
 }
