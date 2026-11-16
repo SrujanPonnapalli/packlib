@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fitFloor, gridIn, inset, meetingRoom, pointIn, type Fitout } from "./furnish.ts";
+import { fitFloor, gridIn, inset, meetingRoom, pointIn, steps, type Fitout } from "./furnish.ts";
 import { FLOORS, type Pt } from "../data/hunt-geometry.ts";
 
 const square: Pt[] = [[0, 0], [10, 0], [10, 10], [0, 10]];
@@ -38,4 +38,14 @@ test("every piece of Level 3 furniture sits on the floor plate", () => {
   const pieces = [...fit.stairs, ...Object.values(fit.detail).flatMap((d) => d.pieces)];
   assert.ok(pieces.length > 60);
   for (const p of pieces) assert.ok(pointIn(floor.plate, [p.x, p.y]), `piece at ${p.x},${p.y} is off the plate`);
+});
+
+test("a stair climbs from this floor to the one above and arrives over its entry edge", () => {
+  const treads = steps([[0, 0], [60, 0], [60, 80], [0, 80]], 0);
+  const tops = treads.map((p) => p.base + p.h);
+  assert.ok(Math.min(...tops) < 0.1);
+  assert.equal(Math.max(...tops), 1);
+  const first = treads[0], last = treads[treads.length - 1];
+  assert.ok(first.y < 15 && last.y < 15, "both ends are at the entry edge");
+  assert.ok(first.x < 30 && last.x > 30, "the flights run side by side");
 });
