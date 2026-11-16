@@ -1,0 +1,2117 @@
+{
+ "fetchedAt": "2026-11-16T22:46:14.398Z",
+ "source": "https://www.lib.ncsu.edu/api/spaces/everything.json",
+ "spaces": [
+  {
+   "id": "27881",
+   "title": "Art Wall",
+   "room": null,
+   "description": "Located directly above the Ask Us service point, the Art Wall welcomes you to Level 2 of the Hunt Library and is highly visible throughout the Rain Garden Reading Lounge. At night, it is even visible from outside the building on The Oval. The Art Wall showcases student, faculty, staff, and community art and design projects. See below for how to contact us about displaying your work. Have a content idea? If you are interested in exhibiting your work on the Art Wall, fill out this form or send a description of your idea to the Libraries' Director of Communications, Chris Tonelli, at catonell@ncsu.edu .",
+   "url": "https://www.lib.ncsu.edu/spaces/art-wall",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/Hunt-Art-Wall-01.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/Hunt-Art-Wall-01.jpg?itok=u7VKPzK-",
+    "alt": "Two students talking in front of the Hunt Art Wall that is mounted above the Ask us desk."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "27720",
+   "title": "Ask Us",
+   "room": null,
+   "description": "The Hunt Library's one-stop service center, where staff are ready to help you. What can I do here? Have a question? Need to find a room, book, or piece of software? Our friendly staff can help! Just ask us. Borrow technology . We lend everything from calculators and charging cables to synthesizers. Borrow books including textbooks . Pick up interlibrary loan requests.",
+   "url": "https://www.lib.ncsu.edu/spaces/ask-us-hunt",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2026-07/hunt-ask-us-2025.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2026-07/hunt-ask-us-2025.jpg?itok=DjxlnqYK",
+    "alt": "Smiling Ask Us employee hands a device to a patron"
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2090",
+   "title": "Audio Rooms",
+   "room": null,
+   "description": "Audio Rooms are fully equipped for creating and mixing music, recording voiceovers, transferring audio from analog formats, and editing digital media. If you are seeking a traditional piano experience, there are eight practice studios available to NC State students on a first-come, f irst-served basis in Price Music Center, the home of the Music Department. You must complete an online orientation before reserving an Audio Room. Note that it will take up to 48 hours for you to be added to the system; if you need a reservation on the same day you take the orientation please stop by the space and ask for help from a consultant. You will need to complete the orientation in both cases, but we may be able to set you up with a reservation same day if you stop by in person. The Media Spaces at Hunt are staffed during our open hours . You can find drop-in consultation assistance for projects, technology, and more just by stopping by.",
+   "url": "https://www.lib.ncsu.edu/spaces/audio-rooms",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-12/09-10-2025_audio_studios-6.png",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-12/09-10-2025_audio_studios-6.png?itok=UDkZ-ffI",
+    "alt": "2 people sitting in an audio room, with one playing guitar and the other singing."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "2027",
+   "title": "Auditorium",
+   "room": "1103",
+   "description": "The Auditorium provides for panel discussions, HD capture and video conferencing sessions, and special presentations like roundtables and mini forums. The audiovisual system includes an extended desktop display solution enabling multiple images to be projected on the projection screen. A sample of equipment in the room includes: two HD DLP projectors, multi-windowing video processor, blu-ray player and auxiliary AV inputs, program audio and movie surround sound system, color touch panel with source device preview and lighting control, and three HD cameras and associated mics for videoconferencing.",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-auditorium",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-04/53615399425_d3c3c469b6_k.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-04/53615399425_d3c3c469b6_k.jpg?itok=GMxMXUE9",
+    "alt": "Speaker on stage in front of lots of attendees"
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "62983",
+   "title": "Carrel Corridor",
+   "room": "2008",
+   "description": "Carrels provide a semi-private individual study space located in the corridor behind the Immersion Theater.",
+   "url": "https://www.lib.ncsu.edu/spaces/carrel-corridor",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2023-10/behind-immersion-4.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2023-10/behind-immersion-4.jpg?itok=jUhmfcDN",
+    "alt": "Corridor lined with Brody individual study carrels"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "24523",
+   "title": "Common Grounds Café",
+   "room": null,
+   "description": "Featuring Caribou Coffee beverages and a lineup of fresh bakery items, bottled beverages, grab ‘n go sandwiches, wraps, pastas, salads and snacks. More Information about Common Grounds Café",
+   "url": "https://www.lib.ncsu.edu/spaces/common-grounds-cafe",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/hunt-common-grounds.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/hunt-common-grounds.jpg?itok=LfLpAqnZ",
+    "alt": "hunt-common-grounds.jpg"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2092",
+   "title": "Cornelson Meeting Room",
+   "room": "4502",
+   "description": "The Cornelson Meeting Room offers table seating for 12, a large screen, and glass walls. It is for collaborative learning and research and is not intended for other purposes such as administrative meetings or formal classroom instruction.",
+   "url": "https://www.lib.ncsu.edu/spaces/cornelson-meeting-room",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/Hunt_Fishbowl_1.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/Hunt_Fishbowl_1.jpg?itok=iaEidtvm",
+    "alt": "Hunt_Fishbowl_1.jpg"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "52050",
+   "title": "Dataspace",
+   "room": null,
+   "description": "The Dataspace is one of two NC State University Libraries’ Data Labs. It provides a place for members of the NC State University community to access essential technology for working with data, including powerful computers and specialized software. The Dataspace supports anyone at NC State University working with data , creating visualizations , or using geospatial tools and methodologies . Data Science Consulting is also available in the Dataspace for help with a wide range of data topics. Consulting is typically available on weekdays when class is in session from 10am-6pm. Please visit Get Data Help for more information and details about the current schedule. The Libraries supports a community in the Dataspace that provides a conducive environment for those working with data. View community guidelines Looking for a Data Lab in Hill Library? See more about the Data Experience Lab . Explore data science services Computing Reserve a Dataspace Workstation Select \"Hunt\" for the building. Then select \"Data Stations.\" If you need to make a reservation longer than four hours, please contact us. Software View list of software If you don't see a specific software that you would like to use, you may submit a Software Request .",
+   "url": "https://www.lib.ncsu.edu/spaces/dataspace",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-07/dataspace_wide_view.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-07/dataspace_wide_view.jpg?itok=z9WYQLFs",
+    "alt": "Dataspace wide view"
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2412",
+   "title": "Duke Energy Hall",
+   "room": "2110A",
+   "description": "The Duke Energy Hall located at James B. Hunt Library is a premier meeting and event venue located on NC State's Centennial Campus. With over 5,400 square feet of versatile meeting and presentation space, it can be divided into sections to accommodate various furniture configurations and capacities for your next event! Reservations may be requested with this form . Alternative spaces for meetings and events on campus, including those on or near Centennial Campus, include the following. Institute for Emerging Issues, Hunt Library Plant Sciences Building, Centennial Campus McKimmon Conference and Training Center Park Alumni Center Talley Student Union Witherspoon Student Center Outdoor Spaces Event Rooms at the JC Raulston Arboretum StateView Hotel Other Spaces View the space in a 360 tour .",
+   "url": "https://www.lib.ncsu.edu/spaces/duke-energy-hall",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2024-11/deh_audi_pan.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2024-11/deh_audi_pan.jpg?itok=fz4hFlqT",
+    "alt": "Duke Energy Hall with dozens of chairs"
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": "https://docs.google.com/forms/d/e/1FAIpQLSdo38BqKcud8pJN1rNmJEJwSPa6WjW6dqyGKDK3bjQpuG6-Pw/viewform"
+  },
+  {
+   "id": "45590",
+   "title": "Emerging Issues Commons",
+   "room": null,
+   "description": "The Emerging Issues Commons is a civic engagement space designed to connect people with information to inspire action for a prosperous North Carolina. Throughout its many sections, visitors are able to hear directly from fellow North Carolinians about issues that transcend the boundaries of geography, sector, demographics and ideology. The commons is managed by the Institute for Emerging Issues, a non-partisan “Connect. Think and Do” tank committed to bringing North Carolinians together to find solutions to the state’s emerging and critical policy issues.",
+   "url": "https://www.lib.ncsu.edu/spaces/emerging-issues-commons",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-08/hunt-ei-commons-1.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-08/hunt-ei-commons-1.jpg?itok=owfZ5KTU",
+    "alt": "Institute for Emerging Issues Lobby with bright digital displays and molded wood furniture"
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": "https://docs.google.com/forms/d/e/1FAIpQLScuK63zk2BdTCjIJ5KIcjih_uFh-CETnzkC8y4bGN0Vfqt3ZQ/viewform"
+  },
+  {
+   "id": "2255",
+   "title": "Faculty Conference 5234",
+   "room": "5234",
+   "description": "Located inside the Faculty Research Commons. (Wolfpack One Card required for entry) Conference table, whiteboards, computer, dual display screens, speakers, phone, webcam, and VGA and HDMI cables for laptop.",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-faculty-conference-5234",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/hunt-faculty-conference-01.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/hunt-faculty-conference-01.jpg?itok=OOG-WyTF",
+    "alt": "Seating for ten in a Hunt faculty conference room containing wall mounted monitor and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "2257",
+   "title": "Faculty Focus 5210",
+   "room": "5210",
+   "description": "Semi-private, office-like workspace. Located inside the Faculty Research Commons. Conference phone available.",
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-focus-5210",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5210.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5210.jpg?itok=2zX_aG1N",
+    "alt": "Hunt Faculty Focus room 5 2 1 0 with work desk and chairs."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56363",
+   "title": "Faculty Focus 5211",
+   "room": "5211",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-focus-5211",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5211.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5211.jpg?itok=KxIICFEU",
+    "alt": "Hunt Faculty Focus room 5 2 1 1 with work desk and chairs and exterior window."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56364",
+   "title": "Faculty Focus 5222",
+   "room": "5222",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-focus-5222",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5222.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5222.jpg?itok=FoXHcO9H",
+    "alt": "Hunt Faculty Focus room 5 2 1 0 with work desk and chairs."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56365",
+   "title": "Faculty Focus 5223",
+   "room": "5223",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-focus-5223",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5223.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5223.jpg?itok=lZzkUBZE",
+    "alt": "Hunt Faculty Focus room 5 2 2 3 with work desk and chairs."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56366",
+   "title": "Faculty Focus 5224",
+   "room": "5224",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-focus-5224",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5224.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5224.jpg?itok=2ykvrydT",
+    "alt": "Hunt Faculty Focus room 5 2 2 4 with work desk and chairs."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "22559",
+   "title": "Faculty Research Commons",
+   "room": null,
+   "description": "Space for faculty to do individual or collaborative work, and to connect with colleagues. A valid Wolfpack One Card is required for access. Available for Reservation The Faculty Research Commons main space is available to use without a reservation. There are reservable spaces within the Faculty Research Commons. These rooms may be reserved up to six months in advance for up to 24 hours. More details about these spaces available below. Reserve a faculty space The NC State University Libraries also has a Faculty Research Commons at the D. H. Hill Jr. Library.",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-faculty-research-commons",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/Hunt_Faculty-Research-Commons_1.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/Hunt_Faculty-Research-Commons_1.jpg?itok=WLBs6QHf",
+    "alt": "Hunt_Faculty-Research-Commons_1.jpg"
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "46000",
+   "title": "Faculty Workroom 5231",
+   "room": "5231",
+   "description": "Located inside the Faculty Research Commons. (Wolfpack One Card required for entry).",
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5231",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-08/hunt-faculty-5231.png",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-08/hunt-faculty-5231.png?itok=1jM4JNKu",
+    "alt": "Circular table surrounded by four task chairs with exterior window on the right."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "2119",
+   "title": "Faculty Workroom 5232",
+   "room": "5232",
+   "description": "Office-like workspace Located inside the Faculty Research Commons. Speakers, display screen, phone, web cam, and VGA and HDMI cables for laptop.",
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5232",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5232.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5232.jpg?itok=KiJe9YOg",
+    "alt": "Hunt Faculty Workroom 5 2 3 2 with work table and chairs, display screen, and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56367",
+   "title": "Faculty Workroom 5233",
+   "room": "5233",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5233",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5233.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5233.jpg?itok=nI0F_gTN",
+    "alt": "Hunt Faculty Workroom 5 2 3 3 with work table and chairs, display screen, and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56373",
+   "title": "Faculty Workroom 5241",
+   "room": "5241",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5241",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5241.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5241.jpg?itok=J2n6y5uq",
+    "alt": "Hunt Faculty Workroom 5 2 4 1 with work table and chairs, display screen, and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56374",
+   "title": "Faculty Workroom 5242",
+   "room": "5242",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5242",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5242.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5242.jpg?itok=rEOari3K",
+    "alt": "Hunt Faculty Workroom 5 2 4 2 with work table and chairs, display screen, and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56375",
+   "title": "Faculty Workroom 5243",
+   "room": "5243",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5243",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5243.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5243.jpg?itok=6UsWhK3C",
+    "alt": "Hunt Faculty Workroom 5 2 4 3 with work table and chairs, display screen, and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56376",
+   "title": "Faculty Workroom 5244",
+   "room": "5244",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5244",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5244.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5244.jpg?itok=UY7JC7bA",
+    "alt": "Hunt Faculty Workroom 5 2 4 4 with work table and chairs, display screen, and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56377",
+   "title": "Faculty Workroom 5245",
+   "room": "5245",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/faculty-workroom-5245",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-5245.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-5245.jpg?itok=VCBtnXHE",
+    "alt": "Hunt Faculty Workroom 5 2 4 5 with work table and chairs, display screen, and whiteboard."
+   },
+   "reservableBy": [
+    "Faculty"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "27296",
+   "title": "Graduate Student Commons",
+   "room": null,
+   "description": "Lounge seating, open study spaces, eight study rooms, computer workstations, and lockers. A valid Wolfpack One Card is required for access. Available for Reservation Reserve a Graduate Study",
+   "url": "https://www.lib.ncsu.edu/spaces/graduate-student-commons-hunt",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/hunt-graduate-commons-01.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/hunt-graduate-commons-01.jpg?itok=7DH5Ob1A",
+    "alt": "hunt-graduate-commons-01.jpg"
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "24764",
+   "title": "Graduate Study Room 4302",
+   "room": "4302",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-study-4302",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-4302a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-4302a-2.jpg?itok=Df75lJ8N",
+    "alt": "Study room with table surrounded by four task chairs, wall-mounted display, and whiteboard walls"
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56333",
+   "title": "Graduate Study Room 4311",
+   "room": "4311",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-study-4311",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4311.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4311.jpg?itok=Hp_iKfLV",
+    "alt": "Hunt Graduate Group Study room 4 3 1 1 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "24761",
+   "title": "Graduate Study Room 4312",
+   "room": "4312",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-study-4312",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4312.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4312.jpg?itok=409if9DZ",
+    "alt": "Hunt Graduate Group Study room 4 3 1 2 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "24765",
+   "title": "Graduate Study Room 4313",
+   "room": "4313",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-lounge-4313",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4311.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4311.jpg?itok=Hp_iKfLV",
+    "alt": "Hunt Graduate Group Study room 4 3 1 1 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56361",
+   "title": "Graduate Study Room 4314",
+   "room": "4314",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-study-4314",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4314.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4314.jpg?itok=M0IcRBkf",
+    "alt": "Hunt Graduate Group Study room 4 3 1 3 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56332",
+   "title": "Graduate Study Room 4315",
+   "room": "4315",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-study-4315",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4315.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4315.jpg?itok=X153p7Dq",
+    "alt": "Hunt Graduate Group Study room 4 3 1 2 with work table and chairs, display screen, whiteboard walls, and exterior windows."
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "24763",
+   "title": "Graduate Study Room 4321",
+   "room": "4321",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-lounge-4321",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-4321a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-4321a-2.jpg?itok=H-v-WDxc",
+    "alt": "Study room with table surrounded by four task chairs, wall-mounted display, whiteboard walls, and exterior windows"
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56362",
+   "title": "Graduate Study Room 4322",
+   "room": "4322",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-graduate-study-4322",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4322.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4322.jpg?itok=FbQm2M0f",
+    "alt": "Hunt Graduate Group Study room 4 3 1 2 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Graduate Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "22585",
+   "title": "Group Meeting Rooms",
+   "room": "4101",
+   "description": "These meeting rooms are not run by the NC State Libraries. They are under the Institute for Emerging Issues (IEI) which is housed in the Hunt Library building. You can request a reservation through the IEI Request Form .",
+   "url": "https://www.lib.ncsu.edu/spaces/group-meeting-rooms",
+   "photo": null,
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "45551",
+   "title": "Idea Alcove",
+   "room": "2302",
+   "description": "The Idea Alcove is an open, informal collaboration space, located near the Quiet Reading Room, for when consultations need to happen on the fly. This space has easily moveable furniture and a whiteboard that takes up the entire north wall.",
+   "url": "https://www.lib.ncsu.edu/spaces/idea-alcove",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/hunt-idea-alcove-01.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/hunt-idea-alcove-01.jpg?itok=Rzh7e_7n",
+    "alt": "Students working in the hunt idea alcove."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "63098",
+   "title": "Interfaith Prayer & Meditation Room",
+   "room": "3211",
+   "description": "NC State’s interfaith prayer & meditation rooms are meant to serve and support all students and the holistic wellness of the university community, as scientific evidence demonstrates the significant cognitive and physiological benefits of meditation. The spaces allow individuals of all religious faiths and non-religious beliefs to experience a place for peace, prayer, meditation and/or reflection throughout the day. The spaces are intended for individual use and not for any organized group activity or meetings. The interfaith prayer and meditation rooms are not reservable and are available for individual students to use whenever the campus building is open. Other interfaith prayer and meditation spaces on campus",
+   "url": "https://www.lib.ncsu.edu/spaces/interfaith-prayer-meditation-room",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2024-01/interfaith_prayer_meditation_3211-3.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2024-01/interfaith_prayer_meditation_3211-3.jpg?itok=dJciB4xi",
+    "alt": "Open room with yellow carpet, whiteboard walls, and prayer rug."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2028",
+   "title": "iPearl Immersion Theater",
+   "room": "2206",
+   "description": "The iPearl Immersion Theater features a nearly 20-foot-long video display with a gentle curve that immerses the viewer. Prominently located in a high-traffic area next to the Ask Us service point, the Theater is Hunt’s premiere digital exhibit space, highlighting the innovative work of NC State’s students, faculty, and staff. You can explore a variety of exhibitions by selecting them on the touch panel next to the display wall. Have a content idea? The iPearl Immersion Theater showcases a wide variety of student, faculty, staff, and community projects. If you would like to exhibit your work in the Theater, please fill out this form or send a description of your idea to Chris Tonelli, Director of Libraries Communications, at catonell@ncsu.edu .",
+   "url": "https://www.lib.ncsu.edu/spaces/ipearl-immersion-theater",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2023-07/immersion_theater-8.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2023-07/immersion_theater-8.jpg?itok=kv1Qinu9",
+    "alt": "Stools in front of the large, curved screen of the Immersion Theater. The screen shows visuals from an exhibit called \"Hypnotizing Math.\""
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "45552",
+   "title": "Jay Lawrence and Ella Apple Technology Showcase",
+   "room": "2200",
+   "description": "The Jay Lawrence and Ella Apple Technology Showcase at the James B. Hunt Jr. Library on Centennial Campus serves as a co-work and study space for students, and as a hub of interdisciplinary technology and craft based activities to promote and support innovation in high impact experiential learning. The Technology Showcase is a site that also hosts a variety of pop-ups, workshops, and events designed to engage Hunt Library patrons through low-stakes, playful, and engaging learning opportunities. The Fall 2026 semester is bringing several pop-up workshops presented by Libraries partners, and The Studios . In addition to various technologies, such as synthesizers, and a VR headset that libraries’ patrons can explore, an upcoming small scale materials library in collaboration with the Wilson College of Textiles will be coming to the space this Fall semester.",
+   "url": "https://www.lib.ncsu.edu/spaces/jay-lawrence-and-ella-apple-technology-showcase",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2026-07/tech-showcase-2025-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2026-07/tech-showcase-2025-2.jpg?itok=3Q43SCnY",
+    "alt": "Musical tech equipment on large tables, with library staff demonstrating their use"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "55203",
+   "title": "Lactation Room",
+   "room": "1202",
+   "description": "Amenities This room includes a table and chair, a lounge chair, changing table, rolling table, sink, mirror, soap dispenser, paper towels, and power outlets. Information about baby changing stations in the library Access The door to this room requires an access code via keypad, and is lockable from the inside. For access to this space, please ask staff at Ask Us or call 919-515-7110. Information for library staff . Hunt Library Lactation Room Calendar Please knock before entering.",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-lactation",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2021-11/hunt-1202a-3.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2021-11/hunt-1202a-3.jpg?itok=Si3XdW9H",
+    "alt": "Hunt Library Lactation room with sink, mirror, paper towels, changing table, and table."
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "27894",
+   "title": "Lake Raleigh Learning Commons",
+   "room": null,
+   "description": "Computer workstations for individual and collaborative work in a light-filled space with floor-to-ceiling windows on three sides. Features comfortable, colorful furniture and views of Lake Raleigh to the south.",
+   "url": "https://www.lib.ncsu.edu/spaces/lake-raleigh-learning-commons",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/hunt-lake-raleigh-01.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/hunt-lake-raleigh-01.jpg?itok=io579X34",
+    "alt": "hunt-lake-raleigh-01.jpg"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2046",
+   "title": "Learning Commons",
+   "room": "3200",
+   "description": "This Commons area promotes group collaboration and computing.",
+   "url": "https://www.lib.ncsu.edu/spaces/learning-commons-hunt",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/hunt-next-gen-learning-commons-01.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/hunt-next-gen-learning-commons-01.jpg?itok=iVg7QNjM",
+    "alt": "hunt-next-gen-learning-commons-01.jpg"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "22579",
+   "title": "Lecture Hall",
+   "room": "4106",
+   "description": "This classroom is managed by the Institute for Emerging Issues (IEI). It is not part of the NC State Libraries. More details and the reservation request form are on IEI's Room Reservations page .",
+   "url": "https://www.lib.ncsu.edu/spaces/lecture-hall",
+   "photo": null,
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "62431",
+   "title": "Lenovo Esports and Gaming Lab",
+   "room": "4403",
+   "description": "The Lenovo Esports and Gaming Lab is located on the fourth floor of the Hunt Library. The NC State community can experience the thrill of competitive gaming, learn new skills and strategies, and connect with other gamers and enthusiasts using the 35 gaming PCs and 4 console stations. The lab supports the NC State Esports program and serves as an incubator for esports research, teaching, learning and student involvement. Esports are electronic sports that involve playing video games, often at a high skill level. Many games involve intricate teamwork, and gameplay can be broadcast through livestreams on the web. Around the world, esports have a huge fan base and are a key part of the ever-growing gaming industry. At the lab, you can: Play or watch some of the most popular esports games, such as League of Legends, Counter-Strike, Dota 2, and Overwatch Access high-end gaming PCs with monitors and accessories optimized for competition Check out controllers and games to play on PlayStation, XBox, or Nintendo Switch stations Explore our gaming and esports workshops in areas such as game design, live streaming, getting started with gaming, and esports basics The lab is open to NC State students, faculty, and staff who are interested in gaming at any level of experience or playstyle. The Lenovo Esports & Gaming Lab is a place where you can have fun, learn, and belong. Complete our online orientation to gain access to the space! The lab is staffed whenever it is open, meaning you can find drop-in consultation assistance for projects, technology, and more just by stopping by. We're adding games over time! See our current games list.",
+   "url": "https://www.lib.ncsu.edu/spaces/gaming-esports-lab",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2024-09/_bk-2302-enhanced-nr.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2024-09/_bk-2302-enhanced-nr.jpg?itok=nhMcif_c",
+    "alt": "Room full of gaming workstations and happy students, and video games on big screens"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "58912",
+   "title": "Locker Bay",
+   "room": null,
+   "description": "Two large bays of lockers with digital locks for short-term storage of personal items located opposite the Media Production Studios on the fourth floor.",
+   "url": "https://www.lib.ncsu.edu/spaces/locker-bay",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-locker-bay.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-locker-bay.jpg?itok=wcMNOlbO",
+    "alt": "Large locker bay with multiple sizes of lockers with keypad locks."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2279",
+   "title": "Maker Studio",
+   "room": "4401",
+   "description": "Know before you go: our updated guidelines First-time users: take the required safety orientation (online) before you visit. The Hunt Library's Maker Studio is located on the fourth floor. This space gives students, faculty, and staff hands-on access to the tools, technologies, and skills of making, including 3D printers, low fidelity prototyping supplies, electronics, sewing machines, and many other tools and materials. The Maker Studio is intended for learning, experimentation, and prototyping and not for mass production or commercial use. The Maker Studio is staffed whenever it is open, meaning you can find drop-in consultation assistance for projects, technology, and more just by stopping by.",
+   "url": "https://www.lib.ncsu.edu/spaces/maker-studio",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-03/54412277545_2ccfac0ce3_k.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-03/54412277545_2ccfac0ce3_k.jpg?itok=5-4YyluN",
+    "alt": "Group of students in Maker Studio conversing."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2077",
+   "title": "Media Studio 4215",
+   "room": "4215",
+   "description": "This space provides state-of-the-art tools for creating and editing digital media. Media Studio 4215 includes a 4K video wall, 5.1 surround sound, professional audio studio stereo monitors, source input video monitors, VHS and DV decks for legacy video transfer, and more. Reservable spaces require an orientation, which can be completed online. The Media Spaces at Hunt are staffed whenever we are open. You can find drop-in consultation assistance for projects, technology, and more just by stopping by. Featured Software Mac: Ableton Live; Adobe Software; Audacity; FinalCut Pro; GarageBand; iMovie; LogicPro; Hardware Enhance your Media Studio experience by borrowing equipment from Ask Us like cameras, lighting kits, and more.",
+   "url": "https://www.lib.ncsu.edu/spaces/media-studio-4215",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-12/09-10-2025_media_production_studios-3.png",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-12/09-10-2025_media_production_studios-3.png?itok=myhcF0y_",
+    "alt": "3 people in a media studio, 2 seated at a computer station, with another standing, pointing at the screen."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "45595",
+   "title": "Monumental Stair with Roman Seating",
+   "room": null,
+   "description": "The Monumental Stair is a signature architectural detail of the Hunt Library, weaving throughout the building and culminating at the Skyline Reading Room. Its distinctive yellow coloring makes it a highly visible wayfinding device. With adjacent step seating on the Second and Third Floors, the Monumental Stair is a prime hang-out spot for students.",
+   "url": "https://www.lib.ncsu.edu/spaces/monumental-stair-roman-seating",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2023-10/roman-seating-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2023-10/roman-seating-2.jpg?itok=dWwzw2UG",
+    "alt": "Large yellow stairs with roman seating on the left with yellow square cushions"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "23207",
+   "title": "Oval",
+   "room": null,
+   "description": "The Oval is a grassy area that lies between Engineering Buildings I, II and III, Tower Hall and the James B. Hunt Jr. Library on Centennial Campus . Calendar for events on the Oval",
+   "url": "https://www.lib.ncsu.edu/spaces/oval",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/the_oval-1.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/the_oval-1.jpg?itok=x-BkJBSm",
+    "alt": "Outdoor lawns with brick pathways and picnic seating surround by campus buildings"
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "59432",
+   "title": "Oval View Reading Room",
+   "room": null,
+   "description": "The Oval View Reading Room has lounge seating and overlooks the second floor of Hunt Library and the Oval on Centennial Campus.",
+   "url": "https://www.lib.ncsu.edu/spaces/oval-view-reading-room",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2021-11/hunt-oval-reading-room-1.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2021-11/hunt-oval-reading-room-1.jpg?itok=JmBr-MWw",
+    "alt": "Lounge seating with book shelves and music booths in the background."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "23939",
+   "title": "Quiet Reading Room",
+   "room": null,
+   "description": "A tranquil, light-filled space with large reading tables and comfortable seating for study and reflection.",
+   "url": "https://www.lib.ncsu.edu/spaces/quiet-reading-room-hunt",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2024-09/_mah8869.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2024-09/_mah8869.jpg?itok=9LYvRpCx",
+    "alt": "Large reading room with long tables and table lamps, surrounded by bookshelves"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "45107",
+   "title": "Rain Garden Reading Lounge",
+   "room": null,
+   "description": "Colorful soft seating arranged around curved book shelves that hold the Popular Reading Collection, reference materials, current periodicals, DVDs and video games, and publications by NC State authors.",
+   "url": "https://www.lib.ncsu.edu/spaces/rain-garden-reading-lounge",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2019-07/Hunt-Rain-Garden-04_0.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2019-07/Hunt-Rain-Garden-04_0.jpg?itok=QxIpox6r",
+    "alt": "Seating arranged around curved bookcases in Hunt Library's rain garden lounge."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2681",
+   "title": "Robot Alley",
+   "room": null,
+   "description": "Watch the bookBot in action through a glass wall as four robots dart up and down enormous aisles to pinpoint and retrieve materials.",
+   "url": "https://www.lib.ncsu.edu/spaces/robot-alley",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-04/_mah4433.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-04/_mah4433.jpg?itok=wgxnQsEz",
+    "alt": "Very tall shelves with bins of books"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "58905",
+   "title": "Single Occupant Toilet",
+   "room": "1203",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/single-occupant-toilet-2",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2021-09/hunt-1203a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2021-09/hunt-1203a-2.jpg?itok=U6PqWEe2",
+    "alt": "Single occupant toilet with hand bars, sink, mirror, paper towels, hand sanitizer, and composting and trash bins."
+   },
+   "reservableBy": [],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "45103",
+   "title": "Skyline Reading Room",
+   "room": null,
+   "description": "The pinnacle of the Hunt Library and the highest point on campus, the Skyline Reading Room provides reading tables and soft seating with stunning views, a quiet atmosphere, and abundant natural light.",
+   "url": "https://www.lib.ncsu.edu/spaces/skyline-reading-room",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/Hunt_Skyline-Reading-Room_1_0.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/Hunt_Skyline-Reading-Room_1_0.jpg?itok=q-3waNgp",
+    "alt": "Student working at long table facing the Skyline terrace."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2127",
+   "title": "Skyline Terrace",
+   "room": null,
+   "description": "The pinnacle of the Hunt Library, these are the highest points on campus, offering both reading tables and soft seating with stunning views and abundant natural light.",
+   "url": "https://www.lib.ncsu.edu/spaces/skyline-terrace",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/thumbnails/image/hunt-skyline-terrace.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/thumbnails/image/hunt-skyline-terrace.jpg?itok=lmtMNQAN",
+    "alt": "hunt-skyline-terrace.jpg"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2107",
+   "title": "Study Room 2304",
+   "room": "2304",
+   "description": "Work table and seating Whiteboards and writeable glass Mac with wireless keyboard, display screen, and HDMI cables",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-lounge-2304",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2305_0.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2305_0.jpg?itok=aYNbV2_l",
+    "alt": "Hunt Group Study room 2 3 0 5 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "2217",
+   "title": "Study Room 2305",
+   "room": "2305",
+   "description": "The display and computer in this room is under repair. Work table and seating Whiteboards and writeable glass Mac with wireless keyboard, display screen, and VGA and HDMI cables",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2305",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2305_0.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2305_0.jpg?itok=aYNbV2_l",
+    "alt": "Hunt Group Study room 2 3 0 5 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "45193",
+   "title": "Study Room 2306",
+   "room": "2306",
+   "description": "Adjustable height work table and seating Whiteboards and writeable glass Mac with wireless keyboard, display screen, and VGA and HDMI cables",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2306",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-2306.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-2306.jpg?itok=ung3nr8H",
+    "alt": "Hunt Group Study room 2 3 0 6 with work table and chairs, display screen, adjustable height table, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56237",
+   "title": "Study Room 2307",
+   "room": "2307",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2307",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2307.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2307.jpg?itok=Eu5y0lrB",
+    "alt": "Hunt Group Study room 2 3 0 7 with work table, chairs, display screen, and whiteboard wall."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56163",
+   "title": "Study Room 2308",
+   "room": "2308",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2308",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2308_6.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2308_6.jpg?itok=CbKpRnyX",
+    "alt": "Hunt Group Study room 2 3 0 8 with work table, chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56238",
+   "title": "Study Room 2309",
+   "room": "2309",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2309",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2309.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2309.jpg?itok=id90w_t5",
+    "alt": "Hunt Group Study room 2 3 0 9 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56246",
+   "title": "Study Room 2312",
+   "room": "2312",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2312",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2312_0.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2312_0.jpg?itok=AOZq1j7B",
+    "alt": "Hunt Group Study room 2 3 1 2 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "2108",
+   "title": "Study Room 2313",
+   "room": "2313",
+   "description": "Work table and seating Whiteboards and writeable glass Mac with wireless keyboard, display screen, and VGA and HDMI cables",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2313",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-2313.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-2313.jpg?itok=x3_WxLCk",
+    "alt": "Hunt Group Study room 2 3 1 3 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56282",
+   "title": "Study Room 2314",
+   "room": "2314",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2314",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-2314a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-2314a-2.jpg?itok=ZK-U3PmF",
+    "alt": "Study room with table surrounded by four task chairs, wall-mounted display, and whiteboard walls"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56283",
+   "title": "Study Room 2315",
+   "room": "2315",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2315",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-2315.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-2315.jpg?itok=tgnqEiex",
+    "alt": "Hunt Group Study room 2 3 1 5 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56247",
+   "title": "Study Room 2322",
+   "room": "2322",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2322",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2322.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2322.jpg?itok=8EjqzZ9q",
+    "alt": "Hunt Group Study room 2 3 2 2 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56285",
+   "title": "Study Room 2323",
+   "room": "2323",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2323",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-2323.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-2323.jpg?itok=djBkoBq4",
+    "alt": "Hunt Group Study room 2 3 2 3 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56286",
+   "title": "Study Room 2324",
+   "room": "2324",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2324",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-2324.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-2324.jpg?itok=XAWXQNTB",
+    "alt": "Hunt Group Study room 2 3 1 2 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56287",
+   "title": "Study Room 2325",
+   "room": "2325",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2325",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-2325.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-2325.jpg?itok=KoTTNqIy",
+    "alt": "Hunt Group Study room 2 3 2 5 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56248",
+   "title": "Study Room 2326",
+   "room": "2326",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2326",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2326.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2326.jpg?itok=0VtMsVB_",
+    "alt": "Hunt Group Study room 2 3 2 6 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56288",
+   "title": "Study Room 2327",
+   "room": "2327",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2327",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-2327.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-2327.jpg?itok=0RB2SeY5",
+    "alt": "Hunt Group Study room 2 3 2 7 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56249",
+   "title": "Study Room 2328",
+   "room": "2328",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-2328",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-2328.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-2328.jpg?itok=Q6vKkEPp",
+    "alt": "Hunt Group Study room 2 3 2 8 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56279",
+   "title": "Study Room 3208",
+   "room": "3208",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3208",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-3208a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-3208a-2.jpg?itok=wUKvf_6z",
+    "alt": "Study room with table surrounded by eight task chairs, wall-mounted display, and whiteboard walls"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56280",
+   "title": "Study Room 3209",
+   "room": "3209",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3209",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-3209a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-3209a-2.jpg?itok=zSFMmQla",
+    "alt": "Study room with table surrounded by six task chairs, wall-mounted display, and whiteboard walls"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "2071",
+   "title": "Study Room 3212",
+   "room": "3212",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3212",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-3212a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-3212a-2.jpg?itok=Gn-t3_im",
+    "alt": "Study room with table surrounded by eight task chairs, wall-mounted display, and whiteboard walls"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56277",
+   "title": "Study Room 3213",
+   "room": "3213",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3213",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-3213a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-3213a-2.jpg?itok=Ahh_qFQG",
+    "alt": "Study room with table surrounded by eight task chairs, wall-mounted display, and whiteboard walls"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56278",
+   "title": "Study Room 3214",
+   "room": "3214",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3214",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-3214a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-3214a-2.jpg?itok=D_2aAfE7",
+    "alt": "Study room with table surrounded by eight task chairs, wall-mounted display, and whiteboard walls"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56289",
+   "title": "Study Room 3215",
+   "room": "3215",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3215",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3215.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3215.jpg?itok=0O8lUp1F",
+    "alt": "Hunt Group Study room 2 3 1 2 with work table and chairs, display screen, whiteboard walls, and external windows."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "53093",
+   "title": "Study Room 3217",
+   "room": "3217",
+   "description": "Work table and seating Whiteboards and writeable glass Mac with wireless keyboard, display screen, and VGA and HDMI cables",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3217",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3217.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3217.jpg?itok=6MVcso-A",
+    "alt": "Hunt Group Study room 3 2 1 7 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "12 hours",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56260",
+   "title": "Study Room 3218",
+   "room": "3218",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3218",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3218.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3218.jpg?itok=2GZ56wWI",
+    "alt": "Hunt Group Study room 3 2 1 8 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "12 hours",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56261",
+   "title": "Study Room 3219",
+   "room": "3219",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3219",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3219.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3219.jpg?itok=CyryonFL",
+    "alt": "Hunt Group Study room 3 2 1 9 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "12 hours",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56276",
+   "title": "Study Room 3220",
+   "room": "3220",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3220",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3220.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3220.jpg?itok=AFbXIeGw",
+    "alt": "Hunt Group Study room 3 3 2 0 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "12 hours",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56297",
+   "title": "Study Room 3241",
+   "room": "3241",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3241",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3241.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3241.jpg?itok=3v8GHXPq",
+    "alt": "Hunt Group Study room 3 2 4 1 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56298",
+   "title": "Study Room 3242",
+   "room": "3242",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3242",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3242.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3242.jpg?itok=wsgYTeEg",
+    "alt": "Hunt Group Study room 3 2 4 2 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "45194",
+   "title": "Study Room 3243",
+   "room": "3243",
+   "description": "Adjustable height work table Whiteboards and writeable glass Mac with wireless keyboard, display screen, and VGA and HDMI cables",
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3243",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3243.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3243.jpg?itok=fmESv_4U",
+    "alt": "Hunt Group Study room 3 2 4 3 with adjustable height table, chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56164",
+   "title": "Study Room 3304",
+   "room": "3304",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3304",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-3304.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-3304.jpg?itok=nHMlirir",
+    "alt": "Hunt Group Study room 3 3 0 4 with work table, chairs, display screen, whiteboard walls, and windows overlooking the reading room."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56250",
+   "title": "Study Room 3305",
+   "room": "3305",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3305",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-3305.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-3305.jpg?itok=WO9JrVzb",
+    "alt": "Hunt Group Study room 3 3 0 5 with work table and chairs, display screen, whiteboard walls, and windows overlooking the reading room."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56165",
+   "title": "Study Room 3306",
+   "room": "3306",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3306",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-3306.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-3306.jpg?itok=WD2sxHl1",
+    "alt": "Hunt Group Study room 3 3 0 6 with work table, chairs, display screen, whiteboard walls, and windows overlooking the reading room."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56251",
+   "title": "Study Room 3307",
+   "room": "3307",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3307",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-3307.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-3307.jpg?itok=acCw1KE1",
+    "alt": "Hunt Group Study room 3 3 0 7 with work table and chairs, display screen, writeable walls, and windows overlooking the reading room."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56252",
+   "title": "Study Room 3309",
+   "room": "3309",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3309",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-05/hunt-3309.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-05/hunt-3309.jpg?itok=9n83tjdh",
+    "alt": "Hunt Group Study room 3 3 0 7 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56254",
+   "title": "Study Room 3312",
+   "room": "3312",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3312",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-3312_1.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-3312_1.jpg?itok=oitVjGlT",
+    "alt": "Hunt Group Study room 3 3 1 2 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56321",
+   "title": "Study Room 3313",
+   "room": "3313",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3313",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-3313.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-3313.jpg?itok=dYZ8ULtU",
+    "alt": "Hunt Group Study room 3 3 1 3 with work table and chairs, display screen, whiteboard walls, and internal windows."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56322",
+   "title": "Study Room 3314",
+   "room": "3314",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3314",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-3314.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-3314.jpg?itok=NpDi1hSq",
+    "alt": "Hunt Group Study room 3 3 1 4 with work table and chairs, display screen, whiteboard walls, and internal windows."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56323",
+   "title": "Study Room 3315",
+   "room": "3315",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3315",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2023-06/hunt_study_3315-3.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2023-06/hunt_study_3315-3.jpg?itok=whXNslEp",
+    "alt": "Four chairs around a table and a screen on the wall. The room overlooks the Quiet Reading Room below."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56324",
+   "title": "Study Room 3316",
+   "room": "3316",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-3316",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-3316.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-3316.jpg?itok=wwDVyo3f",
+    "alt": "Hunt Group Study room 3 3 1 6 with work table and chairs, display screen, whiteboard walls, and internal windows."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56281",
+   "title": "Study Room 4411",
+   "room": "4411",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-4411",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2022-09/hunt-4411a-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2022-09/hunt-4411a-2.jpg?itok=X2W9XvOy",
+    "alt": "Study room with table surrounded by eight task chairs, wall-mounted display, whiteboard walls, and exterior windows"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56257",
+   "title": "Study Room 4510",
+   "room": "4510",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-4510",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-4510.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-4510.jpg?itok=NAG0h0bE",
+    "alt": "Hunt Group Study room 4 5 1 0 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56258",
+   "title": "Study Room 4511",
+   "room": "4511",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-4511",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-06/hunt-4511.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-06/hunt-4511.jpg?itok=T_JZeb-E",
+    "alt": "Hunt Group Study room 4 5 1 1 with work table and chairs, display screen, and whiteboard walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56331",
+   "title": "Study Room 4512",
+   "room": "4512",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-4512",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4512.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4512.jpg?itok=6oT7JvBr",
+    "alt": "Hunt Group Study room 4 5 1 2 with work table and chairs, display screen, adjustable height table, whiteboard walls, and exterior windows."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56328",
+   "title": "Study Room 4513",
+   "room": "4513",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-4513",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4513.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4513.jpg?itok=HdtrHBZF",
+    "alt": "Hunt Group Study room 4 5 1 3 with work table and chairs, display screen, and whiteboard and glass walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56329",
+   "title": "Study Room 4514",
+   "room": "4514",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-4514",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4514.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4514.jpg?itok=77fGfojp",
+    "alt": "Hunt Group Study room 4 5 1 4 with work table and chairs, display screen, and whiteboard and glass walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "56330",
+   "title": "Study Room 4515",
+   "room": "4515",
+   "description": null,
+   "url": "https://www.lib.ncsu.edu/spaces/hunt-study-4515",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2020-07/hunt-4515.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2020-07/hunt-4515.jpg?itok=yqU2g1j9",
+    "alt": "Hunt Group Study room 4 5 1 5 with work table and chairs, display screen, and whiteboard and glass walls."
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "2 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "2075",
+   "title": "Teaching and Visualization Lab",
+   "room": "4505",
+   "description": "The Teaching and Visualization Lab is a black-box room that offers 217 degrees of immersive projection on one smooth, curved projection screen that measures 85 feet in length. The room can host a variety of events including: High-impact learning activities, such as immersive student-led presentations and digital poster sessions Technology-rich interactive instruction sessions Creative digital media exhibits Simultaneous display of multiple devices (up to 8) for collaboration and presentation Presentations of large-scale visualizations and simulations Research communication Reservation requests are reviewed and accepted based on the following criteria: NC State University affiliation Impact on teaching, learning, and community Utilization of the immersive technology If you are an instructor and would like to use this space as part of a course assignment or final presentations, please plan to bring your students in at least 2 times: once for an overview and another time for the presentations.",
+   "url": "https://www.lib.ncsu.edu/spaces/teaching-and-visualization-lab",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2024-01/tv_12-06-2023-02.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2024-01/tv_12-06-2023-02.jpg?itok=Yux4016N",
+    "alt": "Architecture presentation: students in chairs with a student presenting in front of them"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "24 hours",
+   "requestUrl": "https://www.lib.ncsu.edu/request-high-tech-space"
+  },
+  {
+   "id": "2048",
+   "title": "The Landing",
+   "room": "3201",
+   "description": "The Landing is a versatile wellness space for the NC State community. Students can relax and connect with others through board games, Legos, craft materials, and a variety of other hands-on activities. Throughout the year there are various events, hosted in the room, centered around stress reduction, emotional regulation, and mindfulness. When not reserved for specific events, The Landing is open for social gathering and group work. The room is equipped with plants, different light settings, and lounge seating. The room’s maximum capacity is 20. NC State University students, faculty, and staff can request to reserve The Landing for: Wellness activities Student-focused workshops and activities Scholarly sessions Campus initiatives related to student wellness Looking for gaming? Check out the Lenovo Esports and Gaming Lab .",
+   "url": "https://www.lib.ncsu.edu/spaces/landing",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2026-02/traditional_setup_with_lighting1.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2026-02/traditional_setup_with_lighting1.jpg?itok=ocA_JTq_",
+    "alt": "Wide screen displaying The Landing, with a table surrounded by eight work chairs"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "6 months",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  },
+  {
+   "id": "68306",
+   "title": "Vending Machines",
+   "room": "5302",
+   "description": "Vending machine room with two cold drink vending machines of Coca-Cola products, a snack vending machine, and a hot drink vending machine.",
+   "url": "https://www.lib.ncsu.edu/spaces/vending-machines",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-08/hunt-vending-room-5302-2.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-08/hunt-vending-room-5302-2.jpg?itok=HVbzBGNR",
+    "alt": "Snack vending and Coca-Cola products vending on the back wall with coffee vending on the right wall"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": null,
+   "maxBooking": null,
+   "requestUrl": null
+  },
+  {
+   "id": "2093",
+   "title": "VR Room",
+   "room": "4210",
+   "description": "The VR Room is a reservable library space on the fourth floor of the James B. Hunt Jr. Library. This space is built for the exploration of spatial computing concepts through augmented and virtual reality. It's also a great location to record and edit audio or video, especially of gameplay or development. T his immersive studio space is designed for creators, developers, and explorers. Use the Meta Quest 3 or take advantage of our live capture tech, complete with background keying for high-quality visuals. Complete the Studios Orientation and reserve a time through our booking system to experience this fascinating equipment! Technology Our \" What's Inside \" section lists all of the technology that you'll find in the VR Room. Have a request for a piece of software or hardware you'd like to see in the VR Room? Let us know with as much information on the item as possible. Need help? Schedule a technology consultation with us! The Studios Check out our full suite of services, spaces, and expert help . Looking for Gaming and VR at the Hill Library? Check out the Gaming & VR Studio .",
+   "url": "https://www.lib.ncsu.edu/spaces/vr-room",
+   "photo": {
+    "src": "https://www.lib.ncsu.edu/sites/default/files/2025-05/di6a2738.jpg",
+    "thumb": "https://www.lib.ncsu.edu/sites/default/files/styles/thumbnail_16_9/public/2025-05/di6a2738.jpg?itok=2sl3DzjL",
+    "alt": "Person playing in virtual reality"
+   },
+   "reservableBy": [
+    "Faculty",
+    "Graduate Students",
+    "Staff",
+    "Students"
+   ],
+   "bookAhead": "7 days",
+   "maxBooking": "4 hours",
+   "requestUrl": null
+  }
+ ]
+}
