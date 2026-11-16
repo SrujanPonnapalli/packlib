@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* warm paper background, graphite text, and Hunt's stair yellow for the selected item */
+/* warm paper background and graphite text, with teal only for the selected item.
+the darker teal is for thin lines and text where the bright one is too faint. */
 @theme {
   --color-paper: #f5f3ee;
   --color-sheet: #fcfbf8;
@@ -12,8 +13,9 @@
   --color-rule: rgb(29 28 26 / 0.1);
   --color-rule-soft: rgb(29 28 26 / 0.06);
   --color-rule-strong: rgb(29 28 26 / 0.22);
-  --color-stair: #f2c230;
-  --color-stair-wash: #fbf0c6;
+  --color-accent: #1ec7b1;
+  --color-accent-deep: #0e8f7f;
+  --color-accent-wash: #d3eee7;
   --color-slab: #e9e5dc;
   --color-slab-side: #d8d3c8;
   --color-slab-end: #cbc5b8;

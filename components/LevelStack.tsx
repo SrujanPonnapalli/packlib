@@ -85,7 +85,7 @@ export default function LevelStack({ active, counts, onSelect }: Props) {
               >
                 <polygon points={s.side} fill={on ? "#d9ab1f" : "var(--color-slab-side)"} className="transition-[fill] duration-200" />
                 <polygon points={s.end} fill={on ? "#c49917" : "var(--color-slab-end)"} className="transition-[fill] duration-200" />
-                <polygon points={s.top} fill={on ? "var(--color-stair)" : "var(--color-slab)"} className="transition-[fill] duration-200" />
+                <polygon points={s.top} fill={on ? "var(--color-accent)" : "var(--color-slab)"} className="transition-[fill] duration-200" />
               </g>
             </g>
           );

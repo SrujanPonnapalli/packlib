@@ -35,6 +35,7 @@ test("grid points avoid other shapes", () => {
 test("every piece of Level 3 furniture sits on the floor plate", () => {
   const floor = FLOORS[3];
   const fit = fitFloor(floor, () => fitout(8));
-  assert.ok(fit.pieces.length > 100);
-  for (const p of fit.pieces) assert.ok(pointIn(floor.plate, [p.x, p.y]), `piece at ${p.x},${p.y} is off the plate`);
+  const pieces = [...fit.stairs, ...Object.values(fit.detail).flatMap((d) => d.pieces)];
+  assert.ok(pieces.length > 60);
+  for (const p of pieces) assert.ok(pointIn(floor.plate, [p.x, p.y]), `piece at ${p.x},${p.y} is off the plate`);
 });
