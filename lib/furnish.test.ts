@@ -32,20 +32,20 @@ test("grid points avoid other shapes", () => {
   assert.ok(pts.every((p) => !pointIn(hole, p)));
 });
 
-test("every piece of Level 3 furniture sits on the floor plate", () => {
-  const floor = FLOORS[3];
-  const fit = fitFloor(floor, () => fitout(8));
-  const pieces = [...fit.stairs, ...Object.values(fit.detail).flatMap((d) => d.pieces)];
-  assert.ok(pieces.length > 60);
-  for (const p of pieces) assert.ok(pointIn(floor.plate, [p.x, p.y]), `piece at ${p.x},${p.y} is off the plate`);
-});
+for (const level of [2, 3])
+  test(`every room, stair and piece of furniture on Level ${level} sits on the floor plate`, () => {
+    const floor = FLOORS[level];
+    const fit = fitFloor(floor, () => fitout(8));
+    const pieces = [...fit.stairs, ...fit.wells, ...Object.values(fit.detail).flatMap((d) => d.pieces)];
+    assert.ok(pieces.length > 60);
+    for (const p of pieces) assert.ok(pointIn(floor.plate, [p.x, p.y]), `piece at ${p.x},${p.y} is off the plate`);
+    for (const r of fit.rooms) for (const q of r.poly) assert.ok(pointIn(floor.plate, q), `room ${r.ref} corner ${q} is off the plate`);
+  });
 
-test("a stair climbs from this floor to the one above and arrives over its entry edge", () => {
+test("a stair is one straight flight from its entry edge up to the floor above", () => {
   const treads = steps([[0, 0], [60, 0], [60, 80], [0, 80]], 0);
   const tops = treads.map((p) => p.base + p.h);
-  assert.ok(Math.min(...tops) < 0.1);
-  assert.equal(Math.max(...tops), 1);
-  const first = treads[0], last = treads[treads.length - 1];
-  assert.ok(first.y < 15 && last.y < 15, "both ends are at the entry edge");
-  assert.ok(first.x < 30 && last.x > 30, "the flights run side by side");
+  assert.equal(tops.at(-1), 1);
+  assert.ok(tops.every((top, i) => i === 0 || top > tops[i - 1]), "every tread is higher than the last");
+  assert.ok(treads[0].y < 15 && treads.at(-1)!.y > 65, "it starts at the entry edge and ends at the far side");
 });
