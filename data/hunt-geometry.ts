@@ -4,6 +4,8 @@
 // right spot, but it's not exact. Where a map labels a range of rooms
 // ("3309–3316") I guessed the order.
 
+import { pointIn } from "../lib/furnish.ts";
+
 export type Pt = [number, number];
 
 export type Shape = {
@@ -19,7 +21,9 @@ export type Shape = {
   /** Stairs: whether the flight from this floor goes up or down. `front` is the edge you step on from. */
   dir?: "up" | "down";
   /** What to furnish it as. Rooms default to a meeting table. */
-  fit?: "meeting" | "lab" | "commons" | "empty";
+  fit?: "meeting" | "lab" | "commons" | "empty" | "quiet" | "lounge" | "carrels" | "alcove" | "theater" | "showcase" | "hall" | "exhibit";
+  /** Added automatically: the other end of a stair traced on the floor above or below. */
+  twin?: boolean;
 };
 
 export type Floor = { plate: Pt[]; shapes: Shape[]; traced: boolean };
@@ -200,6 +204,7 @@ const level2Shapes: Shape[] = [
     kind: "zone",
     ref: "Quiet Reading Room",
     label: "Quiet Reading Room",
+    fit: "quiet",
     poly: [
       [173, 262],
       [372, 262],
@@ -209,14 +214,14 @@ const level2Shapes: Shape[] = [
       [173, 295],
     ],
   },
-  { kind: "zone", ref: "2302", label: "Idea Alcove", poly: rect(457, 262, 535, 372) },
-  { kind: "zone", ref: "2008", label: "Study Carrels", poly: rect(555, 375, 1065, 392) },
+  { kind: "zone", ref: "2302", label: "Idea Alcove", fit: "alcove", poly: rect(457, 262, 535, 368) },
+  { kind: "zone", ref: "2008", label: "Study Carrels", fit: "carrels", poly: rect(555, 376, 1065, 394) },
   {
     kind: "zone",
     ref: "Rain Garden Reading Lounge",
     label: "Rain Garden Reading Lounge",
     at: [660, 640],
-    fit: "commons",
+    fit: "lounge",
     poly: [
       [500, 548],
       [850, 548],
@@ -230,6 +235,7 @@ const level2Shapes: Shape[] = [
     kind: "zone",
     ref: "2200",
     label: "Technology Showcase",
+    fit: "showcase",
     poly: [
       [1050, 625],
       [1195, 618],
@@ -241,6 +247,7 @@ const level2Shapes: Shape[] = [
     kind: "zone",
     ref: "Emerging Issues Commons",
     label: "Emerging Issues Commons",
+    fit: "exhibit",
     at: [1425, 290],
     poly: [
       [1345, 250],
@@ -259,7 +266,7 @@ const level2Shapes: Shape[] = [
     ref: "2206",
     label: "iPearl Theater",
     front: S,
-    fit: "empty",
+    fit: "theater",
     poly: [
       [948, 405],
       [1090, 405],
@@ -272,7 +279,7 @@ const level2Shapes: Shape[] = [
     ref: "2110A",
     label: "Duke Energy Hall",
     front: 4,
-    fit: "empty",
+    fit: "hall",
     poly: [
       [1560, 205],
       [1762, 165],
@@ -282,7 +289,6 @@ const level2Shapes: Shape[] = [
     ],
   },
   { kind: "counter", ref: "Ask Us", label: "Ask Us", poly: rect(1145, 435, 1212, 500) },
-  { kind: "core", label: "bookBot", poly: rect(552, 130, 1198, 372) },
   { kind: "core", poly: rect(498, 220, 552, 252) },
   { kind: "core", poly: rect(1198, 130, 1280, 300) },
   { kind: "core", poly: rect(630, 405, 712, 500) },
@@ -307,20 +313,7 @@ const level2Shapes: Shape[] = [
       [1642, 192],
     ],
   },
-  // up to Level 3: these sit under Level 3's "down" stairs and go up toward where those start
-  { kind: "stair", dir: "up", front: S, poly: rect(118, 205, 165, 272) },
-  { kind: "stair", dir: "up", front: E, poly: rect(492, 405, 590, 500) },
-  {
-    kind: "stair",
-    dir: "up",
-    front: S,
-    poly: [
-      [855, 415],
-      [945, 405],
-      [955, 490],
-      [855, 498],
-    ],
-  },
+  // stairs up to Level 3 aren't traced here, they get added from Level 3's "down" stairs so the two ends always line up
   {
     kind: "stair", // to the Institute for Emerging Issues and Level 4
     dir: "up",
@@ -332,7 +325,7 @@ const level2Shapes: Shape[] = [
       [1580, 650],
     ],
   },
-  { kind: "stair", dir: "down", front: S, poly: rect(505, 130, 552, 218) },
+  { kind: "stair", dir: "down", front: S, poly: rect(505, 133, 547, 218) },
   {
     kind: "stair", // down to Level 1
     dir: "down",
@@ -351,6 +344,11 @@ const level2: Floor = {
   plate: (
     [
       [38, 125],
+      // left out the bookBot storage vault, it's a pit next to this floor and not somewhere you can go
+      [552, 125],
+      [552, 372],
+      [1198, 372],
+      [1198, 125],
       [1280, 125],
       [1740, 35],
       [1850, 608],
@@ -366,10 +364,23 @@ const level2: Floor = {
 // Levels 1, 4 and 5 are placeholders until I trace them.
 const placeholder = (plate: Pt[]): Floor => ({ traced: false, plate, shapes: [] });
 
-export const FLOORS: Record<number, Floor> = {
+/** Adds the other end of every traced stair on the next floor, if that floor has room for it. */
+function link(floors: Record<number, Floor>) {
+  for (const [n, floor] of Object.entries(floors))
+    for (const s of [...floor.shapes]) {
+      if (s.kind !== "stair" || !s.dir || s.twin) continue;
+      const other = floors[Number(n) + (s.dir === "up" ? 1 : -1)];
+      if (!other || !s.poly.every((p) => pointIn(other.plate, p))) continue;
+      // the other end is entered from the opposite edge: where one flight starts, the other one arrives
+      other.shapes.push({ kind: "stair", twin: true, dir: s.dir === "up" ? "down" : "up", front: ((s.front ?? 0) + 2) % s.poly.length, poly: s.poly });
+    }
+  return floors;
+}
+
+export const FLOORS: Record<number, Floor> = link({
   1: placeholder(ENVELOPE),
   2: level2,
   3: level3,
   4: placeholder(LEVEL_3_PLATE),
   5: placeholder(LEVEL_3_PLATE),
-};
+});

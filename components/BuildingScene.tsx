@@ -6,7 +6,7 @@ import { Edges, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { FLOORS, type Floor, type Pt, type Shape } from "@/data/hunt-geometry";
 import { fitoutFor, spaceByRef, spaces } from "@/data/hunt";
-import { fitFloor, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
+import { inset, fitFloor, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
 
 // map pixels -> scene units, centered on the building
 const U = 20;
@@ -19,7 +19,7 @@ const DROP = 9; // and how far the floors below it sink
 const HOME: [number, number, number] = [0, 2 * RISE, 0];
 const ROOM_H = 0.5; // closed room: just a block
 const WALL_H = 0.55; // open room: low cut-away walls so you can see inside
-const STAIR_FULL = RISE - 0.4; // a stair reaches the underside of the floor above...
+const STAIR_FULL = RISE; // a stair comes up through the opening in the floor above, flush with it...
 const STAIR_OPEN = 2.2; // ...and folds down low while a level is open so it doesn't tower over the rooms
 const FLAT = 0.25; // how flat closed rooms get while another room is open
 const WALL_T = 2.5; // px
@@ -51,7 +51,6 @@ const P = {
   screen: "#34322e",
   desk: "#e8dfcc",
   stair: "#d6cdb9",
-  well: "#b3ab9a",
   edge: "#9d978a",
 };
 
@@ -68,8 +67,10 @@ if (process.env.NODE_ENV !== "production") {
   }
 }
 
-function extrude(poly: Pt[], height: number) {
-  const shape = new THREE.Shape(poly.map(([x, y]) => new THREE.Vector2(wx(x), -wz(y))));
+function extrude(poly: Pt[], height: number, holes: Pt[][] = []) {
+  const flat = (ring: Pt[]) => ring.map(([x, y]) => new THREE.Vector2(wx(x), -wz(y)));
+  const shape = new THREE.Shape(flat(poly));
+  for (const h of holes) shape.holes.push(new THREE.Path(flat(h)));
   const geo = new THREE.ExtrudeGeometry(shape, {
     depth: height,
     bevelEnabled: false,
@@ -262,7 +263,16 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const [hover, setHover] = useState<string | null>(null);
   const mats = useMaterials();
   const fit = FITS[n];
-  const plate = useMemo(() => extrude(floor.plate, 0.4), [floor]);
+  // every stair going down gets an opening in the floor so you can see the flight below coming up through it
+  const plate = useMemo(
+    () =>
+      extrude(
+        floor.plate,
+        0.4,
+        floor.shapes.filter((s) => s.kind === "stair" && s.dir === "down").map((s) => inset(s.poly, 2)),
+      ),
+    [floor],
+  );
   const stairs = useMemo(() => fit.stairs.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
   const wells = useMemo(() => fit.wells.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
 
@@ -271,7 +281,9 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const under = active !== null && n < active;
   const opened = open && selectedRef ? fit.detail[selectedRef] : undefined;
   const targetY = (n - 1) * RISE + (away ? LIFT : under ? -DROP : 0);
-  const targetOpacity = away ? 0 : under ? 0.05 : 1;
+  // in the whole-building view, untraced floors are glass so you can see through them
+  const ghost = active === null && !floor.traced;
+  const targetOpacity = away ? 0 : under ? 0.05 : ghost ? 0.14 : 1;
   // start assembled so opening a level on page load still animates
   const now = useRef({ y: (n - 1) * RISE, opacity: 1, flat: 1, stair: STAIR_FULL });
   const flights = useRef<THREE.Group>(null);
@@ -318,14 +330,14 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
 
   // floors that moved out of the way let clicks go through to the ones below
   const click = (act: () => void) => (e: ThreeEvent<MouseEvent>) => {
-    if (away || e.delta > 4) return;
+    if (away || ghost || e.delta > 4) return;
     e.stopPropagation();
     act();
   };
   const point =
     (ref: string | null): Hover =>
     (e, over) => {
-      if (away) return;
+      if (away || ghost) return;
       e.stopPropagation();
       setHover(over ? ref : null);
       document.body.style.cursor = over ? "pointer" : "";
@@ -379,10 +391,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
           case "counter":
             return <Slab key={key} poly={s.poly} height={0.28} material={mats.counter} cast onClick={click(() => openRef(s.ref))} onHover={onHover} />;
           case "stair":
-            // a stair going down is a darker hole in the floor, one going up just needs something clickable
-            return s.dir === "down" ? (
-              <Slab key={key} poly={s.poly} height={0.03} color={P.well} />
-            ) : s.ref ? (
+            return s.ref && s.dir !== "down" ? (
               <Slab key={key} poly={s.poly} height={0.8} material={mats.hit} onClick={click(() => openRef(s.ref))} onHover={onHover} />
             ) : null;
           default:
@@ -416,7 +425,8 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       <group ref={flights} scale-y={STAIR_FULL}>
         <Blocks geometry={BOX} material={mats.piece} items={stairs} />
       </group>
-      <group>
+      {/* stairs going down, seen from this floor. only on the open level, otherwise the floor below already shows them */}
+      <group visible={open} scale-y={STAIR_OPEN}>
         <Blocks geometry={BOX} material={mats.piece} items={wells} />
       </group>
       {opened && <Inside key={selectedRef} detail={opened} mats={mats} />}
@@ -442,7 +452,7 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
   const out: Label[] = [];
   for (const s of FLOORS[active].shapes) {
     const mine = focus !== undefined && s.ref === selectedRef;
-    if (!s.label || (mine && s.kind === "room")) continue;
+    if (!s.label || mine) continue;
     const [px, py] = s.at ?? centre(s.poly);
     out.push({
       key: s.label,
