@@ -9,12 +9,14 @@ export type Space = (typeof snapshot.spaces)[number] & {
   reservable: boolean;
 };
 
+// NC State just numbers Hunt's floors, no names. `landmark` is the best-known
+// space on each floor, only used as a wayfinding hint.
 export const LEVELS = [
-  { n: 5, name: "Skyline" },
-  { n: 4, name: "Studios & labs" },
-  { n: 3, name: "Learning Commons" },
-  { n: 2, name: "Reading rooms" },
-  { n: 1, name: "Arrival" },
+  { n: 5, landmark: "Skyline Reading Room" },
+  { n: 4, landmark: "Lake Raleigh Learning Commons" },
+  { n: 3, landmark: "Learning Commons" },
+  { n: 2, landmark: "Rain Garden Reading Lounge" },
+  { n: 1, landmark: "Auditorium" },
 ] as const;
 
 export const KINDS: { id: Kind; label: string }[] = [
@@ -26,19 +28,21 @@ export const KINDS: { id: Kind; label: string }[] = [
   { id: "service", label: "Services" },
 ];
 
-// Sorted by hand. The Spaces API only gives a floor through the room number and
-// has no categories at all, so named spaces get placed and sorted here.
+// The Spaces API only gives the floor through the room number. For spaces
+// without one, the floor comes from the space's page on lib.ncsu.edu
+// ("Floor: Third Floor"), checked 16 Nov 2026. The Oval is outside.
 const LEVEL_BY_TITLE: Record<string, number> = {
   "Art Wall": 2,
   "Ask Us": 2,
   "Audio Rooms": 4,
   "Common Grounds Café": 1,
-  Dataspace: 4,
-  "Emerging Issues Commons": 1,
+  Dataspace: 3,
+  "Emerging Issues Commons": 2,
   "Faculty Research Commons": 5,
   "Graduate Student Commons": 4,
   "Lake Raleigh Learning Commons": 4,
   "Locker Bay": 4,
+  "Monumental Stair with Roman Seating": 3,
   "Oval View Reading Room": 4,
   "Quiet Reading Room": 2,
   "Rain Garden Reading Lounge": 2,
@@ -47,6 +51,7 @@ const LEVEL_BY_TITLE: Record<string, number> = {
   "Skyline Terrace": 5,
 };
 
+// the API has no categories so these are sorted by hand
 const OPEN = new Set([
   "Carrel Corridor",
   "Idea Alcove",
@@ -92,5 +97,8 @@ export const spaces: Space[] = snapshot.spaces.map((s) => ({
 
 export const snapshotDate = new Date(snapshot.fetchedAt);
 
-export const levelName = (n: number | null) =>
-  LEVELS.find((l) => l.n === n)?.name ?? "Around Hunt";
+export const landmark = (n: number) => LEVELS.find((l) => l.n === n)?.landmark ?? "";
+
+/** Geometry links to a space by room number, or by title if it doesn't have one. */
+export const spaceByRef = (ref: string) =>
+  spaces.find((s) => s.room === ref) ?? spaces.find((s) => s.title === ref);
