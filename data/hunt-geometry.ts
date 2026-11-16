@@ -7,13 +7,17 @@
 export type Pt = [number, number];
 
 export type Shape = {
-  kind: "room" | "zone" | "stair" | "core";
+  kind: "room" | "zone" | "stair" | "core" | "counter";
   poly: Pt[];
   /** Room number, or space title when it has none. Links the shape to a space. */
   ref?: string;
   label?: string;
   /** Where the label sits, when the middle of the shape is a bad place for it. */
   at?: Pt;
+  /** Index of the edge with the glass front and door (edge i runs from point i to i+1). */
+  front?: number;
+  /** What to furnish it as. Rooms default to a meeting table. */
+  fit?: "meeting" | "lab" | "commons" | "empty";
 };
 
 export type Floor = { plate: Pt[]; shapes: Shape[]; traced: boolean };
@@ -25,14 +29,18 @@ const rect = (x0: number, y0: number, x1: number, y1: number): Pt[] => [
   [x0, y1],
 ];
 
-/** Splits a rectangle into equal rooms along its long side, in the order given. */
-function strip(refs: string[], x0: number, y0: number, x1: number, y1: number): Shape[] {
+// Edges of rect(): 0 north, 1 east, 2 south, 3 west.
+const N = 0, E = 1, W = 3;
+
+/** Splits a rectangle into equal rooms along its long side, in the order given, all opening on `front`. */
+function strip(refs: string[], x0: number, y0: number, x1: number, y1: number, front: number): Shape[] {
   const across = x1 - x0 > y1 - y0;
   const step = (across ? x1 - x0 : y1 - y0) / refs.length;
   return refs.map((ref, i) => ({
     kind: "room",
     ref,
     label: ref,
+    front,
     poly: across
       ? rect(x0 + i * step, y0, x0 + (i + 1) * step, y1)
       : rect(x0, y0 + i * step, x1, y0 + (i + 1) * step),
@@ -72,7 +80,8 @@ const level3: Floor = {
       kind: "zone",
       ref: "3200",
       label: "Learning Commons",
-      at: [820, 300],
+      at: [1175, 200],
+      fit: "commons",
       poly: [
         [648, 175],
         [1265, 175],
@@ -86,18 +95,52 @@ const level3: Floor = {
         [648, 445],
       ],
     },
-    ...strip(["3316", "3315", "3314", "3313", "3312", "3309"], 180, 220, 475, 272),
-    ...strip(["3307", "3306", "3305", "3304"], 420, 350, 475, 550),
-    ...strip(["3241", "3242", "3243"], 588, 157, 627, 287),
-    ...strip(["3215", "3214", "3213", "3212"], 1283, 200, 1357, 357),
-    ...strip(["3217", "3218"], 1170, 310, 1260, 356),
-    ...strip(["3219", "3220"], 1170, 357, 1260, 403),
-    ...strip(["3208", "3209"], 1200, 467, 1297, 550),
-    { kind: "room", ref: "3211", label: "3211", poly: rect(1283, 357, 1357, 430) },
+    {
+      kind: "zone",
+      label: "Reading Room Overlook",
+      at: [448, 330],
+      poly: [
+        [428, 296],
+        [516, 296],
+        [522, 306],
+        [522, 340],
+        [516, 348],
+        [428, 348],
+      ],
+    },
+    ...strip(["3316", "3315", "3314", "3313", "3312", "3309"], 180, 220, 475, 272, N),
+    ...strip(["3307", "3306", "3305", "3304"], 420, 350, 475, 550, E),
+    ...strip(["3241", "3242", "3243"], 588, 157, 627, 287, E),
+    ...strip(["3215", "3214", "3213", "3212"], 1283, 200, 1357, 357, W),
+    { kind: "room", ref: "3217", label: "3217", front: W, poly: rect(1170, 310, 1215, 356) },
+    { kind: "room", ref: "3218", label: "3218", front: E, poly: rect(1215, 310, 1260, 356) },
+    { kind: "room", ref: "3219", label: "3219", front: W, poly: rect(1170, 357, 1215, 403) },
+    { kind: "room", ref: "3220", label: "3220", front: E, poly: rect(1215, 357, 1260, 403) },
+    ...strip(["3208", "3209"], 1200, 467, 1297, 550, N),
+    { kind: "room", ref: "3211", label: "3211", front: W, fit: "empty", poly: rect(1283, 357, 1357, 430) },
+    {
+      kind: "counter",
+      label: "Printing",
+      at: [832, 262],
+      poly: [
+        [792, 240],
+        [850, 220],
+        [884, 228],
+        [887, 241],
+        [850, 238],
+        [808, 256],
+        [798, 298],
+        [814, 314],
+        [792, 328],
+        [778, 312],
+        [781, 262],
+      ],
+    },
     {
       kind: "room",
       ref: "3201",
       label: "The Landing",
+      front: N,
       poly: [
         [1005, 447],
         [1125, 447],
@@ -109,6 +152,8 @@ const level3: Floor = {
       kind: "room",
       ref: "Dataspace",
       label: "Dataspace",
+      front: 7,
+      fit: "lab",
       poly: [
         [1040, 270],
         [1130, 270],

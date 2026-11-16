@@ -20,6 +20,9 @@ export default function SpaceDetail({ space: s, onBack }: Props) {
   if (s.reservableBy.length) facts.push([s.reservable ? "Who can reserve" : "Open to", audience(s.reservableBy)]);
   if (s.bookAhead) facts.push(["Book ahead", `Up to ${s.bookAhead}`]);
   if (s.maxBooking) facts.push(["Longest booking", s.maxBooking]);
+  const seats = ["study", "grad", "faculty"].includes(s.kind) ? s.fitout?.seats : null;
+  if (seats) facts.push(["Seats", String(seats)]);
+  if (s.features.length) facts.push(["In the room", s.features.join(" · ")]);
 
   return (
     <article key={s.id} className="animate-enter px-5 pb-10 pt-4 sm:px-7">
@@ -80,6 +83,9 @@ export default function SpaceDetail({ space: s, onBack }: Props) {
           </div>
         ))}
       </dl>
+      {(seats || s.features.length > 0) && (
+        <p className="mt-2 text-[12px] text-pencil">Seats and room features are read from the Libraries&apos; photo captions.</p>
+      )}
 
       <div className="mt-6 flex flex-wrap gap-2">
         {s.url && (

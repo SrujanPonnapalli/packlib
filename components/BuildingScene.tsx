@@ -1,31 +1,56 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Edges, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { FLOORS, type Floor, type Pt, type Shape } from "@/data/hunt-geometry";
-import { spaceByRef, spaces } from "@/data/hunt";
+import { FLOORS, type Floor, type Pt } from "@/data/hunt-geometry";
+import { fitoutFor, spaceByRef, spaces } from "@/data/hunt";
+import { fitFloor, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
 
 // Map pixels -> scene units, centred on the building envelope.
-const wx = (x: number) => (x - 1005) / 20;
-const wz = (y: number) => (y - 451) / 20;
+const U = 20;
+const wx = (x: number) => (x - 1005) / U;
+const wz = (y: number) => (y - 451) / U;
 
 const RISE = 5; // floor-to-floor spacing, exaggerated so the stack reads
 const LIFT = 26; // how far the floors above an open level move away
 const DROP = 9; // and how far the floors below it sink
-const EDGE = "#8f897c";
 const HOME: [number, number, number] = [0, 2 * RISE, 0];
+const WALL_H = 0.75; // low, cut-away walls so rooms can be seen into
+const WALL_T = 3; // px
 
-const LOOK = {
-  plate: { height: 0.4, color: "#ebe7de" },
-  zone: { height: 0.08, color: "#f6f2e9" },
-  room: { height: 1.5, color: "#d5cebf" },
-  stair: { height: 0.6, color: "#c7c0b1" },
-  core: { height: 2.1, color: "#bdb6a8" },
-} as const;
-const HOVER = "#e9dfc3";
-const PICK = "#f2c230";
+// An architect's model: foam-board walls with the black "cut" a floor plan
+// draws on top, basswood furniture, and Hunt's yellow only for "this one".
+const P = {
+  plate: "#ebe7de",
+  plateSide: "#7a756b",
+  zone: "#f3eee3",
+  overlook: "#efe9dc",
+  room: "#e2dccf",
+  hover: "#efe2bb",
+  pick: "#f2c230",
+  pickWash: "#f6e3a4",
+  wall: "#faf8f3",
+  cut: "#2f2d29",
+  glass: "#d9e2e1",
+  glassTop: "#7f8888",
+  core: "#cdc6b7",
+  coreTop: "#a39c8e",
+  counter: "#e6dcc6",
+  counterSide: "#b9ae97",
+  table: "#d6c7aa",
+  chair: "#77716a",
+  soft: "#bcb3a2",
+  screen: "#2b2a27",
+  desk: "#e2d8c3",
+  stair: "#dad2c1",
+  edge: "#8f897c",
+};
+
+const FITS: Record<string, FloorFit> = Object.fromEntries(
+  Object.entries(FLOORS).map(([n, f]) => [n, fitFloor(f, fitoutFor)]),
+);
 
 // Geometry and data are both hand-kept, so say so when they drift apart.
 if (process.env.NODE_ENV !== "production") {
@@ -45,54 +70,138 @@ function extrude(poly: Pt[], height: number) {
   return geo;
 }
 
-function centre(poly: Pt[]): [number, number] {
+function centre(poly: Pt[]): Pt {
   const xs = poly.map((p) => p[0]);
   const ys = poly.map((p) => p[1]);
-  return [wx((Math.min(...xs) + Math.max(...xs)) / 2), wz((Math.min(...ys) + Math.max(...ys)) / 2)];
+  return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
 }
 
 /** Time-based easing toward a target; `dt` is clamped because on-demand rendering reports idle time as one long frame. */
 const ease = (dt: number, seconds: number) => 1 - Math.exp(-Math.min(dt, 1 / 30) / seconds);
+
+// Every block on every floor is one of these two shapes, scaled.
+const BOX = new THREE.BoxGeometry(1, 1, 1);
+const DISC = new THREE.CylinderGeometry(0.5, 0.5, 1, 24);
+const UP = new THREE.Vector3(0, 1, 0);
+
+const placed = (x: number, y: number, z: number, sx: number, sy: number, sz: number, rot: number) =>
+  new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(UP, rot), new THREE.Vector3(sx, sy, sz));
+
+function wallMatrix(w: Wall) {
+  const dx = w.b[0] - w.a[0];
+  const dy = w.b[1] - w.a[1];
+  return placed(wx((w.a[0] + w.b[0]) / 2), WALL_H / 2, wz((w.a[1] + w.b[1]) / 2), Math.hypot(dx, dy) / U, WALL_H, WALL_T / U, -Math.atan2(dy, dx));
+}
+
+const pieceMatrix = (p: Piece) =>
+  placed(wx(p.x), p.base + p.h / 2, wz(p.y), p.w / U, p.h, (p.round ? p.w : p.d) / U, -p.rot);
+
+type Item = { m: THREE.Matrix4; color?: string };
+
+/** Many copies of one shape in a single draw call. Not clickable: the room floor beneath takes the click. */
+function Blocks({ geometry, material, items }: { geometry: THREE.BufferGeometry; material: THREE.Material | THREE.Material[]; items: Item[] }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const c = new THREE.Color();
+    items.forEach((it, i) => {
+      mesh.setMatrixAt(i, it.m);
+      if (it.color) mesh.setColorAt(i, c.set(it.color));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [items]);
+  if (items.length === 0) return null;
+  return (
+    <instancedMesh ref={ref} args={[geometry, material, items.length]} castShadow receiveShadow frustumCulled={false} raycast={() => null} />
+  );
+}
+
+/** Materials remember their resting opacity so a floor can fade as a whole. */
+function lambert(color: string, base = 1, glass = false) {
+  const m = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: base });
+  m.userData = { base, glass };
+  return m;
+}
+
+function useMaterials() {
+  return useMemo(() => {
+    const wall = lambert(P.wall);
+    const cut = lambert(P.cut);
+    const glass = lambert(P.glass, 0.3, true);
+    const glassTop = lambert(P.glassTop, 0.85);
+    // BoxGeometry faces: +x, -x, +y (top), -y, +z, -z. ExtrudeGeometry: caps, sides.
+    return {
+      wall: [wall, wall, cut, wall, wall, wall],
+      glass: [glass, glass, glassTop, glass, glass, glass],
+      piece: lambert("#ffffff"), // tinted per instance
+      plate: [lambert(P.plate), lambert(P.plateSide)],
+      core: [lambert(P.coreTop), lambert(P.core)],
+      counter: [lambert(P.counter), lambert(P.counterSide)],
+      hit: lambert("#ffffff", 0), // invisible, but catches clicks
+    };
+  }, []);
+}
+
+type Hover = (e: ThreeEvent<PointerEvent>, over: boolean) => void;
+
+function Slab({
+  poly,
+  height,
+  color,
+  material,
+  cast,
+  onClick,
+  onHover,
+}: {
+  poly: Pt[];
+  height: number;
+  color?: string;
+  material?: THREE.Material | THREE.Material[];
+  cast?: boolean;
+  onClick?: (e: ThreeEvent<MouseEvent>) => void;
+  onHover?: Hover;
+}) {
+  const geo = useMemo(() => extrude(poly, height), [poly, height]);
+  return (
+    <mesh
+      geometry={geo}
+      material={material}
+      castShadow={cast}
+      receiveShadow
+      onClick={onClick}
+      onPointerOver={onHover && ((e) => onHover(e, true))}
+      onPointerOut={onHover && ((e) => onHover(e, false))}
+    >
+      {!material && <meshLambertMaterial color={color} transparent />}
+    </mesh>
+  );
+}
 
 type Common = {
   active: number | null;
   selectedRef: string | null;
   onSelectLevel: (n: number) => void;
   onOpenSpace: (id: string) => void;
+  onClear: () => void;
 };
 
-function Block({
-  shape,
-  color,
-  y = 0,
-  onClick,
-  onHover,
-}: {
-  shape: Shape;
-  color: string;
-  y?: number;
-  onClick?: (e: ThreeEvent<MouseEvent>) => void;
-  onHover?: (e: ThreeEvent<PointerEvent>, over: boolean) => void;
-}) {
-  const geo = useMemo(() => extrude(shape.poly, LOOK[shape.kind].height), [shape]);
-  return (
-    <mesh
-      geometry={geo}
-      position-y={y}
-      onClick={onClick}
-      onPointerOver={onHover && ((e) => onHover(e, true))}
-      onPointerOut={onHover && ((e) => onHover(e, false))}
-    >
-      <meshLambertMaterial color={color} transparent />
-      {shape.kind !== "zone" && <Edges threshold={20} color={EDGE} transparent />}
-    </mesh>
-  );
-}
-
-function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace }: Common & { n: number; floor: Floor }) {
+function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear }: Common & { n: number; floor: Floor }) {
   const group = useRef<THREE.Group>(null!);
   const [hover, setHover] = useState<string | null>(null);
-  const plate = useMemo(() => extrude(floor.plate, LOOK.plate.height), [floor]);
+  const mats = useMaterials();
+  const fit = FITS[n];
+  const plate = useMemo(() => extrude(floor.plate, 0.4), [floor]);
+  const items = useMemo(
+    () => ({
+      walls: fit.walls.filter((w) => !w.glass).map((w) => ({ m: wallMatrix(w) })),
+      glass: fit.walls.filter((w) => w.glass).map((w) => ({ m: wallMatrix(w) })),
+      boxes: fit.pieces.filter((p) => !p.round).map((p) => ({ m: pieceMatrix(p), color: P[p.tone] })),
+      discs: fit.pieces.filter((p) => p.round).map((p) => ({ m: pieceMatrix(p), color: P[p.tone] })),
+    }),
+    [fit],
+  );
 
   const open = active === n;
   const away = active !== null && n > active;
@@ -113,11 +222,16 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace 
       s.opacity = targetOpacity;
     } else state.invalidate();
     group.current.position.y = s.y;
+    const fade = (m: THREE.Material) => {
+      const base = (m.userData.base as number | undefined) ?? 1;
+      m.opacity = base * s.opacity;
+      m.depthWrite = s.opacity > 0.5 && base > 0.5 && !m.userData.glass;
+    };
     group.current.traverse((o) => {
-      const m = (o as THREE.Mesh).material as THREE.Material | undefined;
-      if (!m) return;
-      m.opacity = s.opacity;
-      m.depthWrite = s.opacity > 0.5;
+      const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (mat) [mat].flat().forEach(fade);
+      o.userData.cast ??= o.castShadow;
+      o.castShadow = o.userData.cast && s.opacity > 0.5; // faded floors cast no shadow
     });
   });
 
@@ -127,62 +241,132 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace 
     e.stopPropagation();
     act();
   };
-  const point = (ref: string | null) => (e: ThreeEvent<PointerEvent>, over: boolean) => {
-    if (away) return;
-    e.stopPropagation();
-    setHover(over ? ref : null);
-    document.body.style.cursor = over ? "pointer" : "";
+  const point =
+    (ref: string | null): Hover =>
+    (e, over) => {
+      if (away) return;
+      e.stopPropagation();
+      setHover(over ? ref : null);
+      document.body.style.cursor = over ? "pointer" : "";
+    };
+  const openRef = (ref?: string) => {
+    const space = ref ? spaceByRef(ref) : undefined;
+    if (!open) onSelectLevel(n);
+    else if (space) onOpenSpace(space.id);
+  };
+  const look = (ref?: string) => {
+    const linked = ref !== undefined && spaceByRef(ref) !== undefined;
+    return {
+      picked: linked && ref === selectedRef,
+      hot: open && linked && hover === ref,
+      onHover: open && linked ? point(ref) : undefined,
+    };
   };
 
   return (
     <group ref={group} position-y={(n - 1) * RISE}>
       <mesh
         geometry={plate}
-        position-y={-LOOK.plate.height}
-        onClick={click(() => !open && onSelectLevel(n))}
+        material={mats.plate}
+        position-y={-0.4}
+        castShadow
+        receiveShadow
+        onClick={click(() => (open ? selectedRef && onClear() : onSelectLevel(n)))}
         onPointerOver={open ? undefined : (e) => point(null)(e, true)}
         onPointerOut={open ? undefined : (e) => point(null)(e, false)}
       >
-        <meshLambertMaterial color={LOOK.plate.color} transparent />
-        <Edges threshold={20} color={EDGE} transparent />
+        <Edges threshold={20} color={P.edge} transparent />
       </mesh>
 
-      {floor.shapes.map((shape, i) => {
-        const space = shape.ref ? spaceByRef(shape.ref) : undefined;
-        const picked = shape.ref !== undefined && shape.ref === selectedRef;
-        const hot = open && space !== undefined && hover === shape.ref;
+      {floor.shapes.map((s, i) => {
+        const key = s.ref ?? `${s.kind}-${i}`;
+        const { picked, hot, onHover } = look(s.ref);
+        switch (s.kind) {
+          case "zone":
+            return (
+              <Slab
+                key={key}
+                poly={s.poly}
+                height={0.03}
+                color={picked ? P.pickWash : hot ? P.hover : s.ref ? P.zone : P.overlook}
+                onClick={click(() => openRef(s.ref))}
+                onHover={onHover}
+              />
+            );
+          case "core":
+            return <Slab key={key} poly={s.poly} height={0.9} material={mats.core} cast />;
+          case "counter":
+            return <Slab key={key} poly={s.poly} height={0.32} material={mats.counter} cast />;
+          case "stair":
+            return s.ref ? (
+              <Slab key={key} poly={s.poly} height={0.8} material={mats.hit} onClick={click(() => openRef(s.ref))} onHover={onHover} />
+            ) : null;
+          default:
+            return null; // rooms are drawn from the fit below
+        }
+      })}
+
+      {fit.rooms.map((r, i) => {
+        const { picked, hot, onHover } = look(r.ref);
         return (
-          <group key={shape.ref ?? i}>
-            <Block
-              shape={shape}
-              color={picked ? PICK : hot ? HOVER : LOOK[shape.kind].color}
-              y={picked && shape.kind !== "zone" ? 0.35 : 0}
-              onClick={click(() => (open && space ? onOpenSpace(space.id) : onSelectLevel(n)))}
-              onHover={open && !space ? undefined : point(shape.ref ?? null)}
-            />
-          </group>
+          <Slab
+            key={r.ref ?? i}
+            poly={r.poly}
+            height={0.06}
+            color={picked ? P.pick : hot ? P.hover : P.room}
+            onClick={click(() => openRef(r.ref))}
+            onHover={onHover}
+          />
         );
       })}
+
+      <Blocks geometry={BOX} material={mats.wall} items={items.walls} />
+      <Blocks geometry={BOX} material={mats.glass} items={items.glass} />
+      <Blocks geometry={BOX} material={mats.piece} items={items.boxes} />
+      <Blocks geometry={DISC} material={mats.piece} items={items.discs} />
     </group>
   );
 }
 
-type Label = { ref?: string; text: string; at: THREE.Vector3; name: boolean };
+type Label = { key: string; text: string; at: THREE.Vector3; style: "room" | "name" | "callout"; dim: boolean; picked: boolean; flip?: boolean };
 
-/** Labels of the open level, with where each one floats in the scene. */
-function labelsFor(active: number | null): Label[] {
+/** Labels for the open level, plus callouts describing the open room. */
+function labelsFor(active: number | null, selectedRef: string | null): Label[] {
   if (active === null) return [];
-  return FLOORS[active].shapes.flatMap((s) => {
-    if (!s.label) return [];
-    const [x, z] = s.at ? [wx(s.at[0]), wz(s.at[1])] : centre(s.poly);
-    return [{ ref: s.ref, text: s.label, at: new THREE.Vector3(x, (active - 1) * RISE + LOOK[s.kind].height + 0.4, z), name: !/^\d/.test(s.label) }];
-  });
+  const y = (active - 1) * RISE;
+  const callouts = selectedRef ? (FITS[active].callouts[selectedRef] ?? []) : [];
+  const focused = callouts.length > 0;
+  const out: Label[] = [];
+  for (const s of FLOORS[active].shapes) {
+    if (!s.label || (focused && s.ref === selectedRef)) continue;
+    const [px, py] = s.at ?? centre(s.poly);
+    out.push({
+      key: s.label,
+      text: s.label,
+      at: new THREE.Vector3(wx(px), y + (s.kind === "room" ? WALL_H : 0.35) + 0.25, wz(py)),
+      style: /^\d/.test(s.label) ? "room" : "name",
+      dim: focused,
+      picked: s.ref !== undefined && s.ref === selectedRef,
+    });
+  }
+  callouts.forEach((c, i) =>
+    out.push({
+      key: `${selectedRef}-${c.text}`,
+      text: c.text,
+      at: new THREE.Vector3(wx(c.at[0]), y + c.height, wz(c.at[1])),
+      style: "callout",
+      dim: false,
+      picked: false,
+      flip: i % 2 === 1,
+    }),
+  );
+  return out;
 }
 
 const scratch = new THREE.Vector3();
 
-/** Keeps the HTML labels (one plain overlay, outside the canvas) pinned to their rooms. */
-function LabelSync({ labels, els }: { labels: Label[]; els: React.RefObject<(HTMLElement | null)[]> }) {
+/** Pins the HTML labels (one plain overlay outside the canvas) to their places in the scene. */
+function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLElement | null)[]> }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => invalidate(), [labels, invalidate]);
   useFrame(({ camera, size }) => {
@@ -191,17 +375,51 @@ function LabelSync({ labels, els }: { labels: Label[]; els: React.RefObject<(HTM
       const el = els.current[i];
       if (!el) return;
       scratch.copy(label.at).project(camera);
-      const x = (scratch.x * 0.5 + 0.5) * size.width;
-      const y = (-scratch.y * 0.5 + 0.5) * size.height;
-      el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
-      el.style.opacity = "1";
+      const x = ((scratch.x * 0.5 + 0.5) * size.width).toFixed(1);
+      const y = ((-scratch.y * 0.5 + 0.5) * size.height).toFixed(1);
+      el.style.transform = label.style === "callout" ? `translate(${x}px, ${y}px)` : `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+      el.style.opacity = label.dim ? "0.4" : "1";
     });
   });
   return null;
 }
 
-/** Frames the whole building, or the open level, whenever the selection changes. */
-function Rig({ active }: { active: number | null }) {
+const SUN = new THREE.Vector3(26, 80, 34);
+
+/** Sunlight that follows the view, with its shadow box sized to what is on screen so shadows stay crisp up close. */
+function Sun() {
+  const light = useRef<THREE.DirectionalLight>(null!);
+  useFrame((state) => {
+    const l = light.current;
+    const target = (state.controls as unknown as { target: THREE.Vector3 } | null)?.target;
+    if (!target) return;
+    l.position.copy(target).add(SUN);
+    l.target.position.copy(target);
+    l.target.updateMatrixWorld();
+    const half = Math.min(70, (Math.max(state.size.width, state.size.height) / state.camera.zoom) * 0.7 + 2);
+    const box = l.shadow.camera;
+    if (box.right !== half) {
+      box.left = box.bottom = -half;
+      box.right = box.top = half;
+      box.updateProjectionMatrix();
+    }
+  });
+  return (
+    <directionalLight
+      ref={light}
+      intensity={1.25}
+      castShadow
+      shadow-mapSize={[2048, 2048]}
+      shadow-bias={-0.0004}
+      shadow-normalBias={0.02}
+      shadow-camera-near={1}
+      shadow-camera-far={240}
+    />
+  );
+}
+
+/** Frames the whole building, the open level, or the open room, whenever the selection changes. */
+function Rig({ active, focus }: { active: number | null; focus: Pt[] | null }) {
   const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls);
   const invalidate = useThree((s) => s.invalidate);
@@ -209,15 +427,18 @@ function Rig({ active }: { active: number | null }) {
 
   const goal = useMemo(() => {
     if (active === null) return { at: new THREE.Vector3(...HOME), zoom: Math.min((size.width - 110) / 104, size.height / 96) };
-    const plate = FLOORS[active].plate;
-    const xs = plate.map((p) => wx(p[0]));
-    const zs = plate.map((p) => wz(p[1]));
+    const poly = focus ?? FLOORS[active].plate;
+    const xs = poly.map((p) => wx(p[0]));
+    const zs = poly.map((p) => wz(p[1]));
     const w = Math.max(...xs) - Math.min(...xs);
+    const d = Math.max(...zs) - Math.min(...zs);
     return {
       at: new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, (active - 1) * RISE, (Math.min(...zs) + Math.max(...zs)) / 2),
-      zoom: Math.min((size.width - 110) / (w * 1.08), size.height / 62), // the margin keeps clear of the level rail
+      zoom: focus
+        ? Math.min(80, Math.min(size.width * 0.6, size.height * 0.6) / (Math.max(w, d) * 1.6 + 6)) // a little of the neighbours stays in view
+        : Math.min((size.width - 110) / (w * 1.08), size.height / 62), // the margin keeps clear of the level rail
     };
-  }, [active, size]);
+  }, [active, focus, size]);
 
   useEffect(() => {
     moving.current = true;
@@ -237,14 +458,15 @@ function Rig({ active }: { active: number | null }) {
   useFrame((state, dt) => {
     const c = state.controls as unknown as { target: THREE.Vector3; update: () => void } | null;
     if (!moving.current || !c) return;
-    const k = ease(dt, 0.14);
+    const k = ease(dt, 0.16);
     const step = goal.at.clone().sub(c.target).multiplyScalar(k);
     c.target.add(step);
     state.camera.position.add(step); // keep the viewing angle
-    state.camera.zoom += (goal.zoom - state.camera.zoom) * k;
+    // Zoom eases in log space, so a 10x zoom feels as even as a 2x one.
+    state.camera.zoom = Math.exp(Math.log(state.camera.zoom) + (Math.log(goal.zoom) - Math.log(state.camera.zoom)) * k);
     state.camera.updateProjectionMatrix();
     c.update();
-    if (c.target.distanceTo(goal.at) < 0.02 && Math.abs(goal.zoom - state.camera.zoom) < 0.01) moving.current = false;
+    if (c.target.distanceTo(goal.at) < 0.01 && Math.abs(goal.zoom / state.camera.zoom - 1) < 0.002) moving.current = false;
     else state.invalidate();
   });
 
@@ -252,12 +474,18 @@ function Rig({ active }: { active: number | null }) {
 }
 
 export default function BuildingScene(props: Common) {
-  const labels = useMemo(() => labelsFor(props.active), [props.active]);
+  const { active, selectedRef } = props;
+  const labels = useMemo(() => labelsFor(active, selectedRef), [active, selectedRef]);
+  const focus = useMemo(
+    () => (active !== null && selectedRef ? (FLOORS[active].shapes.find((s) => s.ref === selectedRef && s.kind !== "zone")?.poly ?? null) : null),
+    [active, selectedRef],
+  );
   const els = useRef<(HTMLElement | null)[]>([]);
 
   return (
     <div className="absolute inset-0">
       <Canvas
+        shadows
         orthographic
         flat
         frameloop="demand"
@@ -266,33 +494,57 @@ export default function BuildingScene(props: Common) {
         onPointerMissed={() => (document.body.style.cursor = "")}
         aria-label="3D model of Hunt Library. Use the level buttons and the list to explore without it."
       >
-        <ambientLight intensity={1.6} />
-        <directionalLight position={[40, 90, 30]} intensity={1.6} />
-        <OrbitControls makeDefault enablePan={false} minPolarAngle={0.35} maxPolarAngle={1.3} minZoom={3} maxZoom={40} target={HOME} />
-        <Rig active={props.active} />
+        <ambientLight intensity={2.05} />
+        <Sun />
+        <OrbitControls makeDefault enablePan={false} minPolarAngle={0.35} maxPolarAngle={1.3} minZoom={3} maxZoom={170} target={HOME} />
+        <Rig active={active} focus={focus} />
         <LabelSync labels={labels} els={els} />
         {Object.entries(FLOORS).map(([n, floor]) => (
           <FloorModel key={n} n={Number(n)} floor={floor} {...props} />
         ))}
       </Canvas>
 
+      {/* Paper fades so the heading, level rail and caption stay legible over a zoomed-in model. */}
+      <div className="pointer-events-none absolute z-[1] inset-x-0 top-0 h-48 bg-gradient-to-b from-paper via-paper/80 to-transparent" />
+      <div className="pointer-events-none absolute z-[1] inset-y-0 left-0 w-28 bg-gradient-to-r from-paper via-paper/70 to-transparent" />
+      <div className="pointer-events-none absolute z-[1] inset-x-0 bottom-0 h-28 bg-gradient-to-t from-paper via-paper/80 to-transparent" />
+
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        {labels.map((label, i) => {
-          const picked = label.ref !== undefined && label.ref === props.selectedRef;
-          return (
-            <span
-              key={`${props.active}-${label.text}`}
-              ref={(el) => {
-                els.current[i] = el;
-              }}
-              className={`plaque absolute left-0 top-0 whitespace-nowrap rounded-[3px] px-1 leading-[1.5] opacity-0 transition-opacity duration-200 ${
-                label.name ? "annot text-[10px] text-graphite" : `text-[10px] font-semibold ${picked ? "bg-ink text-sheet" : "text-ink"}`
-              }`}
-            >
-              {label.text}
-            </span>
-          );
-        })}
+        {labels.map((label, i) => (
+          <span
+            key={label.key}
+            ref={(el) => {
+              els.current[i] = el;
+            }}
+            className="absolute left-0 top-0 opacity-0 transition-opacity duration-300"
+            style={label.style === "callout" ? { transitionDelay: `${120 + i * 40}ms` } : undefined}
+          >
+            {label.style === "callout" ? (
+              <>
+                <span className="absolute size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink ring-2 ring-sheet" />
+                {/* Alternate callouts lean down instead of up, so neighbours don't collide. */}
+                <span className={`absolute left-0 top-0 h-px w-[22px] origin-left bg-ink ${label.flip ? "rotate-[38deg]" : "-rotate-[38deg]"}`} />
+                <span
+                  className={`annot absolute left-[16px] whitespace-nowrap rounded-[4px] bg-sheet px-1.5 py-[3px] text-[10px] leading-none text-ink shadow-lift ${
+                    label.flip ? "top-[11px]" : "top-[-27px]"
+                  }`}
+                >
+                  {label.text}
+                </span>
+              </>
+            ) : (
+              <span
+                className={`plaque block whitespace-nowrap rounded-[3px] px-1 leading-[1.5] ${
+                  label.style === "name"
+                    ? "annot text-[10px] text-graphite"
+                    : `text-[10px] font-semibold ${label.picked ? "bg-ink text-sheet" : "text-ink"}`
+                }`}
+              >
+                {label.text}
+              </span>
+            )}
+          </span>
+        ))}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import snapshot from "./hunt-spaces.json";
+import type { Fitout } from "@/lib/furnish";
 
 export type Kind = "study" | "open" | "grad" | "faculty" | "studio" | "service";
 
@@ -7,6 +8,10 @@ export type Space = (typeof snapshot.spaces)[number] & {
   kind: Kind;
   /** True when the Libraries list booking rules for it. */
   reservable: boolean;
+  /** Read from the photo caption; null when there is no photo. */
+  fitout: Fitout | null;
+  /** Human-readable fit-out, shown only for bookable rooms. */
+  features: string[];
 };
 
 // NC State numbers Hunt's floors and gives them no names. `landmark` is the
@@ -88,12 +93,47 @@ function kindOf(title: string): Kind {
   return "studio";
 }
 
-export const spaces: Space[] = snapshot.spaces.map((s) => ({
-  ...s,
-  level: s.room ? Number(s.room[0]) : (LEVEL_BY_TITLE[s.title] ?? null),
-  kind: kindOf(s.title),
-  reservable: Boolean(s.bookAhead || s.maxBooking),
-}));
+const NUMBERS: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12 };
+
+// The Libraries publish no capacities for Hunt rooms, but photo captions say
+// things like "table surrounded by eight task chairs, wall-mounted display,
+// and whiteboard walls". That is the only source for seats and fit-out.
+export function readCaption(alt: string): Fitout {
+  const a = alt.toLowerCase();
+  const word = /\b(\w+) (?:task |work )?chairs\b/.exec(a)?.[1] ?? /seating for (\w+)/.exec(a)?.[1];
+  return {
+    seats: word ? (NUMBERS[word] ?? null) : null,
+    display: /display|monitor|screen/.test(a),
+    whiteboard: /whiteboard|writeable/.test(a),
+    window: /exterior window|external window/.test(a) ? "exterior" : /internal window|overlook/.test(a) ? "interior" : null,
+    adjustable: /adjustable/.test(a),
+  };
+}
+
+function featuresOf(f: Fitout): string[] {
+  return [
+    f.display && "Wall display",
+    f.whiteboard && "Whiteboard walls",
+    f.window === "exterior" && "Outside windows",
+    f.window === "interior" && "Windows onto the library",
+    f.adjustable && "Adjustable-height table",
+  ].filter((x): x is string => Boolean(x));
+}
+
+const ROOM_KINDS: Kind[] = ["study", "grad", "faculty"];
+
+export const spaces: Space[] = snapshot.spaces.map((s) => {
+  const kind = kindOf(s.title);
+  const fitout = s.photo ? readCaption(s.photo.alt) : null;
+  return {
+    ...s,
+    level: s.room ? Number(s.room[0]) : (LEVEL_BY_TITLE[s.title] ?? null),
+    kind,
+    reservable: Boolean(s.bookAhead || s.maxBooking),
+    fitout,
+    features: fitout && ROOM_KINDS.includes(kind) ? featuresOf(fitout) : [],
+  };
+});
 
 export const snapshotDate = new Date(snapshot.fetchedAt);
 
@@ -102,3 +142,5 @@ export const landmark = (n: number) => LEVELS.find((l) => l.n === n)?.landmark ?
 /** Geometry links to a space by room number, or by title when it has none. */
 export const spaceByRef = (ref: string) =>
   spaces.find((s) => s.room === ref) ?? spaces.find((s) => s.title === ref);
+
+export const fitoutFor = (ref: string) => spaceByRef(ref)?.fitout ?? null;
