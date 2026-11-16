@@ -1,6 +1,6 @@
 // Stylised walls and furniture for the 3D model, laid out in floor-map pixels
 // (20px = 1 scene unit). Plain geometry with no three.js, so it can be tested.
-import type { Floor, Pt } from "@/data/hunt-geometry";
+import type { Floor, Pt, Shape } from "@/data/hunt-geometry";
 
 /** What a room's photo caption tells us. Unknowns stay null or false. */
 export type Fitout = {
@@ -234,7 +234,7 @@ function flight(poly: Pt[], entry: number) {
   const W = (Math.max(...us) - Math.min(...us)) * 0.88;
   const D = Math.max(...poly.map((q) => dot(sub(q, a), into))) * 0.92;
   const n = Math.max(5, Math.round(D / 7));
-  return { W, n, pitch: D / n, rot: Math.atan2(ex[1], ex[0]), place: (v: number) => at(add(a, add(mul(ex, mid), mul(into, v + D * 0.04)))) };
+  return { W, D, n, pitch: D / n, rot: Math.atan2(ex[1], ex[0]), place: (v: number, u = 0) => at(add(a, add(mul(ex, mid + u), mul(into, v + D * 0.04)))) };
 }
 
 /**
@@ -250,12 +250,79 @@ export function steps(poly: Pt[], entry = 0): Piece[] {
   });
 }
 
-/** A flight going down, seen from above: flat treads with gaps, lying in the floor. The floor below draws the flight itself. */
+/** The same flight seen from the floor above: treads dropping away from the `entry` edge, through the opening in the floor. */
 export function well(poly: Pt[], entry = 0): Piece[] {
   const f = flight(poly, entry);
+  const T = 0.14;
   return Array.from({ length: f.n }, (_, i) => ({
-    ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch * 0.55, rot: f.rot, h: 0.03, base: 0.03, tone: "stair" as const,
+    ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: T, base: -(i + 1) / f.n - T, tone: "stair" as const,
   }));
+}
+
+const box = (p: Pt, w: number, d: number, h: number, tone: Tone, rot = 0, base = 0): Piece => ({ ...at(p), w, d, rot, h, base, tone });
+const disc = (p: Pt, w: number, h: number, tone: Tone, base = 0): Piece => ({ ...at(p), w, d: w, rot: 0, h, base, tone, round: true });
+/** `n` points on a circle around `c`, starting at angle `a0` and covering `sweep` radians. */
+const ring = (c: Pt, r: number, n: number, a0 = 0, sweep = 2 * Math.PI): { p: Pt; a: number }[] =>
+  Array.from({ length: n }, (_, i) => {
+    const a = a0 + (sweep * (sweep === 2 * Math.PI ? i : i + 0.5)) / n;
+    return { p: [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)] as Pt, a };
+  });
+
+/** Stylised furniture for the one-of-a-kind spaces. Each is a few large, regular groups: what the place is for, not an inventory. */
+function special(fit: NonNullable<Shape["fit"]>, poly: Pt[], front: number, avoid: Pt[][]): Piece[] {
+  switch (fit) {
+    case "quiet": // long reading tables in rows
+      return gridIn(poly, 58, 24, avoid).flatMap(([x, y]) => [
+        box([x, y], 38, 12, 0.3, "table"),
+        ...[-12, 0, 12].flatMap((u) => [-10, 10].map((v) => disc([x + u, y + v], 6, 0.2, "chair"))),
+      ]);
+    case "lounge": // curved sofas around low tables, as the map draws them
+      return gridIn(poly, 80, 38, avoid).flatMap(([x, y], k) => [
+        disc([x, y], 20, 0.16, "table"),
+        ...ring([x, y], 29, 7, k * 2.1, Math.PI * 1.15).map(({ p, a }) => box(p, 13.5, 10, 0.2, "soft", a + Math.PI / 2)),
+      ]);
+    case "alcove": { // a ring of easy chairs
+      const c = centroid(poly);
+      return [disc(c, 16, 0.2, "table"), ...ring(c, 24, 6).map(({ p, a }) => box(p, 11, 11, 0.18, "soft", a))];
+    }
+    case "carrels": { // one row of single desks, each with a privacy screen
+      const fr = frame(poly);
+      const n = Math.floor(fr.L / 17);
+      return Array.from({ length: n }, (_, i) => (i + 0.5 - n / 2) * 17).flatMap((u) => [
+        box(fr.at(u, -3), 11, 7, 0.28, "desk", fr.rot),
+        box(fr.at(u, -6.5), 12, 1, 0.3, "screen", fr.rot, 0.1),
+        disc(fr.at(u, 4.5), 5, 0.2, "chair"),
+      ]);
+    }
+    case "showcase": // plinths with a screen on each
+      return gridIn(poly, 38, 16, avoid).flatMap(([x, y]) => [box([x, y], 13, 13, 0.34, "desk"), box([x, y], 11, 1.5, 0.3, "screen", 0, 0.34)]);
+    case "exhibit": // display walls with a table between
+      return gridIn(poly, 50, 20, avoid).flatMap(([x, y], k) =>
+        k % 2 ? [disc([x, y], 15, 0.3, "table"), ...ring([x, y], 12, 4, Math.PI / 4).map(({ p }) => disc(p, 5.5, 0.2, "chair"))] : [box([x, y], 28, 2.5, 0.55, "desk")],
+      );
+    case "hall": // round banquet tables
+      return gridIn(poly, 64, 30, avoid).flatMap(([x, y]) => [disc([x, y], 22, 0.3, "table"), ...ring([x, y], 16, 6).map(({ p }) => disc(p, 6, 0.2, "chair"))]);
+    case "theater": { // a gently curved wall of screens, with stools facing it
+      const f = flight(poly, front);
+      const r = f.W * 0.6;
+      const sweep = Math.PI * 0.5;
+      const seg = (r * sweep) / 9;
+      const local = (v: number, u = 0): Pt => {
+        const q = f.place(v, u);
+        return [q.x, q.y];
+      };
+      return [
+        ...ring([0, f.D * 0.84 - r], r, 9, Math.PI / 2 - sweep / 2, sweep).map(({ p, a }) => box(local(p[1], p[0]), seg + 0.5, 1.5, 0.5, "screen", f.rot + a + Math.PI / 2, 0.04)),
+        ...[0.26, 0.44].flatMap((v, row) => [-2, -1, 0, 1, 2].map((i) => disc(local(f.D * v, (i + row * 0.5 - 0.25) * f.W * 0.15), 7, 0.22, "soft"))),
+      ];
+    }
+    case "lab":
+      return lab(poly);
+    case "commons":
+      return commons(poly, avoid);
+    default:
+      return [];
+  }
 }
 
 export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null): FloorFit {
@@ -269,10 +336,9 @@ export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null)
       out.rooms.push({ ref: s.ref, poly: room });
       if (!s.ref) continue;
       const fit = s.fit ?? "meeting";
-      const m = fit === "meeting" ? meetingRoom(room, front, f) : { pieces: fit === "lab" ? lab(room) : [], callouts: [] };
+      const m = fit === "meeting" ? meetingRoom(room, front, f) : { pieces: special(fit, room, front, []), callouts: [] };
       out.detail[s.ref] = { walls: roomWalls(room, front, f.window !== null), ...m };
-    } else if (s.kind === "zone" && s.fit === "commons" && s.ref)
-      out.detail[s.ref] = { walls: [], pieces: commons(s.poly, solids), callouts: [] };
+    } else if (s.kind === "zone" && s.fit && s.ref) out.detail[s.ref] = { walls: [], pieces: special(s.fit, s.poly, 0, solids), callouts: [] };
     else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.dir === "down" ? well : steps)(s.poly, s.front));
   }
   return out;
