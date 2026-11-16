@@ -93,6 +93,7 @@ export default function Explorer() {
               selectedRef={selected ? (selected.room ?? selected.title) : null}
               onSelectLevel={selectLevel}
               onOpenSpace={(id) => go({ space: id }, true)}
+              onClear={() => go({ space: null }, true)}
             />
             <div className="absolute left-10 top-1/2 z-10 -translate-y-1/2">
               <LevelRail active={stackLevel} counts={counts} onSelect={selectLevel} />

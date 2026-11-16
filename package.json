@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "snapshot": "node scripts/snapshot-spaces.mjs"
+    "snapshot": "node scripts/snapshot-spaces.mjs",
+    "test": "node --test"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -27,5 +28,6 @@
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
-  }
+  },
+  "type": "module"
 }
