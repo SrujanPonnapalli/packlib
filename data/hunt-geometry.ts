@@ -16,6 +16,8 @@ export type Shape = {
   at?: Pt;
   /** Index of the edge with the glass front and door, or for a stair the edge you step on from (edge i runs from point i to i+1). */
   front?: number;
+  /** Stairs: whether the flight from this floor goes up or down. The `front` edge is where you step on. */
+  dir?: "up" | "down";
   /** What to furnish it as. Rooms default to a meeting table. */
   fit?: "meeting" | "lab" | "commons" | "empty";
 };
@@ -30,7 +32,7 @@ const rect = (x0: number, y0: number, x1: number, y1: number): Pt[] => [
 ];
 
 // Edges of rect(): 0 north, 1 east, 2 south, 3 west.
-const N = 0, E = 1, W = 3;
+const N = 0, E = 1, S = 2, W = 3;
 
 /** Splits a rectangle into equal rooms along its long side, in the order given, all opening on `front`. */
 function strip(refs: string[], x0: number, y0: number, x1: number, y1: number, front: number): Shape[] {
@@ -97,8 +99,8 @@ const level3: Floor = {
     },
     {
       kind: "zone",
-      label: "Reading Room Overlook",
-      at: [448, 330],
+      label: "Overlook",
+      at: [490, 310],
       poly: [
         [428, 296],
         [516, 296],
@@ -165,9 +167,11 @@ const level3: Floor = {
         [1025, 300],
       ],
     },
-    { kind: "stair", ref: "Monumental Stair with Roman Seating", front: E, poly: rect(545, 360, 612, 437) },
+    // The two stairs by the overlook are one run: up to Level 4 from the east, and beside it down to Level 2.
+    { kind: "stair", ref: "Monumental Stair with Roman Seating", dir: "up", front: E, poly: rect(545, 360, 612, 447) },
     {
       kind: "stair",
+      dir: "down", // to Level 2, heading south
       front: N,
       poly: [
         [908, 460],
@@ -176,8 +180,8 @@ const level3: Floor = {
         [910, 548],
       ],
     },
-    { kind: "stair", front: E, poly: rect(523, 447, 627, 550) },
-    { kind: "stair", front: E, poly: rect(125, 225, 180, 305) },
+    { kind: "stair", dir: "down", front: W, poly: rect(523, 447, 627, 550) },
+    { kind: "stair", dir: "down", front: N, poly: rect(125, 225, 180, 305) },
     { kind: "core", poly: rect(527, 157, 588, 287) },
     { kind: "core", poly: rect(673, 447, 780, 550) },
     { kind: "core", poly: rect(1130, 447, 1200, 550) },
@@ -186,12 +190,185 @@ const level3: Floor = {
   ],
 };
 
-// Levels 1, 2, 4 and 5 are placeholders until they are traced.
+// Level 2 is traced on its own map, which is drawn slightly smaller and offset
+// from Level 3's. This lines the two up (checked against the building outline
+// and the stair that joins them).
+const fromLevel2Map = ([x, y]: Pt): Pt => [Math.round((x - 38) * 1.0588 + 45), Math.round((y - 125) * 1.0588 + 150)];
+
+const level2Shapes: Shape[] = [
+  {
+    kind: "zone",
+    ref: "Quiet Reading Room",
+    label: "Quiet Reading Room",
+    poly: [
+      [173, 262],
+      [372, 262],
+      [372, 512],
+      [55, 512],
+      [55, 295],
+      [173, 295],
+    ],
+  },
+  { kind: "zone", ref: "2302", label: "Idea Alcove", poly: rect(457, 262, 535, 372) },
+  { kind: "zone", ref: "2008", label: "Study Carrels", poly: rect(555, 375, 1065, 392) },
+  {
+    kind: "zone",
+    ref: "Rain Garden Reading Lounge",
+    label: "Rain Garden Reading Lounge",
+    at: [660, 640],
+    fit: "commons",
+    poly: [
+      [500, 548],
+      [850, 548],
+      [905, 600],
+      [972, 768],
+      [412, 675],
+      [455, 580],
+    ],
+  },
+  {
+    kind: "zone",
+    ref: "2200",
+    label: "Technology Showcase",
+    poly: [
+      [1050, 625],
+      [1195, 618],
+      [1200, 700],
+      [1068, 722],
+    ],
+  },
+  {
+    kind: "zone",
+    ref: "Emerging Issues Commons",
+    label: "Emerging Issues Commons",
+    at: [1425, 290],
+    poly: [
+      [1345, 250],
+      [1490, 250],
+      [1510, 330],
+      [1530, 420],
+      [1345, 420],
+    ],
+  },
+  { kind: "zone", label: "Lobby", poly: rect(1300, 432, 1530, 540) },
+  ...strip(["2312", "2313", "2314", "2315"], 168, 190, 362, 242, S),
+  ...strip(["2309", "2308", "2307", "2306", "2305", "2304"], 390, 190, 447, 502, E),
+  ...strip(["2322", "2323", "2324", "2325", "2326", "2327", "2328"], 100, 532, 447, 582, N),
+  {
+    kind: "room",
+    ref: "2206",
+    label: "iPearl Theater",
+    front: S,
+    fit: "empty",
+    poly: [
+      [948, 405],
+      [1090, 405],
+      [1090, 498],
+      [960, 498],
+    ],
+  },
+  {
+    kind: "room",
+    ref: "2110A",
+    label: "Duke Energy Hall",
+    front: 4,
+    fit: "empty",
+    poly: [
+      [1560, 205],
+      [1762, 165],
+      [1845, 600],
+      [1685, 635],
+      [1600, 440],
+    ],
+  },
+  { kind: "counter", ref: "Ask Us", label: "Ask Us", poly: rect(1145, 435, 1212, 500) },
+  { kind: "core", label: "bookBot", poly: rect(552, 130, 1198, 372) },
+  { kind: "core", poly: rect(498, 220, 552, 252) },
+  { kind: "core", poly: rect(1198, 130, 1280, 300) },
+  { kind: "core", poly: rect(630, 405, 712, 500) },
+  { kind: "core", poly: rect(732, 405, 855, 497) },
+  { kind: "core", poly: rect(1090, 372, 1140, 498) },
+  { kind: "core", poly: rect(1240, 372, 1282, 490) },
+  {
+    kind: "core", // staff area
+    poly: [
+      [1472, 128],
+      [1590, 105],
+      [1640, 320],
+      [1520, 345],
+    ],
+  },
+  {
+    kind: "core",
+    poly: [
+      [1620, 62],
+      [1738, 40],
+      [1760, 162],
+      [1642, 192],
+    ],
+  },
+  // Up to Level 3: these sit under Level 3's "down" stairs and rise toward where those begin.
+  { kind: "stair", dir: "up", front: S, poly: rect(118, 205, 165, 272) },
+  { kind: "stair", dir: "up", front: E, poly: rect(492, 405, 590, 500) },
+  {
+    kind: "stair",
+    dir: "up",
+    front: S,
+    poly: [
+      [855, 415],
+      [945, 405],
+      [955, 490],
+      [855, 498],
+    ],
+  },
+  {
+    kind: "stair", // to the Institute for Emerging Issues and Level 4
+    dir: "up",
+    front: S,
+    poly: [
+      [1558, 565],
+      [1598, 557],
+      [1620, 640],
+      [1580, 650],
+    ],
+  },
+  { kind: "stair", dir: "down", front: S, poly: rect(505, 130, 552, 218) },
+  {
+    kind: "stair", // down to Level 1
+    dir: "down",
+    front: S,
+    poly: [
+      [1288, 230],
+      [1322, 235],
+      [1335, 330],
+      [1300, 335],
+    ],
+  },
+];
+
+const level2: Floor = {
+  traced: true,
+  plate: (
+    [
+      [38, 125],
+      [1280, 125],
+      [1740, 35],
+      [1850, 608],
+      [1280, 722],
+      [1280, 775],
+      [970, 775],
+      [38, 618],
+    ] as Pt[]
+  ).map(fromLevel2Map),
+  shapes: level2Shapes.map((s) => ({ ...s, poly: s.poly.map(fromLevel2Map), at: s.at && fromLevel2Map(s.at) })),
+};
+
+// Levels 1, 4 and 5 are placeholders until they are traced.
 const placeholder = (plate: Pt[]): Floor => ({ traced: false, plate, shapes: [] });
 
 export const FLOORS: Record<number, Floor> = {
   1: placeholder(ENVELOPE),
-  2: placeholder(ENVELOPE),
+  2: level2,
   3: level3,
   4: placeholder(LEVEL_3_PLATE),
   5: placeholder(LEVEL_3_PLATE),

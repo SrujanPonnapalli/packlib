@@ -51,6 +51,7 @@ const P = {
   screen: "#34322e",
   desk: "#e8dfcc",
   stair: "#d6cdb9",
+  well: "#b3ab9a",
   edge: "#9d978a",
 };
 
@@ -263,6 +264,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const fit = FITS[n];
   const plate = useMemo(() => extrude(floor.plate, 0.4), [floor]);
   const stairs = useMemo(() => fit.stairs.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
+  const wells = useMemo(() => fit.wells.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
 
   const open = active === n;
   const away = active !== null && n > active;
@@ -375,9 +377,12 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
           case "core":
             return <Slab key={key} poly={s.poly} height={0.7} material={mats.core} cast edges />;
           case "counter":
-            return <Slab key={key} poly={s.poly} height={0.28} material={mats.counter} cast />;
+            return <Slab key={key} poly={s.poly} height={0.28} material={mats.counter} cast onClick={click(() => openRef(s.ref))} onHover={onHover} />;
           case "stair":
-            return s.ref ? (
+            // A stair going down is a darker well in the floor; one going up only needs something to click.
+            return s.dir === "down" ? (
+              <Slab key={key} poly={s.poly} height={0.03} color={P.well} />
+            ) : s.ref ? (
               <Slab key={key} poly={s.poly} height={0.8} material={mats.hit} onClick={click(() => openRef(s.ref))} onHover={onHover} />
             ) : null;
           default:
@@ -410,6 +415,9 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
 
       <group ref={flights} scale-y={STAIR_FULL}>
         <Blocks geometry={BOX} material={mats.piece} items={stairs} />
+      </group>
+      <group>
+        <Blocks geometry={BOX} material={mats.piece} items={wells} />
       </group>
       {opened && <Inside key={selectedRef} detail={opened} mats={mats} />}
     </group>
@@ -479,6 +487,8 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
       el.style.opacity = label.dim ? "0.35" : "1";
       if (label.style !== "callout") {
         el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
+        // Room numbers shrink with the model, so a row of small rooms stays readable on a big floor.
+        if (label.style === "room") (el.firstElementChild as HTMLElement).style.fontSize = `${Math.min(10, Math.max(6.5, camera.zoom * 0.9)).toFixed(1)}px`;
         return;
       }
       el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
@@ -533,6 +543,7 @@ function Sun() {
 
 const FRAME = { left: 110, top: 190, bottom: 90 }; // px covered by the level rail, heading and caption
 const FILL = 0.62; // share of the free area an opened space fills; the rest is floor to click off onto
+const LEVEL_FILL = 0.94; // an open level nearly fills it
 const MAX_FOCUS_ZOOM = 95; // so the smallest rooms don't fill the panel
 
 /** Frames the whole building, the open level, or the open room, whenever the selection changes. */
@@ -554,24 +565,25 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
     const zs = poly.map((p) => wz(p[1]));
     const y = (active - 1) * RISE;
     const at = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, y, (Math.min(...zs) + Math.max(...zs)) / 2);
-    if (!focus) {
-      const w = Math.max(...xs) - Math.min(...xs);
-      return { at, zoom: Math.min((size.width - 110) / (w * 1.08), size.height / 62) }; // the margin keeps clear of the level rail
-    }
-    // Measure the space as it will appear on screen from the current viewing angle,
+    // Measure the level or space as it will appear on screen from the current viewing angle,
     // then let it fill a fixed share of the area not covered by the heading, rail and caption.
     const right = new THREE.Vector3();
     const up = new THREE.Vector3();
     camera.updateMatrixWorld(); // not yet current on a page that opens straight onto a space
     camera.matrixWorld.extractBasis(right, up, new THREE.Vector3());
-    const span = (axis: THREE.Vector3) => {
+    const extent = (axis: THREE.Vector3) => {
       const ds = poly.flatMap((p) => [0, WALL_H].map((h) => axis.dot(scratch.set(wx(p[0]), y + h, wz(p[1])))));
-      return Math.max(...ds) - Math.min(...ds);
+      const lo = Math.min(...ds);
+      const hi = Math.max(...ds);
+      return { size: hi - lo, off: (lo + hi) / 2 - axis.dot(at) }; // `off`: how far its on-screen middle is from `at`
     };
+    const across = extent(right);
+    const tall = extent(up);
     const free = { w: size.width - FRAME.left, h: size.height - FRAME.top - FRAME.bottom };
-    const zoom = Math.min(MAX_FOCUS_ZOOM, FILL * Math.min(free.w / span(right), free.h / span(up)));
-    // Centre it in that free area, not in the whole panel.
-    at.addScaledVector(right, -FRAME.left / 2 / zoom).addScaledVector(up, (FRAME.top - FRAME.bottom) / 2 / zoom);
+    const fit = Math.min(free.w / across.size, free.h / tall.size);
+    const zoom = focus ? Math.min(MAX_FOCUS_ZOOM, FILL * fit) : LEVEL_FILL * fit;
+    // Centre its on-screen outline in that free area, not in the whole panel.
+    at.addScaledVector(right, across.off - FRAME.left / 2 / zoom).addScaledVector(up, tall.off + (FRAME.top - FRAME.bottom) / 2 / zoom);
     return { at, zoom };
   }, [active, focus, size, camera]);
 
@@ -669,10 +681,10 @@ export default function BuildingScene(props: Common) {
               </>
             ) : (
               <span
-                className={`block whitespace-nowrap rounded-[3px] px-1 leading-[1.5] ${
+                className={`block rounded-[3px] px-1 ${
                   label.style === "name"
-                    ? "annot text-[9.5px] text-graphite"
-                    : `plaque text-[10px] font-medium ${label.picked ? "bg-accent font-semibold text-ink" : "text-pencil"}`
+                    ? "annot w-max max-w-[14ch] text-center text-[9.5px] leading-[1.25] text-graphite"
+                    : `plaque whitespace-nowrap text-[10px] font-medium leading-[1.5] ${label.picked ? "bg-accent font-semibold text-ink" : "text-pencil"}`
                 }`}
               >
                 {label.text}

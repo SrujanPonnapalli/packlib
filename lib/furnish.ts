@@ -24,6 +24,8 @@ export type FloorFit = {
   rooms: { ref?: string; poly: Pt[] }[];
   /** Steps are drawn at every zoom; everything else waits until its room is opened. */
   stairs: Piece[];
+  /** Flights going down, drawn flat in the floor. */
+  wells: Piece[];
   detail: Record<string, Detail>;
 };
 
@@ -220,40 +222,44 @@ function commons(zone: Pt[], avoid: Pt[][]): Piece[] {
   });
 }
 
-/**
- * A switchback stair that climbs to the next floor: one flight runs in from the `entry` edge to a
- * half-way landing at the back, the second returns beside it and arrives above the entry edge.
- * Heights are fractions of the floor-to-floor rise (1 = the floor above), so the scene sets the scale.
- */
-export function steps(poly: Pt[], entry = 0): Piece[] {
+/** A frame on the edge you step onto a stair from: `u` runs along that edge, `v` away from it across the stair. */
+function flight(poly: Pt[], entry: number) {
   const a = poly[entry % poly.length];
   const ex = norm(sub(poly[(entry + 1) % poly.length], a));
   let into: Pt = [-ex[1], ex[0]];
   if (dot(sub(centroid(poly), a), into) < 0) into = mul(into, -1);
   const us = poly.map((q) => dot(sub(q, a), ex));
-  const vs = poly.map((q) => dot(sub(q, a), into));
+  const mid = (Math.min(...us) + Math.max(...us)) / 2;
   // Slightly inside the outline, so a slanted edge never pushes a tread off the floor.
-  const u0 = Math.min(...us), W = (Math.max(...us) - u0) * 0.9, D = Math.max(...vs) * 0.92;
-  const mid = u0 + (Math.max(...us) - u0) / 2;
-  const place = (u: number, v: number) => at(add(a, add(mul(ex, mid + u), mul(into, v + D * 0.04))));
-  const rot = Math.atan2(ex[1], ex[0]);
-  const land = Math.min(D * 0.28, W / 2);
-  const run = D - land;
-  const n = Math.max(4, Math.round(run / 7));
-  const T = 0.14; // tread thickness: chunky, so the flight reads as one ribbon
-  const tread = (u: number, v: number, top: number, w: number, d: number): Piece => ({
-    ...place(u, v), w, d, rot, h: Math.min(T, top), base: Math.max(0, top - T), tone: "stair",
+  const W = (Math.max(...us) - Math.min(...us)) * 0.88;
+  const D = Math.max(...poly.map((q) => dot(sub(q, a), into))) * 0.92;
+  const n = Math.max(5, Math.round(D / 7));
+  return { W, n, pitch: D / n, rot: Math.atan2(ex[1], ex[0]), place: (v: number) => at(add(a, add(mul(ex, mid), mul(into, v + D * 0.04)))) };
+}
+
+/**
+ * One straight flight up to the next floor, starting at the `entry` edge and arriving at the far side.
+ * Heights are fractions of the floor-to-floor rise (1 = the floor above), so the scene sets the scale.
+ */
+export function steps(poly: Pt[], entry = 0): Piece[] {
+  const f = flight(poly, entry);
+  const T = 0.14; // tread thickness
+  return Array.from({ length: f.n }, (_, i) => {
+    const top = (i + 1) / f.n;
+    return { ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: Math.min(T, top), base: Math.max(0, top - T), tone: "stair" as const };
   });
-  const lane = W / 2 - 1;
-  return [
-    ...Array.from({ length: n }, (_, i) => tread(-W / 4, ((i + 0.5) * run) / n, ((i + 1) / (n + 1)) * 0.5, lane, run / n)),
-    tread(0, run + land / 2, 0.5, W, land),
-    ...Array.from({ length: n }, (_, i) => tread(W / 4, run - ((i + 0.5) * run) / n, 0.5 + ((i + 1) / n) * 0.5, lane, run / n)),
-  ];
+}
+
+/** A flight going down, seen from above: flat treads with gaps, lying in the floor. The floor below draws the flight itself. */
+export function well(poly: Pt[], entry = 0): Piece[] {
+  const f = flight(poly, entry);
+  return Array.from({ length: f.n }, (_, i) => ({
+    ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch * 0.55, rot: f.rot, h: 0.03, base: 0.03, tone: "stair" as const,
+  }));
 }
 
 export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null): FloorFit {
-  const out: FloorFit = { rooms: [], stairs: [], detail: {} };
+  const out: FloorFit = { rooms: [], stairs: [], wells: [], detail: {} };
   const solids = floor.shapes.filter((s) => s.kind !== "zone").map((s) => s.poly);
   for (const s of floor.shapes) {
     if (s.kind === "room") {
@@ -267,7 +273,7 @@ export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null)
       out.detail[s.ref] = { walls: roomWalls(room, front, f.window !== null), ...m };
     } else if (s.kind === "zone" && s.fit === "commons" && s.ref)
       out.detail[s.ref] = { walls: [], pieces: commons(s.poly, solids), callouts: [] };
-    else if (s.kind === "stair") out.stairs.push(...steps(s.poly, s.front));
+    else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.dir === "down" ? well : steps)(s.poly, s.front));
   }
   return out;
 }

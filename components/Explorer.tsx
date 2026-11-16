@@ -107,7 +107,7 @@ export default function Explorer() {
         )}
 
         <p className="pointer-events-none relative z-10 max-w-[60ch] text-[12px] leading-relaxed text-pencil">
-          Schematic, not to scale. {wide && "Level 3 is traced from the Libraries' floor map; the other levels are placeholders. Drag to turn, scroll to zoom. "}
+          Schematic, not to scale. {wide && "Levels 2 and 3 are traced from the Libraries' floor maps; the other levels are placeholders. Drag to turn, scroll to zoom. "}
           Space details from NC State Libraries, captured{" "}
           {snapshotDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.
         </p>
