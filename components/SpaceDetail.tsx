@@ -2,6 +2,7 @@ import Image from "next/image";
 import { KINDS, type Space } from "@/data/hunt";
 import { BUSY_LABEL, STALE_MS, ago, people, zoneFor } from "@/lib/occupancy";
 import { BusyDot, readingFor, type Live } from "./Busy";
+import BookingHandoff from "./BookingHandoff";
 
 const EVERYONE = ["Faculty", "Graduate Students", "Staff", "Students"];
 
@@ -20,8 +21,6 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
   const facts: [string, string][] = [];
   if (s.level !== null) facts.push(["Level", String(s.level)]);
   if (s.reservableBy.length) facts.push([s.reservable ? "Who can reserve" : "Open to", audience(s.reservableBy)]);
-  if (s.bookAhead) facts.push(["Book ahead", `Up to ${s.bookAhead}`]);
-  if (s.maxBooking) facts.push(["Longest booking", s.maxBooking]);
   const seats = ["study", "grad", "faculty"].includes(s.kind) ? s.fitout?.seats : null;
   if (seats) facts.push(["Seats", String(seats)]);
   if (s.features.length) facts.push(["In the room", s.features.join(" · ")]);
@@ -90,15 +89,19 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
         <p className="mt-2 text-[12px] text-pencil">Seats and room features are read from the Libraries&apos; photo captions.</p>
       )}
 
+      {s.reservable && <BookingHandoff space={s} />}
+
       <div className="mt-6 flex flex-wrap gap-2">
         {s.url && (
           <a
             href={s.url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-ink px-4 text-[14px] font-medium text-sheet transition-transform duration-150 ease-out-quint active:scale-[0.97]"
+            className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-4 text-[14px] font-medium transition-[background-color,transform] duration-150 ease-out-quint active:scale-[0.97] ${
+              s.reservable ? "shadow-[inset_0_0_0_1px_var(--color-rule-strong)] hover:bg-vellum" : "bg-ink text-sheet"
+            }`}
           >
-            {s.reservable ? "Reserve on NC State Libraries" : "View on NC State Libraries"}
+            {s.reservable ? "About this room on NC State" : "View on NC State Libraries"}
             <Arrow />
           </a>
         )}
