@@ -121,6 +121,68 @@ Resources:
         - Notification: { NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 50, ThresholdType: PERCENTAGE }
           Subscribers: [{ SubscriptionType: EMAIL, Address: !Ref AlertEmail }]
 
+  # The site reads the last week of data from this function's public URL. It's
+  # public NC State data so no keys needed, and the function can only query the table.
+  HistoryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - { Effect: Allow, Principal: { Service: lambda.amazonaws.com }, Action: sts:AssumeRole }
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: read-history
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - { Effect: Allow, Action: dynamodb:Query, Resource: !GetAtt Table.Arn }
+
+  HistoryLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/studyscape-history
+      RetentionInDays: 14
+
+  History:
+    Type: AWS::Lambda::Function
+    DependsOn: HistoryLogs
+    Properties:
+      FunctionName: studyscape-history
+      Runtime: nodejs24.x
+      Handler: collector/history-api.handler
+      Role: !GetAtt HistoryRole.Arn
+      MemorySize: 256
+      Timeout: 10
+      Environment:
+        Variables: { TABLE: !Ref Table }
+      Code:
+        ZipFile: "exports.handler = async () => { throw new Error('code not uploaded yet: run scripts/deploy-collector.sh'); };"
+
+  HistoryUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !Ref History
+      AuthType: NONE
+
+  HistoryUrlPublic:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref History
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  HistoryInvokePublic:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref History
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
 Outputs:
   Function: { Value: !Ref Collect }
   Table: { Value: !Ref Table }
+  HistoryUrl: { Value: !GetAtt HistoryUrl.FunctionUrl }
