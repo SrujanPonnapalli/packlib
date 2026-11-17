@@ -664,7 +664,14 @@ type Label = {
   style: "room" | "name" | "callout" | "match";
   dim: boolean;
   picked: boolean;
+  /** A match pin raised above the stack: where its stem lands on its own floor, and that floor's tag. */
+  foot?: THREE.Vector3;
+  tag?: string;
 };
+
+// In the whole-building view match pins float above the top floor, each on a stem down to its own floor,
+// so a pin can't be mistaken for a room on whichever floor happens to be drawn under it.
+const PIN_TOP = (Math.max(...Object.keys(FLOORS).map(Number)) - 1) * RISE * SPREAD + ROOM_H + 4;
 
 /** Labels for the open level, plus callouts describing the open room. */
 function labelsFor(active: number | null, selectedRef: string | null, matches: string[]): Label[] {
@@ -674,8 +681,20 @@ function labelsFor(active: number | null, selectedRef: string | null, matches: s
     const shape = FLOORS[n]?.shapes.find((s) => s.ref === ref);
     if (!shape || (active !== null && n !== active) || ref === selectedRef) return [];
     const [px, py] = shape.at ?? centre(shape.poly);
-    const y = (n - 1) * RISE * (active === null ? SPREAD : 1) + (shape.kind === "room" ? ROOM_H : 0.3) + 0.35;
-    return [{ key: `match-${ref}`, text: String(i + 1), at: new THREE.Vector3(wx(px), y, wz(py)), style: "match" as const, dim: false, picked: i === 0 }];
+    const floorY = (n - 1) * RISE * (active === null ? SPREAD : 1) + (shape.kind === "room" ? ROOM_H : 0.3);
+    const whole = active === null;
+    return [
+      {
+        key: `match-${ref}`,
+        text: String(i + 1),
+        at: new THREE.Vector3(wx(px), whole ? PIN_TOP : floorY + 0.35, wz(py)),
+        style: "match" as const,
+        dim: false,
+        picked: i === 0,
+        foot: whole ? new THREE.Vector3(wx(px), floorY, wz(py)) : undefined,
+        tag: whole ? `Level ${n}` : undefined,
+      },
+    ];
   });
   if (active === null) return pins;
   const y = (active - 1) * RISE;
@@ -732,6 +751,20 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
       const x = (scratch.x * 0.5 + 0.5) * size.width;
       const y = (-scratch.y * 0.5 + 0.5) * size.height;
       el.style.opacity = label.dim ? "0.35" : "1";
+      if (label.style === "match") {
+        // The element sits on the pin's point; its stem and foot dot are placed relative to it.
+        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+        taken.push({ x, y, w: 32, h: 32 });
+        if (!label.foot) return;
+        scratch.copy(label.foot).project(camera);
+        const dx = (scratch.x * 0.5 + 0.5) * size.width - x;
+        const dy = (-scratch.y * 0.5 + 0.5) * size.height - y;
+        const [line, dot] = el.firstElementChild!.children as unknown as HTMLElement[];
+        line.style.width = `${Math.hypot(dx, dy).toFixed(1)}px`;
+        line.style.transform = `rotate(${Math.atan2(dy, dx).toFixed(3)}rad)`;
+        dot.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+        return;
+      }
       if (label.style !== "callout") {
         el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
         // Room numbers shrink with the model, so a row of small rooms stays readable on a big floor.
@@ -968,12 +1001,26 @@ export default function BuildingScene(props: Common) {
               </>
             ) : label.style === "match" ? (
               // All three matches in teal, ranked like the cards: #1 solid and larger, #2 and #3 outlined.
-              <span
-                className={`arrive plaque grid place-items-center rounded-full font-semibold leading-none shadow-lift [--d:900ms] transition-transform duration-150 ease-out-quint ${
-                  label.picked ? "size-8 bg-accent text-[17px] text-ink ring-2 ring-sheet" : "size-6 bg-sheet text-[14px] text-ink ring-2 ring-accent-deep"
-                } ${props.highlight && label.key === `match-${props.highlight}` ? "scale-[1.2]" : ""}`}
-              >
-                {label.text}
+              // Above the whole building, a stem runs down to a dot on the pin's own floor, and a tag names it.
+              <span className="arrive absolute left-0 top-0 [--d:900ms]">
+                {label.foot && (
+                  <>
+                    <span className="absolute left-0 top-0 h-[1.5px] origin-left bg-accent-deep" />
+                    <span className="absolute left-0 top-0 size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-deep ring-2 ring-sheet" />
+                  </>
+                )}
+                <span
+                  className={`plaque absolute left-0 top-0 grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-semibold leading-none shadow-lift transition-[scale] duration-150 ease-out-quint ${
+                    label.picked ? "size-8 bg-accent text-[17px] text-ink ring-2 ring-sheet" : "size-6 bg-sheet text-[14px] text-ink ring-2 ring-accent-deep"
+                  } ${props.highlight && label.key === `match-${props.highlight}` ? "scale-[1.2]" : ""}`}
+                >
+                  {label.text}
+                  {label.tag && (
+                    <span className="annot absolute left-full top-1/2 ml-1.5 -translate-y-1/2 whitespace-nowrap rounded-[4px] bg-sheet px-1.5 py-[3px] text-[10px] leading-none text-ink shadow-lift">
+                      {label.tag}
+                    </span>
+                  )}
+                </span>
               </span>
             ) : (
               <span
