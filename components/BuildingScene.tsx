@@ -9,7 +9,6 @@ import { fitoutFor, spaceByRef, spaces } from "@/data/hunt";
 import { inset, fitFloor, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
 import { scatter, seeded } from "@/lib/crowd";
 import type { Busy, Occupancy, Zone } from "@/lib/occupancy";
-import type { Availability, Status } from "@/lib/availability";
 
 // Map pixels -> scene units, centred on the building envelope.
 const U = 20;
@@ -61,8 +60,6 @@ const P = {
 // Busyness, pale to strong (same ramp as the page). Dots use deeper shades so the faintest still shows on the floor.
 const HEAT: Record<Busy, string> = { quiet: "#f0c4a0", busy: "#e8865a", packed: "#c4452e" };
 const DOT: Record<Busy, string> = { quiet: "#d9946a", busy: "#d0683c", packed: "#a8321f" };
-// Room tops by (demo) availability: sage when free, paler when it will not stay free long, warm grey when booked.
-const ROOF: Record<Availability, string> = { free: "#cfe4bd", soon: "#e8ebc8", booked: "#d4cec2" };
 const CLOTHES = ["#45413b", "#5d5850", "#776d61", "#4c5864", "#8b5b4a", "#6a7461"];
 const PEOPLE_ZOOM = 14; // closer than this, dots become little people
 const CROWD_CAP = 220; // per zone, so a packed commons stays readable and cheap
@@ -194,11 +191,6 @@ function useMaterials() {
       core: [lambert(P.coreTop), lambert(P.core)],
       counter: [lambert(P.counter), lambert(P.counterSide)],
       hit: lambert("#ffffff", 0), // invisible, but catches clicks
-      roof: {
-        free: [lambert(ROOF.free), lambert(P.blockSide)],
-        soon: [lambert(ROOF.soon), lambert(P.blockSide)],
-        booked: [lambert(ROOF.booked), lambert(P.blockSide)],
-      },
       heat: { quiet: lambert(HEAT.quiet, 0.75, true), busy: lambert(HEAT.busy, 0.75, true), packed: lambert(HEAT.packed, 0.75, true) },
     };
   }, []);
@@ -397,10 +389,9 @@ type Common = {
   onOpenSpace: (id: string) => void;
   onClear: () => void;
   occupancy?: Occupancy | null;
-  rooms?: Record<string, Status> | null;
 };
 
-function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy, rooms }: Common & { n: number; floor: Floor }) {
+function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy }: Common & { n: number; floor: Floor }) {
   const group = useRef<THREE.Group>(null!);
   const [hover, setHover] = useState<string | null>(null);
   const mats = useMaterials();
@@ -502,10 +493,6 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
     if (!open) onSelectLevel(n);
     else if (space) onOpenSpace(space.id);
   };
-  const roofFor = (ref?: string) => {
-    const status = ref ? rooms?.[ref] : null;
-    return status ? mats.roof[status.state] : mats.block;
-  };
   const look = (ref?: string) => {
     const linked = ref !== undefined && spaceByRef(ref) !== undefined;
     return {
@@ -572,7 +559,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
               key={r.ref ?? i}
               poly={r.poly}
               height={ROOM_H}
-              material={picked ? [mats.blockHover[0], mats.block[1]] : hot ? mats.blockHover : roofFor(r.ref)}
+              material={picked ? [mats.blockHover[0], mats.block[1]] : hot ? mats.blockHover : mats.block}
               cast
               edges
               onClick={onClick}

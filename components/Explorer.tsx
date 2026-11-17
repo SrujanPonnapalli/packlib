@@ -4,12 +4,11 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { KINDS, LEVELS, landmark, snapshotDate, spaces, type Kind } from "@/data/hunt";
-import { demoBookings, statusAt } from "@/lib/availability";
 import LevelRail from "./LevelRail";
 import LevelStack from "./LevelStack";
 import SpaceList from "./SpaceList";
 import SpaceDetail from "./SpaceDetail";
-import { AvailKey, BusyKey, LiveNote, type Rooms } from "./Busy";
+import { BusyKey, LiveNote } from "./Busy";
 import { useOccupancy } from "./useOccupancy";
 
 // three.js is only fetched where the 3D model is shown.
@@ -38,14 +37,6 @@ export default function Explorer() {
     () => Object.fromEntries(LEVELS.map(({ n }) => [n, live.data?.levels[n]?.busy ?? null])),
     [live.data],
   );
-  // Demo availability for every bookable room, recomputed as the clock ticks.
-  const rooms: Rooms = useMemo(() => {
-    if (!live.now) return null;
-    const d = new Date(live.now);
-    const day = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-    const minute = d.getHours() * 60 + d.getMinutes(); // shortcut: the visitor's clock, not Raleigh's
-    return Object.fromEntries(spaces.filter((s) => s.room && s.reservable).map((s) => [s.room!, statusAt(demoBookings(s.room!, day), minute)]));
-  }, [live.now]);
 
   function go(patch: Record<string, string | number | null>, push = false) {
     const next = new URLSearchParams(params.toString());
@@ -112,7 +103,6 @@ export default function Explorer() {
               onOpenSpace={(id) => go({ space: id }, true)}
               onClear={() => go({ space: null }, true)}
               occupancy={live.data}
-              rooms={rooms}
             />
             <div className="absolute left-10 top-1/2 z-10 -translate-y-1/2">
               <LevelRail active={stackLevel} counts={counts} busy={busy} onSelect={selectLevel} />
@@ -132,18 +122,13 @@ export default function Explorer() {
             {snapshotDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.
             {live.data && ` Headcounts are live from the Libraries' sensors${wide ? "; where each person is drawn is made up" : ""}.`}
           </p>
-          {wide && (
-            <div className="flex flex-col items-end gap-2">
-              {rooms && <AvailKey />}
-              {live.data && <BusyKey />}
-            </div>
-          )}
+          {wide && live.data && <BusyKey />}
         </div>
       </section>
 
       <section aria-label="Spaces" className="min-h-0 min-w-0 border-t border-rule bg-sheet lg:overflow-y-auto lg:border-l lg:border-t-0">
         {selected ? (
-          <SpaceDetail space={selected} live={live} rooms={rooms} onBack={() => go({ space: null }, true)} />
+          <SpaceDetail space={selected} live={live} onBack={() => go({ space: null }, true)} />
         ) : (
           <>
             <div className="sticky top-0 z-10 border-b border-rule bg-sheet/95 px-5 pb-3 pt-5 backdrop-blur-sm sm:px-7">
@@ -183,7 +168,7 @@ export default function Explorer() {
 
             <div className="px-5 pb-12 pt-6 sm:px-7">
               {listed.length > 0 ? (
-                <SpaceList spaces={listed} live={live} rooms={rooms} onOpen={(s) => go({ space: s.id }, true)} />
+                <SpaceList spaces={listed} live={live} onOpen={(s) => go({ space: s.id }, true)} />
               ) : (
                 <div className="py-16 text-center">
                   <p className="text-[16px] font-semibold">Nothing matches that.</p>

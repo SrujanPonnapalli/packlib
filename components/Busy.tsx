@@ -1,6 +1,5 @@
 import type { Space } from "@/data/hunt";
 import { BUSY_LABEL, STALE_MS, ago, people, zoneFor, type Busy, type Occupancy, type Reading } from "@/lib/occupancy";
-import { AVAIL_LABEL, type Availability, type Status } from "@/lib/availability";
 
 const DOT: Record<Busy, string> = { quiet: "bg-quiet", busy: "bg-busy", packed: "bg-packed" };
 
@@ -45,37 +44,6 @@ export function LiveNote({ live, level, space }: { live: Live; level: number | n
         {stale(live) && ", may be out of date"}
       </span>
     </p>
-  );
-}
-
-const AVAIL_DOT: Record<Availability, string> = { free: "bg-free", soon: "bg-soon", booked: "bg-booked" };
-
-export function AvailDot({ state, className = "" }: { state: Availability; className?: string }) {
-  return <span aria-hidden="true" className={`inline-block size-2 shrink-0 rounded-full ${AVAIL_DOT[state]} ${className}`} />;
-}
-
-/** Demo availability per bookable room number; null until the clock is known. */
-export type Rooms = Record<string, Status> | null;
-
-export function DemoBadge() {
-  return (
-    <span title="NC State's booking system has no public feed, so room availability here is made up." className="annot rounded-[3px] bg-vellum px-1 py-px text-[9.5px] text-graphite">
-      Demo
-    </span>
-  );
-}
-
-export function AvailKey() {
-  return (
-    <div className="flex items-center gap-3 text-[11px] text-graphite">
-      {(["free", "soon", "booked"] as Availability[]).map((a) => (
-        <span key={a} className="flex items-center gap-1.5">
-          <AvailDot state={a} />
-          {a === "soon" ? "Free < 1 h" : AVAIL_LABEL[a]}
-        </span>
-      ))}
-      <DemoBadge />
-    </div>
   );
 }
 
