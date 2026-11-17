@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { observations, slot } from "./history.ts";
+import { instant, lineUp, observations, slot, summary } from "./history.ts";
 
 const at = "2026-11-17T19:45:10Z"; // 2:45 pm in Raleigh
 const building = {
@@ -40,4 +40,34 @@ test("one poll stores the building, each level and every zone, keeping switched-
 
 test("an unusable building response writes nothing", () => {
   assert.throws(() => observations({ error: "down" }, {}));
+});
+
+test("stored days become one time-ordered history, with repeated minutes collapsed", () => {
+  const h = lineUp(
+    {
+      building: [
+        { day: "2026-11-17", r: [[75, 178, 0.1], [75, 178, 0.1], [79, 158, 0.09]] },
+        { day: "2026-11-16", r: [[1435, 200, 0.11]] },
+      ],
+      "level#2": [{ day: "2026-11-17", r: [[79, 30, 0.05]] }],
+    },
+    "2026-11-16",
+    0,
+  );
+  assert.deepEqual(h.t, [Date.parse("2026-11-17T04:55:00Z"), Date.parse("2026-11-17T06:15:00Z"), Date.parse("2026-11-17T06:19:00Z")]);
+  assert.deepEqual(h.total, [200, 178, 158]);
+  assert.deepEqual(h.levels[2], [null, null, 30], "a level with no reading at that poll is a gap, not zero");
+  assert.equal(instant("2026-03-08", 3 * 60), Date.parse("2026-03-08T07:00:00Z"), "after clocks go forward");
+});
+
+test("now against yesterday at this time, and the week's peak", () => {
+  const day = 86_400_000;
+  const t0 = Date.parse("2026-11-17T19:00:00Z");
+  const h = { t: [t0 - day - 4 * 60_000, t0 - 3600_000, t0], total: [400, 900, 500], share: [0.2, 0.5, 0.28], levels: {}, since: null, readAt: t0 };
+  const s = summary(h, t0);
+  assert.equal(s.latest?.count, 500);
+  assert.equal(s.yesterday, 400, "within 15 minutes of exactly a day earlier");
+  assert.equal(s.change, 25);
+  assert.deepEqual(s.peak, { t: t0 - 3600_000, count: 900 });
+  assert.equal(summary({ ...h, t: [t0], total: [500], share: [0.28] }, t0).change, null, "no reading yesterday, no comparison");
 });

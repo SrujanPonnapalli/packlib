@@ -11,6 +11,8 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1170.0",
+    "@aws-sdk/lib-dynamodb": "^3.1170.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "next": "16.4.6",
