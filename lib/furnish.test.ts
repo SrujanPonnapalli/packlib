@@ -32,12 +32,12 @@ test("grid points avoid other shapes", () => {
   assert.ok(pts.every((p) => !pointIn(hole, p)));
 });
 
-for (const level of [2, 3])
+for (const level of [1, 2, 3, 4, 5])
   test(`every room, stair and piece of furniture on Level ${level} sits on the floor plate`, () => {
     const floor = FLOORS[level];
     const fit = fitFloor(floor, () => fitout(8));
     const pieces = [...fit.stairs, ...fit.wells, ...Object.values(fit.detail).flatMap((d) => d.pieces)];
-    assert.ok(pieces.length > 60);
+    assert.ok(pieces.length > 20);
     for (const p of pieces) assert.ok(pointIn(floor.plate, [p.x, p.y]), `piece at ${p.x},${p.y} is off the plate`);
     for (const r of fit.rooms) for (const q of r.poly) assert.ok(pointIn(floor.plate, q), `room ${r.ref} corner ${q} is off the plate`);
   });

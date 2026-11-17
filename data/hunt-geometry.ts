@@ -21,7 +21,7 @@ export type Shape = {
   /** Stairs: whether the flight from this floor goes up or down. The `front` edge is where you step on. */
   dir?: "up" | "down";
   /** What to furnish it as. Rooms default to a meeting table. */
-  fit?: "meeting" | "lab" | "commons" | "empty" | "quiet" | "lounge" | "carrels" | "alcove" | "theater" | "showcase" | "hall" | "exhibit";
+  fit?: "meeting" | "lab" | "commons" | "empty" | "quiet" | "lounge" | "carrels" | "alcove" | "theater" | "showcase" | "hall" | "exhibit" | "cafe" | "auditorium";
   /** Added automatically: the other end of a stair that was traced on the floor above or below. */
   twin?: boolean;
 };
@@ -325,7 +325,7 @@ const level2Shapes: Shape[] = [
       [1580, 650],
     ],
   },
-  { kind: "stair", dir: "down", front: S, poly: rect(505, 133, 547, 218) },
+  { kind: "core", poly: rect(505, 133, 552, 220) }, // an exit stair, closed to the floor
   {
     kind: "stair", // down to Level 1
     dir: "down",
@@ -339,30 +339,417 @@ const level2Shapes: Shape[] = [
   },
 ];
 
-const level2: Floor = {
+/** A floor traced on its own map, moved onto Level 3's coordinates. */
+const aligned = (map: (p: Pt) => Pt, plate: Pt[], shapes: Shape[]): Floor => ({
   traced: true,
-  plate: (
-    [
-      [38, 125],
-      // The bookBot's storage vault is left out: it is a pit beside this floor, not a place to go.
-      [552, 125],
-      [552, 372],
-      [1198, 372],
-      [1198, 125],
-      [1280, 125],
-      [1740, 35],
-      [1850, 608],
-      [1280, 722],
-      [1280, 775],
-      [970, 775],
-      [38, 618],
-    ] as Pt[]
-  ).map(fromLevel2Map),
-  shapes: level2Shapes.map((s) => ({ ...s, poly: s.poly.map(fromLevel2Map), at: s.at && fromLevel2Map(s.at) })),
-};
+  plate: plate.map(map),
+  shapes: shapes.map((s) => ({ ...s, poly: s.poly.map(map), at: s.at && map(s.at) })),
+});
 
-// Levels 1, 4 and 5 are placeholders until they are traced.
-const placeholder = (plate: Pt[]): Floor => ({ traced: false, plate, shapes: [] });
+const level2 = aligned(
+  fromLevel2Map,
+  [
+    [38, 125],
+    // The bookBot's storage vault is left out: it is a pit beside this floor, not a place to go.
+    [552, 125],
+    [552, 372],
+    [1198, 372],
+    [1198, 125],
+    [1280, 125],
+    [1740, 35],
+    [1850, 608],
+    [1280, 722],
+    [1280, 775],
+    [970, 775],
+    [38, 618],
+  ],
+  level2Shapes,
+);
+
+// Level 4's map matches Level 3's scale and sits 22px higher (checked against the elevators and the stair cores).
+const level4 = aligned(
+  ([x, y]) => [x, y + 22],
+  [
+    [45, 128],
+    [1355, 128],
+    [1842, 35],
+    [1963, 660],
+    [1405, 755],
+    [1065, 815],
+    [1035, 815],
+    // the floor curves back here around the Oval View's window wall
+    [955, 625],
+    [935, 590],
+    [885, 573],
+    [545, 573],
+    [500, 595],
+    [440, 712],
+    [45, 645],
+  ],
+  [
+    {
+      kind: "zone",
+      ref: "Lake Raleigh Learning Commons",
+      label: "Lake Raleigh Learning Commons",
+      at: [175, 520],
+      fit: "commons",
+      poly: [
+        [62, 140],
+        [135, 140],
+        [135, 305],
+        [420, 292],
+        [440, 380],
+        [315, 430],
+        [285, 520],
+        [468, 590],
+        [430, 688],
+        [62, 632],
+      ],
+    },
+    {
+      kind: "zone",
+      ref: "Graduate Student Commons",
+      label: "Graduate Student Commons",
+      at: [1160, 300],
+      fit: "commons",
+      poly: [
+        [1024, 132],
+        [1303, 132],
+        [1303, 385],
+        [1230, 385],
+        [1230, 418],
+        [1022, 418],
+        [1022, 360],
+        [975, 360],
+        [975, 240],
+        [1024, 240],
+      ],
+    },
+    {
+      kind: "zone",
+      ref: "Oval View Reading Room",
+      label: "Oval View Reading Room",
+      fit: "lounge",
+      poly: [
+        [978, 578],
+        [1283, 572],
+        [1283, 752],
+        [1050, 792],
+      ],
+    },
+    { kind: "zone", ref: "Locker Bay", label: "Lockers", at: [975, 400], poly: rect(955, 364, 1020, 470) },
+    {
+      kind: "zone", // not part of the Libraries; its two bookable rooms are drawn inside it
+      label: "Institute for Emerging Issues",
+      at: [1600, 215],
+      poly: [
+        [1358, 132],
+        [1838, 40],
+        [1958, 656],
+        [1408, 750],
+        [1388, 640],
+        [1358, 640],
+      ],
+    },
+    ...strip(["4510", "4511", "4512"], 148, 158, 190, 298, E),
+    ...strip(["4513", "4514", "4515"], 215, 132, 272, 290, W),
+    {
+      kind: "room",
+      ref: "4505",
+      label: "Visualization Lab",
+      front: S,
+      fit: "theater",
+      poly: [
+        [272, 132],
+        [470, 132],
+        [470, 270],
+        [272, 288],
+      ],
+    },
+    { kind: "room", ref: "4411", label: "4411", front: S, poly: rect(470, 132, 538, 192) },
+    {
+      kind: "room",
+      ref: "4403",
+      label: "Esports & Gaming Lab",
+      front: S,
+      fit: "lab",
+      poly: [
+        [590, 132],
+        [892, 132],
+        [892, 240],
+        [590, 262],
+      ],
+    },
+    { kind: "room", ref: "4401", label: "Maker Studio", front: S, fit: "showcase", poly: rect(892, 132, 970, 238) },
+    ...strip(["4321", "4322"], 970, 132, 1022, 236, E),
+    ...strip(["4311", "4312", "4313", "4314", "4315"], 1305, 132, 1353, 385, W),
+    { kind: "room", poly: rect(885, 360, 935, 440) }, // media studio 4217, not bookable
+    { kind: "room", ref: "4215", label: "4215", front: W, fit: "lab", poly: rect(885, 442, 935, 525) },
+    { kind: "room", ref: "4302", label: "4302", front: N, poly: rect(1022, 420, 1085, 470) },
+    { kind: "room", ref: "Audio Rooms", label: "Audio", front: S, fit: "empty", poly: rect(957, 472, 1085, 527) },
+    { kind: "room", ref: "4210", label: "VR Room", front: S, fit: "empty", poly: rect(1085, 472, 1135, 527) },
+    {
+      kind: "room",
+      ref: "4502",
+      label: "Cornelson Room",
+      front: 0,
+      poly: [
+        [348, 474],
+        [452, 440],
+        [458, 500],
+        [385, 545],
+        [334, 522],
+      ],
+    },
+    {
+      kind: "room",
+      ref: "4106",
+      label: "Lecture Hall",
+      front: 3,
+      fit: "auditorium",
+      poly: [
+        [1705, 352],
+        [1890, 322],
+        [1918, 468],
+        [1732, 495],
+      ],
+    },
+    {
+      kind: "room",
+      ref: "4101",
+      label: "Meeting Rooms",
+      front: 0,
+      poly: [
+        [1404, 652],
+        [1505, 634],
+        [1515, 720],
+        [1414, 740],
+      ],
+    },
+    { kind: "core", poly: rect(470, 194, 512, 270) },
+    { kind: "core", poly: rect(538, 132, 590, 266) },
+    { kind: "core", poly: rect(525, 432, 628, 525) },
+    { kind: "core", poly: rect(672, 422, 758, 525) },
+    { kind: "core", poly: rect(783, 422, 883, 525) },
+    {
+      kind: "core",
+      poly: [
+        [1087, 420],
+        [1200, 420],
+        [1200, 525],
+        [1137, 525],
+        [1137, 470],
+        [1087, 470],
+      ],
+    },
+    { kind: "core", poly: rect(1205, 390, 1353, 525) },
+    {
+      kind: "stair", // up to the Skyline Reading Room, starting from the east end
+      dir: "up",
+      front: E,
+      poly: [
+        [318, 440],
+        [440, 405],
+        [450, 435],
+        [330, 470],
+      ],
+    },
+  ],
+);
+
+// Level 5's map also matches Level 3's scale; it sits 7px right and 12px higher (checked against the elevators).
+const level5 = aligned(
+  ([x, y]) => [x - 7, y + 12],
+  [
+    // The planted roofs north and south of the floor are left out.
+    [55, 138],
+    [150, 138],
+    [150, 200],
+    [1360, 140],
+    [1845, 45],
+    [1967, 672],
+    [1380, 770],
+    [1250, 750],
+    [150, 563],
+    [150, 672],
+    [55, 655],
+  ],
+  [
+    { kind: "zone", ref: "Skyline Terrace", label: "Skyline Terrace", at: [102, 560], fit: "cafe", poly: rect(62, 148, 143, 648) },
+    {
+      kind: "zone",
+      ref: "Skyline Reading Room",
+      label: "Skyline Reading Room",
+      at: [250, 330],
+      fit: "quiet",
+      poly: [
+        [165, 216],
+        [296, 210],
+        [312, 436],
+        [292, 538],
+        [750, 556],
+        [750, 640],
+        [165, 545],
+      ],
+    },
+    {
+      kind: "zone",
+      ref: "Faculty Research Commons",
+      label: "Faculty Research Commons",
+      at: [990, 640],
+      fit: "commons",
+      poly: [
+        [792, 572],
+        [1193, 572],
+        [1193, 736],
+        [792, 668],
+      ],
+    },
+    {
+      kind: "zone",
+      label: "Staff only",
+      at: [1125, 315],
+      poly: [
+        [312, 198],
+        [1360, 144],
+        [1840, 52],
+        [1896, 344],
+        [1500, 424],
+        [1500, 386],
+        [1392, 386],
+        [1392, 432],
+        [1322, 432],
+        [1322, 500],
+        [890, 518],
+        [890, 432],
+        [640, 432],
+        [640, 478],
+        [440, 478],
+        [420, 428],
+        [332, 445],
+      ],
+    },
+    {
+      kind: "zone",
+      label: "University Centers",
+      at: [1640, 540],
+      poly: [
+        [1264, 526],
+        [1322, 522],
+        [1322, 434],
+        [1392, 434],
+        [1392, 388],
+        [1498, 388],
+        [1498, 427],
+        [1898, 348],
+        [1962, 668],
+        [1380, 766],
+        [1264, 748],
+      ],
+    },
+    ...strip(["5241", "5242", "5243", "5244", "5245"], 890, 526, 1140, 568, S),
+    { kind: "room", ref: "5234", label: "5234", front: W, poly: rect(1197, 526, 1260, 594) },
+    ...strip(["5231", "5232", "5233"], 1197, 598, 1250, 742, W),
+    ...strip(["5210", "5211"], 792, 606, 824, 666, E),
+    ...strip(["5222", "5223", "5224"], 1100, 606, 1172, 690, W),
+    { kind: "counter", ref: "5302", label: "Vending", poly: rect(446, 490, 524, 530) },
+    { kind: "core", poly: rect(532, 483, 632, 535) },
+    { kind: "core", poly: rect(678, 435, 712, 515) },
+    { kind: "core", poly: rect(765, 435, 888, 518) },
+  ],
+);
+
+// Level 1's map is drawn smaller than Level 3's; this lines it up (checked against the east elevators and the bookBot).
+const level1 = aligned(
+  ([x, y]) => [Math.round((x - 48) * 1.049 + 45), Math.round((y - 435) * 1.049 + 150)],
+  [
+    [48, 435],
+    // the bookBot's vault again
+    [562, 435],
+    [562, 682],
+    [1218, 682],
+    [1218, 435],
+    [1230, 435],
+    [1350, 420],
+    [1362, 382],
+    [1768, 342],
+    [1878, 922],
+    [1430, 1010],
+    [1405, 882],
+    [548, 882],
+    [548, 1000],
+    [48, 900],
+  ],
+  [
+    { kind: "zone", ref: "Robot Alley", label: "Robot Alley", poly: rect(1224, 446, 1300, 700) },
+    {
+      kind: "zone",
+      label: "Lobby",
+      at: [1390, 530],
+      poly: [
+        [1304, 428],
+        [1492, 406],
+        [1506, 556],
+        [1390, 586],
+        [1304, 600],
+      ],
+    },
+    {
+      kind: "zone",
+      ref: "Common Grounds Café",
+      label: "Common Grounds Café",
+      fit: "cafe",
+      poly: [
+        [1502, 402],
+        [1590, 388],
+        [1612, 530],
+        [1516, 546],
+      ],
+    },
+    {
+      kind: "zone",
+      label: "Staff only",
+      poly: [
+        [54, 441],
+        [556, 441],
+        [556, 688],
+        [1104, 688],
+        [1104, 876],
+        [554, 876],
+        [554, 994],
+        [54, 896],
+      ],
+    },
+    {
+      kind: "zone",
+      poly: [
+        [1612, 364],
+        [1764, 349],
+        [1870, 917],
+        [1704, 950],
+        [1642, 600],
+        [1622, 540],
+      ],
+    },
+    {
+      kind: "room",
+      ref: "1103",
+      label: "Auditorium",
+      front: 0,
+      fit: "auditorium",
+      poly: [
+        [1392, 594],
+        [1638, 602],
+        [1698, 950],
+        [1464, 994],
+      ],
+    },
+    { kind: "room", ref: "1202", label: "Lactation Room", front: N, fit: "empty", poly: rect(1336, 800, 1400, 842) },
+    { kind: "room", ref: "1203", label: "Restroom", front: N, fit: "empty", poly: rect(1262, 800, 1306, 842) },
+    { kind: "core", poly: rect(1150, 716, 1258, 845) },
+    { kind: "core", poly: rect(1260, 716, 1298, 798) },
+  ],
+);
 
 /** Gives every traced stair its other end on the neighbouring floor, when that floor has room for it. */
 function link(floors: Record<number, Floor>) {
@@ -378,9 +765,9 @@ function link(floors: Record<number, Floor>) {
 }
 
 export const FLOORS: Record<number, Floor> = link({
-  1: placeholder(ENVELOPE),
+  1: level1,
   2: level2,
   3: level3,
-  4: placeholder(LEVEL_3_PLATE),
-  5: placeholder(LEVEL_3_PLATE),
+  4: level4,
+  5: level5,
 });
