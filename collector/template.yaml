@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  StudyScape collector. Saves Hunt Library's live headcounts every 5 minutes.
+  Sized to stay inside AWS's always-free tier (DynamoDB 25 RCU/WCU and 25 GB,
+  Lambda 1M requests, EventBridge Scheduler 14M runs, 10 alarms).
+
+Parameters:
+  AlertEmail:
+    Type: String
+    Description: Where AWS sends the budget warning and "collector failing" alerts. Confirm the subscription email AWS sends.
+
+Resources:
+  Table:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain # keep the table if the stack gets deleted, the history can't be collected again
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: studyscape
+      BillingMode: PROVISIONED # on-demand isn't covered by the free tier
+      ProvisionedThroughput: { ReadCapacityUnits: 10, WriteCapacityUnits: 10 }
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+
+  CollectRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - { Effect: Allow, Principal: { Service: lambda.amazonaws.com }, Action: sts:AssumeRole }
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: append-readings
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - { Effect: Allow, Action: dynamodb:UpdateItem, Resource: !GetAtt Table.Arn }
+
+  CollectLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/studyscape-collect
+      RetentionInDays: 14
+
+  Collect:
+    Type: AWS::Lambda::Function
+    DependsOn: CollectLogs
+    Properties:
+      FunctionName: studyscape-collect
+      Runtime: nodejs24.x
+      Handler: collector/collect.handler
+      Role: !GetAtt CollectRole.Arn
+      MemorySize: 256
+      Timeout: 30
+      Environment:
+        Variables: { TABLE: !Ref Table }
+      Code:
+        ZipFile: "exports.handler = async () => { throw new Error('code not uploaded yet: run scripts/deploy-collector.sh'); };"
+
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - { Effect: Allow, Principal: { Service: scheduler.amazonaws.com }, Action: sts:AssumeRole }
+      Policies:
+        - PolicyName: invoke-collect
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - { Effect: Allow, Action: lambda:InvokeFunction, Resource: !GetAtt Collect.Arn }
+
+  Every5Minutes:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: studyscape-collect
+      ScheduleExpression: rate(5 minutes)
+      FlexibleTimeWindow: { Mode: "OFF" }
+      Target:
+        Arn: !GetAtt Collect.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+        RetryPolicy: { MaximumRetryAttempts: 0 } # the next run is 5 minutes away anyway
+
+  Alerts:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - { Protocol: email, Endpoint: !Ref AlertEmail }
+
+  CollectFailing:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: StudyScape collector failed every run for 30 minutes (NC State down or its response changed).
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions: [{ Name: FunctionName, Value: !Ref Collect }]
+      Statistic: Sum
+      Period: 1800
+      EvaluationPeriods: 1
+      Threshold: 6
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref Alerts]
+      OKActions: [!Ref Alerts]
+
+  OneDollarBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: studyscape
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: { Amount: 1, Unit: USD }
+      NotificationsWithSubscribers:
+        - Notification: { NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 50, ThresholdType: PERCENTAGE }
+          Subscribers: [{ SubscriptionType: EMAIL, Address: !Ref AlertEmail }]
+
+Outputs:
+  Function: { Value: !Ref Collect }
+  Table: { Value: !Ref Table }
