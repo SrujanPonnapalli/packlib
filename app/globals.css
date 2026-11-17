@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
-/* Drafting table: warm paper and graphite ink, with one teal used only to
+/* Plain light paper and neutral ink, with one teal used only to
    mark "this one". The deep teal is for thin lines and text on paper, where
    the bright teal is too faint. */
 @theme {
-  --color-paper: #f5f3ee;
-  --color-sheet: #fcfbf8;
-  --color-vellum: #ebe8e0;
-  --color-ink: #1d1c1a;
-  --color-graphite: #55524c;
-  --color-pencil: #6f6b64;
-  --color-faint: #a8a399;
-  --color-rule: rgb(29 28 26 / 0.1);
-  --color-rule-soft: rgb(29 28 26 / 0.06);
-  --color-rule-strong: rgb(29 28 26 / 0.22);
+  --color-paper: #f6f6f6;
+  --color-sheet: #ffffff;
+  --color-vellum: #ededed;
+  --color-ink: #171717;
+  --color-graphite: #525252;
+  --color-pencil: #6b6b6b;
+  --color-faint: #a3a3a3;
+  --color-rule: rgb(23 23 23 / 0.1);
+  --color-rule-soft: rgb(23 23 23 / 0.06);
+  --color-rule-strong: rgb(23 23 23 / 0.22);
   --color-accent: #1ec7b1;
   --color-accent-deep: #0e8f7f;
   --color-accent-wash: #d3eee7;
@@ -27,15 +27,15 @@
   --color-quiet-ink: #3b7d2c;
   --color-busy-ink: #94650a;
   --color-packed-ink: #b23a24;
-  --color-slab: #e9e5dc;
-  --color-slab-side: #d8d3c8;
-  --color-slab-end: #cbc5b8;
+  --color-slab: #e8e8e8;
+  --color-slab-side: #d6d6d6;
+  --color-slab-end: #c8c8c8;
 
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
   --shadow-lift:
-    0 0 0 1px rgb(29 28 26 / 0.06), 0 1px 2px -1px rgb(29 28 26 / 0.08),
-    0 3px 8px rgb(29 28 26 / 0.05);
+    0 0 0 1px rgb(23 23 23 / 0.06), 0 1px 2px -1px rgb(23 23 23 / 0.08),
+    0 3px 8px rgb(23 23 23 / 0.05);
 
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
 
@@ -142,7 +142,7 @@ html[data-arrived] :is(.arrive, .draw, .fill-in) {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--color-vellum) 25%, #f3f0ea 50%, var(--color-vellum) 75%) 0 0 / 200% 100%;
+  background: linear-gradient(90deg, var(--color-vellum) 25%, #f6f6f6 50%, var(--color-vellum) 75%) 0 0 / 200% 100%;
   animation: var(--animate-shimmer);
 }
 
@@ -150,15 +150,15 @@ html[data-arrived] :is(.arrive, .draw, .fill-in) {
    as a space fills, the way a drawing shades what is solid. It carries the
    meaning without colour, and leaves flat teal as the only "this one". */
 .hatch-quiet {
-  background: repeating-linear-gradient(135deg, rgb(29 28 26 / 0.34) 0 1px, transparent 1px 4.5px), var(--color-quiet);
+  background: repeating-linear-gradient(135deg, rgb(23 23 23 / 0.34) 0 1px, transparent 1px 4.5px), var(--color-quiet);
 }
 .hatch-busy {
-  background: repeating-linear-gradient(135deg, rgb(29 28 26 / 0.34) 0 1px, transparent 1px 2.75px), var(--color-busy);
+  background: repeating-linear-gradient(135deg, rgb(23 23 23 / 0.34) 0 1px, transparent 1px 2.75px), var(--color-busy);
 }
 .hatch-packed {
   background:
-    repeating-linear-gradient(135deg, rgb(29 28 26 / 0.38) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(45deg, rgb(29 28 26 / 0.38) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(135deg, rgb(23 23 23 / 0.38) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(45deg, rgb(23 23 23 / 0.38) 0 1px, transparent 1px 3px),
     var(--color-packed);
 }
 

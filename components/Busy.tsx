@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Space } from "@/data/hunt";
 import { BUSY_LABEL, STALE_MS, ago, people, zoneFor, type Busy, type Occupancy, type Reading } from "@/lib/occupancy";
 
@@ -8,7 +8,7 @@ const HATCH: Record<Busy, string> = { quiet: "hatch-quiet", busy: "hatch-busy", 
 
 /** A hatched swatch: denser lines, more people (see the hatch classes in globals.css). */
 export function BusyDot({ busy, className = "" }: { busy: Busy; className?: string }) {
-  return <span aria-hidden="true" className={`inline-block size-2.5 shrink-0 rounded-[2px] shadow-[inset_0_0_0_1px_rgb(29_28_26/0.22)] ${HATCH[busy]} ${className}`} />;
+  return <span aria-hidden="true" className={`inline-block size-2.5 shrink-0 rounded-[2px] shadow-[inset_0_0_0_1px_rgb(23_23_23/0.22)] ${HATCH[busy]} ${className}`} />;
 }
 
 export type Live = { data: Occupancy | null | undefined; now: number };
@@ -92,6 +92,33 @@ export function Ticker({ value, format = String, from, className = "", ms = 280 
   );
 }
 
+/** Eases a number up from 0 once, on mount; null when done (or when motion is reduced), so later changes tick instead. */
+function useCountUp(target: number, ms = 1400) {
+  const [shown, setShown] = useState<number | null>(0);
+  useEffect(() => {
+    const dur = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms;
+    const t0 = performance.now();
+    let id = 0;
+    const step = (t: number) => {
+      const k = dur ? Math.min(1, (t - t0) / dur) : 1;
+      if (k === 1) return setShown(null);
+      setShown(Math.round(target * (1 - Math.pow(1 - k, 5)))); // ease-out quint: fast, then settling onto the number
+      id = requestAnimationFrame(step);
+    };
+    id = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(id);
+    // Only the first value counts up; the target is read once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return shown;
+}
+
+function HeroNumber({ value }: { value: number }) {
+  const counting = useCountUp(value);
+  const cls = "plaque text-[88px] font-semibold leading-none tracking-[-0.03em] sm:text-[112px] lg:text-[136px]";
+  return counting === null ? <Ticker value={value} ms={650} className={cls} /> : <span className={`inline-flex tabular-nums ${cls}`}>{counting}</span>;
+}
+
 /** The first answer, at the size of an answer: how many people are in the building right now. */
 export function HeroCount({ live, where }: { live: Live; where: string }) {
   const { data, now } = live;
@@ -99,7 +126,7 @@ export function HeroCount({ live, where }: { live: Live; where: string }) {
   if (!data || !b || b.count === null || b.busy === null) return null;
   return (
     <div className="arrive [--d:140ms] lg:text-right">
-      <Ticker value={b.count} from={0} ms={650} className="plaque text-[88px] font-semibold leading-none tracking-[-0.03em] sm:text-[112px] lg:text-[136px]" />
+      <HeroNumber value={b.count} />
       <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[13px] leading-5 tabular-nums text-graphite lg:justify-end">
         <BusyDot busy={b.busy} className="mr-0.5" />
         <span className="font-medium text-ink">people in {where} now</span>

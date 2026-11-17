@@ -3,7 +3,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { KINDS, LEVELS, landmark, snapshotDate, spaces, type Kind } from "@/data/hunt";
+import { KINDS, LEVELS, landmark, spaces, type Kind } from "@/data/hunt";
 import LevelRail from "./LevelRail";
 import LevelStack from "./LevelStack";
 import SpaceList from "./SpaceList";
@@ -158,10 +158,7 @@ export default function Explorer() {
 
         <div className="pointer-events-none relative z-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
           <p className="max-w-[60ch] text-[12px] leading-relaxed text-pencil">
-            Schematic, not to scale. {wide && "Traced by eye from the Libraries' floor maps. Drag to turn, scroll to zoom. "}
-            Space details from NC State Libraries, captured{" "}
-            {snapshotDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.
-            {live.data && ` Headcounts are live from the Libraries' sensors${wide ? "; where each person is drawn is made up" : ""}.`}
+            Not to scale.{wide && " Drag to turn, scroll to zoom."}
           </p>
           {wide && live.data && <BusyKey />}
         </div>
@@ -209,7 +206,7 @@ export default function Explorer() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search by name or room number"
-                  className="h-10 w-full rounded-lg bg-vellum pl-9 pr-3 text-[14px] placeholder:text-pencil focus-visible:outline-offset-0"
+                  className="h-10 w-full rounded-lg bg-sheet pl-9 pr-3 text-[14px] shadow-[inset_0_0_0_1px_var(--color-rule-strong)] transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_rgb(23_23_23/0.35)] placeholder:text-pencil focus-visible:outline-offset-0"
                 />
               </label>
               <div className="-mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-7 sm:px-7" role="group" aria-label="Filter by type">
