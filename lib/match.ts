@@ -44,7 +44,7 @@ const WHO: Record<Who, string[]> = {
   staff: ["Staff"],
 };
 
-const UNLISTED_MAX = 6; // TODO: rooms whose captions don't give a seat count are trusted for up to six, change if the Libraries publish capacities
+const UNLISTED_MAX = 6; // TODO: rooms with no known seat count (some grad and faculty rooms) are trusted for up to six until we know their real counts
 
 /** The hard rules. Returns why a place is ruled out, or null if it's allowed. */
 export function ruledOut(c: Candidate, a: Ask): string | null {
