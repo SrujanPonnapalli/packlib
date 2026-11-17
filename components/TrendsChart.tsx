@@ -393,12 +393,12 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
             ) : (
               <>
                 <p className="mt-1 flex items-baseline gap-1.5">
-                  <Ticker value={h.total[tip]!} format={(v) => v.toLocaleString("en-US")} className="plaque text-[24px] font-semibold leading-none" />
+                  <Ticker value={h.total[tip]!} format={(v) => v.toLocaleString("en-US")} ms={240} lift={40} stagger={0} className="plaque text-[24px] font-semibold leading-none" />
                   <span className="text-[12px] text-sheet/75">people</span>
                   {h.share[tip] !== null && (
                     <span className="ml-auto flex items-center gap-1.5 text-[12px] tabular-nums text-sheet/85">
                       <BusyDot busy={busyAt(h.share[tip]!)} />
-                      <Ticker value={Math.round(h.share[tip]! * 100)} format={(v) => `${v}%`} />
+                      {Math.round(h.share[tip]! * 100)}%
                     </span>
                   )}
                 </p>
@@ -408,14 +408,14 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
                       <li key={lv} className="flex items-center gap-2 text-[12px] text-sheet/80">
                         <span className="size-2 rounded-[2px]" style={{ background: LEVEL_FILL[lv] }} aria-hidden="true" />
                         Level {lv}
-                        <span className="plaque ml-auto text-[13px] text-sheet">{h.levels[lv][tip] === null ? "–" : <Ticker value={h.levels[lv][tip]!} />}</span>
+                        <span className="plaque ml-auto text-[13px] tabular-nums text-sheet">{h.levels[lv][tip] ?? "–"}</span>
                       </li>
                     ))}
                     {usual[tip] !== null && (
                       <li className="mt-1 flex items-center gap-2 border-t border-sheet/15 pt-1.5 text-[12px] text-sheet/80">
                         <span className="w-2 border-t-[1.5px] border-dashed border-sheet/70" aria-hidden="true" />
                         Typical
-                        <span className="plaque ml-auto text-[13px] text-sheet"><Ticker value={usual[tip]!} /></span>
+                        <span className="plaque ml-auto text-[13px] tabular-nums text-sheet">{usual[tip]}</span>
                       </li>
                     )}
                   </ul>
@@ -440,11 +440,11 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
               <>
                 <p className="mt-1 flex items-baseline gap-2" style={{ color: `var(--color-${diff.tone})` }}>
                   <span className="plaque flex items-baseline text-[26px] font-semibold leading-none">
-                    {diff.delta === 0 ? "No change" : <>{diff.delta > 0 ? "↑" : "↓"}&nbsp;<Ticker value={Math.abs(diff.delta)} format={(v) => (mode === "count" ? v.toLocaleString("en-US") : `${v} pts`)} /></>}
+                    {diff.delta === 0 ? "No change" : <>{diff.delta > 0 ? "↑" : "↓"}&nbsp;{mode === "count" ? Math.abs(diff.delta).toLocaleString("en-US") : `${Math.abs(diff.delta)} pts`}</>}
                   </span>
                   {diff.pct !== null && diff.delta !== 0 && (
                     <span className="plaque text-[15px] font-semibold">
-                      <Ticker value={Math.abs(diff.pct)} format={(v) => `${diff.pct! > 0 ? "+" : "−"}${v}%`} />
+                      {`${diff.pct > 0 ? "+" : "−"}${Math.abs(diff.pct)}%`}
                     </span>
                   )}
                 </p>

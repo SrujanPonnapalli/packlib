@@ -67,9 +67,8 @@ const P = {
   edge: "#999999",
 };
 
-// busyness, pale to strong (same ramp as the page). the floor hatch shows it, people are small marks on top
+// busyness, pale to strong (same ramp as the page). the floor's wash shows it
 const HEAT: Record<Busy, string> = { quiet: "#9dd08a", busy: "#f2b84b", packed: "#d9533a" };
-const INK = "#333333";
 const CLOTHES = ["#45413b", "#5d5850", "#776d61", "#4c5864", "#8b5b4a", "#6a7461"];
 const PEOPLE_ZOOM = 14; // closer than this and dots turn into people
 const CROWD_CAP = 220; // per zone, keeps a packed commons readable and cheap to draw
@@ -410,22 +409,18 @@ function Walkers({ crowd, base, count, mats }: { crowd: Crowd; base: number; cou
   );
 }
 
-/** A zone's people based on zoom: little people up close, dots for a whole level. */
-function People({ crowd, base, close, dot = 0.3, mats }: { crowd: Crowd; base: number; close: boolean; dot?: number; mats: ReturnType<typeof useMaterials> }) {
-  const moving = close && !reduceMotion() ? Math.round(crowd.standing.length * 0.35) : 0;
+/** A zone's people up close: little figures, sitting on chairs first, some walking. */
+function People({ crowd, base, mats }: { crowd: Crowd; base: number; mats: ReturnType<typeof useMaterials> }) {
+  const moving = !reduceMotion() ? Math.round(crowd.standing.length * 0.35) : 0;
   const items = useMemo(() => {
-    if (!close) {
-      return { dots: [...crowd.seated.map((s) => s.at), ...crowd.standing].map(([x, y]) => ({ m: placed(wx(x), base + 0.03, wz(y), dot, 0.02, dot, 0), color: INK })), body: [], head: [] };
-    }
     const still = [
       ...crowd.seated.map((s, k) => person(wx(s.at[0]), wz(s.at[1]), base, true, tint(k))),
       ...crowd.standing.slice(moving).map(([x, y], k) => person(wx(x), wz(y), base, false, tint(k + 1))),
     ];
-    return { dots: [], body: still.map((p) => p[0]), head: still.map((p) => p[1]) };
-  }, [crowd, base, close, dot, moving]);
+    return { body: still.map((p) => p[0]), head: still.map((p) => p[1]) };
+  }, [crowd, base, moving]);
   return (
     <>
-      <Blocks geometry={DISC} material={mats.piece} items={items.dots} />
       <Blocks geometry={BODY} material={mats.piece} items={items.body} />
       <Blocks geometry={HEAD} material={mats.piece} items={items.head} />
       {moving > 0 && <Walkers crowd={crowd} base={base} count={moving} mats={mats} />}
@@ -631,11 +626,6 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
             />
           );
         })}
-        {/* closed rooms show their people as dots on the roof, and flatten with it */}
-        {open &&
-          crowds
-            .filter((c) => c.room && !c.zone.refs.includes(selectedRef ?? ""))
-            .map((c) => <People key={c.zone.id} crowd={c} base={ROOM_H} close={false} dot={close ? 0.16 : 0.26} mats={mats} />)}
       </group>
 
       <group ref={flights} scale-y={STAIR_FULL * SPREAD}>
@@ -658,11 +648,11 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
             </group>
           ));
         })}
-      {/* open level: its people, on the floor of open spaces and the opened room */}
-      {open &&
+      {/* up close, people stand on the floor of open spaces and the opened room. further out the wash shows it instead */}
+      {close &&
         crowds
           .filter((c) => !c.room || c.zone.refs.includes(selectedRef ?? ""))
-          .map((c) => <People key={c.zone.id} crowd={c} base={c.room ? 0.04 : 0.03} close={close} mats={mats} />)}
+          .map((c) => <People key={c.zone.id} crowd={c} base={c.room ? 0.04 : 0.03} mats={mats} />)}
     </group>
   );
 }

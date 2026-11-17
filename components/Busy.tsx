@@ -58,7 +58,8 @@ export function LiveNote({ live, level, space, said = false }: { live: Live; lev
  * new one slides in (up if the number went up, down if it went down).
  * `from` starts it there and ticks to `value` on mount.
  */
-export function Ticker({ value, format = String, from, className = "", ms = 280 }: { value: number; format?: (v: number) => string; from?: number; className?: string; ms?: number }) {
+/** `lift` is how far digits move (fraction of their height), `stagger` delays each column after the ones. */
+export function Ticker({ value, format = String, from, className = "", ms = 280, lift = 100, stagger = 35 }: { value: number; format?: (v: number) => string; from?: number; className?: string; ms?: number; lift?: number; stagger?: number }) {
   const [t, setT] = useState({ shown: value, prev: from ?? value, n: 0 });
   if (value !== t.shown) setT({ shown: value, prev: t.shown, n: t.n + 1 });
   const now = format(t.shown);
@@ -67,14 +68,14 @@ export function Ticker({ value, format = String, from, className = "", ms = 280 
   const len = Math.max(now.length, before.length);
   const at = (s: string, i: number) => s[s.length - len + i] ?? "";
   return (
-    <span className={`inline-flex tabular-nums ${className}`} style={{ ["--tick" as string]: `${ms}ms` }}>
+    <span className={`inline-flex tabular-nums ${className}`} style={{ ["--tick" as string]: `${ms}ms`, ["--tick-y" as string]: `${lift}%` }}>
       <span className="sr-only">{now}</span>
       {Array.from({ length: len }, (_, i) => {
         const c = at(now, i);
         const b = at(before, i);
         const moved = c !== b;
         // keyed from the right so the ones column stays the ones column when 985 becomes 1,002
-        const delay = { animationDelay: `${(len - 1 - i) * 35}ms` };
+        const delay = { animationDelay: `${(len - 1 - i) * stagger}ms` };
         return (
           <span key={len - i} aria-hidden="true" className="relative inline-block overflow-hidden">
             <span key={`in${t.n}`} className={`block ${moved ? `tick-in-${dir}` : ""}`} style={delay}>
