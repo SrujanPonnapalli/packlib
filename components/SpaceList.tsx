@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { KINDS, LEVELS, type Kind, type Space } from "@/data/hunt";
 import { BUSY_LABEL, zoneFor } from "@/lib/occupancy";
-import { BusyDot, type Live } from "./Busy";
+import { AvailDot, BusyDot, DemoBadge, type Live, type Rooms } from "./Busy";
+import { describe } from "@/lib/availability";
 
 // Numbered rooms of these kinds are near-identical, so they show as a grid of
 // door plaques instead of sixty rows that differ by one number.
@@ -9,9 +10,9 @@ const PLAQUE_KINDS: Kind[] = ["study", "grad", "faculty"];
 const isPlaque = (s: Space) => s.room !== null && PLAQUE_KINDS.includes(s.kind);
 const kindLabel = (k: Kind) => KINDS.find((x) => x.id === k)!.label;
 
-type Props = { spaces: Space[]; live: Live; onOpen: (s: Space) => void };
+type Props = { spaces: Space[]; live: Live; rooms: Rooms; onOpen: (s: Space) => void };
 
-export default function SpaceList({ spaces, live, onOpen }: Props) {
+export default function SpaceList({ spaces, live, rooms, onOpen }: Props) {
   const groups = [...LEVELS.map((l) => l.n), null]
     .map((n) => ({ n, items: spaces.filter((s) => s.level === n) }))
     .filter((g) => g.items.length > 0);
@@ -68,26 +69,38 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
           </ul>
 
           {PLAQUE_KINDS.map((k) => {
-            const rooms = items.filter((s) => isPlaque(s) && s.kind === k);
-            if (rooms.length === 0) return null;
+            const plaques = items.filter((s) => isPlaque(s) && s.kind === k);
+            if (plaques.length === 0) return null;
+            const freeNow = rooms ? plaques.filter((s) => rooms[s.room!] && rooms[s.room!]!.state !== "booked").length : null;
             return (
               <div key={k} className="mt-4">
-                <h3 className="mb-2 text-[12px] text-pencil">
-                  {kindLabel(k)} <span className="tabular-nums">· {rooms.length}</span>
+                <h3 className="mb-2 flex items-center gap-1.5 text-[12px] text-pencil">
+                  {kindLabel(k)} <span className="tabular-nums">· {plaques.length}</span>
+                  {freeNow !== null && (
+                    <>
+                      <span className="tabular-nums">· {freeNow} free now</span>
+                      <DemoBadge />
+                    </>
+                  )}
                 </h3>
                 <ul className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
-                  {rooms.map((s) => (
+                  {plaques.map((s) => {
+                    const status = rooms?.[s.room!];
+                    return (
                     <li key={s.id}>
                       <button
                         type="button"
                         onClick={() => onOpen(s)}
-                        aria-label={s.title}
-                        className="plaque h-11 w-full rounded-md bg-paper text-[17px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-rule)] transition-[background-color,box-shadow,transform] duration-150 ease-out-quint hover:bg-sheet hover:shadow-lift active:scale-[0.97]"
+                        aria-label={status !== undefined ? `${s.title}, ${describe(status)} (demo)` : s.title}
+                        title={status !== undefined ? `${describe(status)} (demo)` : undefined}
+                        className="plaque relative h-11 w-full rounded-md bg-paper text-[17px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-rule)] transition-[background-color,box-shadow,transform] duration-150 ease-out-quint hover:bg-sheet hover:shadow-lift active:scale-[0.97]"
                       >
                         {s.room}
+                        {status && <AvailDot state={status.state} className="absolute right-1.5 top-1.5" />}
                       </button>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </div>
             );

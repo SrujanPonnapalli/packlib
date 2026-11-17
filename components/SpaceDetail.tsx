@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { KINDS, type Space } from "@/data/hunt";
 import { BUSY_LABEL, STALE_MS, ago, people, zoneFor } from "@/lib/occupancy";
-import { BusyDot, readingFor, type Live } from "./Busy";
+import { AvailDot, BusyDot, DemoBadge, readingFor, type Live, type Rooms } from "./Busy";
+import { describe } from "@/lib/availability";
 
 const EVERYONE = ["Faculty", "Graduate Students", "Staff", "Students"];
 
@@ -13,9 +14,10 @@ function audience(list: string[]) {
 // Some photo captions in the source are just file names.
 const isCaption = (alt: string) => alt.length > 0 && !/\.(jpe?g|png)$/i.test(alt);
 
-type Props = { space: Space; live: Live; onBack: () => void };
+type Props = { space: Space; live: Live; rooms: Rooms; onBack: () => void };
 
-export default function SpaceDetail({ space: s, live, onBack }: Props) {
+export default function SpaceDetail({ space: s, live, rooms, onBack }: Props) {
+  const status = s.room && rooms ? rooms[s.room] : undefined;
   const kind = KINDS.find((k) => k.id === s.kind)!.label;
   const facts: [string, string][] = [];
   if (s.level !== null) facts.push(["Level", String(s.level)]);
@@ -79,6 +81,16 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
 
       <dl className="mt-6 border-t border-rule">
         <NowRow space={s} live={live} />
+        {status !== undefined && (
+          <div className="flex gap-4 border-b border-rule-soft py-3 text-[14px]">
+            <dt className="w-32 shrink-0 text-pencil">Availability</dt>
+            <dd className="flex min-w-0 flex-wrap items-center gap-x-1.5 font-medium">
+              <AvailDot state={status.state} />
+              {describe(status)}
+              <DemoBadge />
+            </dd>
+          </div>
+        )}
         {facts.map(([label, value]) => (
           <div key={label} className="flex gap-4 border-b border-rule-soft py-3 text-[14px]">
             <dt className="w-32 shrink-0 text-pencil">{label}</dt>
