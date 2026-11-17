@@ -8,7 +8,7 @@ import LevelRail from "./LevelRail";
 import LevelStack from "./LevelStack";
 import SpaceList from "./SpaceList";
 import SpaceDetail from "./SpaceDetail";
-import { BusyKey, LiveNote } from "./Busy";
+import { BusyKey, HeroCount, LiveNote } from "./Busy";
 import { useOccupancy } from "./useOccupancy";
 import StudyMatch, { CHIP, DEFAULT_ASK, chipState, findMatches } from "./StudyMatch";
 import { BUSY_LABEL } from "@/lib/occupancy";
@@ -73,6 +73,9 @@ export default function Explorer() {
   // with nothing selected, the heading shows how busy it is
   const overall = live.data?.building.busy ?? null;
   const said = !selected && level === null && overall !== null;
+  const hero = said && live.data?.building.count != null;
+  // reserve the hero's space while the first reading loads so the heading doesn't jump
+  const heroPending = !selected && level === null && live.data === undefined;
 
   const listed = level === null ? matching : matching.filter((s) => s.level === level);
   const stackLevel = selected ? selected.level : level;
@@ -83,11 +86,26 @@ export default function Explorer() {
     <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]">
       <section aria-label="Building" className="dot-grid relative flex min-w-0 flex-col px-5 pb-5 pt-6 sm:px-10 lg:pb-8 lg:pt-9">
         <div className="pointer-events-none relative z-10 [&_button]:pointer-events-auto">
-          <p className="annot text-pencil">James B. Hunt Jr. Library</p>
-          <h1 className="mt-1.5 text-[28px] [text-wrap:balance] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[36px]">
+          <p className="annot arrive text-pencil">James B. Hunt Jr. Library</p>
+          {/* with nothing selected the live headcount is the hero: under the label on phones, across from the heading on wide screens */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+          {(hero || heroPending) && (
+            <div className="mt-2 lg:order-last lg:-mt-5">
+              {hero ? (
+                <HeroCount live={live} where="Hunt" />
+              ) : (
+                <div aria-hidden="true" className="flex flex-col gap-1 lg:items-end">
+                  <div className="skeleton h-[88px] w-[160px] rounded-lg sm:h-[112px] sm:w-[200px] lg:h-[136px] lg:w-[230px]" />
+                  <div className="skeleton h-5 w-[210px] rounded" />
+                </div>
+              )}
+            </div>
+          )}
+          <div className="min-w-0">
+          <h1 className="arrive mt-1.5 text-[28px] [--d:80ms] [text-wrap:balance] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[36px]">
             {selected ? selected.title : level !== null ? `Level ${level}` : said ? `Hunt is ${BUSY_LABEL[overall!].toLowerCase()} right now.` : "Find a place to study in Hunt."}
           </h1>
-          <p className="mt-2 text-[14px] text-graphite">
+          <p className="arrive mt-2 text-[14px] text-graphite [--d:160ms]">
             {selected ? (
               selected.level !== null ? `Level ${selected.level}` : "Not tied to a single level"
             ) : level !== null ? (
@@ -109,7 +127,9 @@ export default function Explorer() {
               `Showing ${matching.length} of ${spaces.length} rooms and spaces.`
             )}
           </p>
-          <LiveNote live={live} level={level} space={selected} said={said} />
+          {!hero && !heroPending && <LiveNote live={live} level={level} space={selected} said={said} />}
+          </div>
+          </div>
         </div>
 
         {wide ? (

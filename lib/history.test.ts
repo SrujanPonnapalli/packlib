@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { instant, lineUp, observations, slot, summary } from "./history.ts";
+import { instant, lineUp, observations, slot, summary, typical } from "./history.ts";
 import { HILL_SENSORS, HUNT_SENSORS } from "./occupancy.ts";
 
 const at = "2026-11-17T19:45:10Z"; // 2:45 pm in Raleigh
@@ -96,4 +96,15 @@ test("now against yesterday at this time, and the week's peak", () => {
   assert.deepEqual(s.peak, { t: t0 - 3600_000, count: 900 });
   assert.equal(s.hourChange, -44, "an hour ago there were 900");
   assert.equal(summary({ ...h, t: [t0], total: [500], share: [0.28] }, t0).change, null, "no reading yesterday, no comparison");
+});
+
+test("typical is the median of the same time on earlier days, once 3 days exist", () => {
+  const day = 86_400_000;
+  const t0 = Date.parse("2026-11-20T18:00:00Z");
+  // readings at 1 pm on four days (the oldest a few minutes off), plus one at 5 pm yesterday
+  const t = [t0 - 3 * day + 5 * 60_000, t0 - 2 * day, t0 - day, t0 - day + 4 * 3600_000, t0];
+  const h = { t, total: [300, 900, 600, 50, 700], share: t.map(() => null), levels: {}, since: null, readAt: t0 };
+  const out = typical(h);
+  assert.equal(out[4], 600, "median of 300, 900 and 600");
+  assert.equal(out[2], null, "only two earlier days");
 });

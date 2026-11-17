@@ -72,6 +72,36 @@ export function nearest(h: History, time: number, within = 15 * 60_000): number 
   return best;
 }
 
+/**
+ * What's typical at each reading's time of day: the median headcount at the same
+ * time on up to 7 earlier days, once at least 3 of those days have a reading.
+ */
+export function typical(h: History, within = 15 * 60_000): (number | null)[] {
+  // index of the first reading at or after `time` (readings are sorted)
+  const from = (time: number) => {
+    let lo = 0, hi = h.t.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (h.t[mid] < time) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+  return h.t.map((t) => {
+    const seen: number[] = [];
+    for (let k = 1; k <= 7; k++) {
+      const at = t - k * 86_400_000;
+      const i = from(at);
+      const best = [i - 1, i].filter((j) => j >= 0 && j < h.t.length && h.total[j] !== null && Math.abs(h.t[j] - at) <= within).sort((a, b) => Math.abs(h.t[a] - at) - Math.abs(h.t[b] - at))[0];
+      if (best !== undefined) seen.push(h.total[best]!);
+    }
+    if (seen.length < 3) return null;
+    seen.sort((a, b) => a - b);
+    const m = seen.length >> 1;
+    return seen.length % 2 ? seen[m] : Math.round((seen[m - 1] + seen[m]) / 2);
+  });
+}
+
 /** The numbers above the chart: now, same time yesterday, and the busiest point shown. */
 export function summary(h: History, now: number) {
   const last = h.t.length - 1;

@@ -94,7 +94,7 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen, onHove
         aria-expanded={editing}
         aria-controls="match-questions"
         onClick={() => setEditing(!editing)}
-        className="group -mx-2 flex w-[calc(100%+1rem)] items-start gap-3 rounded-lg px-2 py-2 text-left transition-colors duration-150 hover:bg-vellum/60"
+        className="arrive group -mx-2 flex w-[calc(100%+1rem)] [--d:240ms] items-start gap-3 rounded-lg px-2 py-2 text-left transition-colors duration-150 hover:bg-vellum/60"
       >
         <span className="min-w-0 flex-1">
           <span className="annot block text-pencil">Matching for</span>
@@ -185,7 +185,7 @@ function Result({ rank, m, onOpen, onHover }: { rank: number; m: Match; onOpen: 
   const live = [...m.reasons, ...m.cautions].find((r) => LIVE[r]);
   const first = rank === 1;
   return (
-    <li>
+    <li className="arrive" style={{ ["--d" as string]: `${320 + rank * 80}ms` }}>
       <button
         type="button"
         onClick={() => onOpen(s)}

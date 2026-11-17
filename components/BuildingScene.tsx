@@ -348,6 +348,8 @@ const person = (x: number, z: number, base: number, sitting: boolean, color: str
 ];
 
 const reduceMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// first visit in a session: floors rise into place one by one (the layout marks later loads)
+const arriving = () => typeof document !== "undefined" && !document.documentElement.dataset.arrived && !reduceMotion();
 
 /** People walking between a few spots in their zone. Positions are made up, only the count is real. */
 function Walkers({ crowd, base, count, mats }: { crowd: Crowd; base: number; count: number; mats: ReturnType<typeof useMaterials> }) {
@@ -458,8 +460,9 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   // in the whole-building view, untraced floors are glass so you can see through them
   const ghost = active === null && !floor.traced;
   const targetOpacity = away ? 0 : under ? 0.05 : ghost ? 0.14 : 1;
-  // start assembled so opening a level on page load still animates
-  const now = useRef({ y: (n - 1) * RISE * SPREAD, opacity: 1, flat: 1, stair: STAIR_FULL * SPREAD, glass: 1 });
+  // on the intro each floor starts hidden below its spot. otherwise start assembled so opening a level on page load still animates
+  const [born] = useState(() => (arriving() ? performance.now() + 200 + (n - 1) * 120 : 0));
+  const now = useRef({ y: (n - 1) * RISE * SPREAD - (born ? 4 : 0), opacity: born ? 0 : 1, flat: 1, stair: born ? 0.01 : STAIR_FULL * SPREAD, glass: 1 });
   // in the whole-building view the floors are glass so you can see every level's rooms and the stairs
   const glassy = active === null;
   const targetGlass = glassy ? GLASS : 1;
@@ -476,6 +479,11 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   useFrame((state, dt) => {
     const s = now.current;
     if (open && near !== state.camera.zoom > PEOPLE_ZOOM) setNear(!near);
+    if (born && performance.now() < born) {
+      if (group.current) group.current.visible = false;
+      state.invalidate();
+      return;
+    }
     if (s.flat !== targetFlat) {
       s.flat += (targetFlat - s.flat) * ease(dt, 0.1);
       if (Math.abs(targetFlat - s.flat) < 0.002) s.flat = targetFlat;
@@ -921,7 +929,7 @@ export default function BuildingScene(props: Common) {
             ) : label.style === "match" ? (
               // all three matches in teal, ranked like the cards: #1 solid and bigger, #2 and #3 outlined
               <span
-                className={`plaque grid place-items-center rounded-full font-semibold leading-none shadow-lift transition-transform duration-150 ease-out-quint ${
+                className={`arrive plaque grid place-items-center rounded-full font-semibold leading-none shadow-lift [--d:900ms] transition-transform duration-150 ease-out-quint ${
                   label.picked ? "size-8 bg-accent text-[17px] text-ink ring-2 ring-sheet" : "size-6 bg-sheet text-[14px] text-ink ring-2 ring-accent-deep"
                 } ${props.highlight && label.key === `match-${props.highlight}` ? "scale-[1.2]" : ""}`}
               >
