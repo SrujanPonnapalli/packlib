@@ -88,6 +88,20 @@ export function parse(raw: unknown): { self: Reading; at: string; children: Read
   return { self, at, children };
 }
 
+async function read(id: number): Promise<unknown> {
+  const res = await fetch(`${SOURCE}?id=${id}&library=hunt`, { signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error(`occupancy ${id}: HTTP ${res.status}`);
+  return res.json();
+}
+
+/** Five requests cover all of Hunt. Levels that fail come back null; a failed building request throws. */
+export async function readHunt(): Promise<{ building: unknown; levels: Record<number, unknown> }> {
+  const ids = Object.entries(LEVEL_IDS);
+  const [building, ...rest] = await Promise.allSettled([read(BUILDING_ID), ...ids.map(([, id]) => read(id))]);
+  if (building.status === "rejected") throw building.reason;
+  return { building: building.value, levels: Object.fromEntries(ids.map(([n], i) => [n, rest[i].status === "fulfilled" ? rest[i].value : null])) };
+}
+
 /** Joins the building response and one response per level into what the page shows. */
 export function combine(building: unknown, levels: Record<number, unknown>): Occupancy {
   const b = parse(building);
