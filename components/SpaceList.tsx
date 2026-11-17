@@ -97,7 +97,7 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
                 <h3 className="mb-2 text-[12px] text-pencil">
                   {kindLabel(k)} <span className="tabular-nums">· {rooms.length}</span>
                 </h3>
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-1.5">
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-1.5">
                   {rooms.map((s) => (
                     <li key={s.id}>
                       <button
@@ -107,17 +107,20 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
                         className="flex w-full flex-col items-start rounded-md bg-paper px-2.5 py-2 text-left shadow-[inset_0_0_0_1px_var(--color-rule)] transition-[background-color,box-shadow,transform] duration-150 ease-out-quint hover:bg-sheet hover:shadow-lift active:scale-[0.97]"
                       >
                         <span className="plaque text-[17px] font-semibold leading-none text-ink">{s.room}</span>
-                        <span className="mt-1.5 flex h-3.5 items-center gap-1.5 text-[11px] leading-none text-pencil">
+                        {/* Seats on the left as one unit (chair + count), fit-out on the right, so the number can only belong to the chair. */}
+                        <span className="mt-2 flex w-full items-center gap-1.5">
                           {s.seats ? (
-                            <span className="flex items-center gap-0.5 whitespace-nowrap tabular-nums">
+                            <span title={`${s.seats} seats`} className="flex h-5 items-center gap-1 whitespace-nowrap rounded bg-vellum px-1.5 text-[12px] font-semibold leading-none tabular-nums text-ink">
                               <ChairIcon />
                               {s.seats}
                             </span>
                           ) : (
-                            <span className="text-faint">–</span>
+                            <span className="text-[11px] text-faint">Seats not listed</span>
                           )}
-                          {s.fitout?.display && <DisplayIcon />}
-                          {s.fitout?.whiteboard && <BoardIcon />}
+                          <span className="ml-auto flex items-center gap-1">
+                            {s.fitout?.display && <DisplayIcon />}
+                            {s.fitout?.whiteboard && <BoardIcon />}
+                          </span>
                         </span>
                       </button>
                     </li>
@@ -135,12 +138,14 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
   );
 }
 
-// Seats: a chair seen side-on.
+// Seats: Lucide's "armchair" (ISC licence), inlined.
 function ChairIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className="text-graphite">
-      <title>Seats</title>
-      <path d="M3.5 1.5v5.5h5M3.5 7v3.5M8.5 7v3.5M3.5 7h5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="text-graphite">
+      <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3" />
+      <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z" />
+      <path d="M5 18v2" />
+      <path d="M19 18v2" />
     </svg>
   );
 }
