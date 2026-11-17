@@ -118,25 +118,25 @@ html[data-arrived] :is(.arrive, .draw, .fill-in) {
 }
 @keyframes tick-in-up {
   from {
-    transform: translateY(100%);
+    transform: translateY(var(--tick-y, 100%));
     opacity: 0;
   }
 }
 @keyframes tick-in-down {
   from {
-    transform: translateY(-100%);
+    transform: translateY(calc(var(--tick-y, 100%) * -1));
     opacity: 0;
   }
 }
 @keyframes tick-out-up {
   to {
-    transform: translateY(-100%);
+    transform: translateY(calc(var(--tick-y, 100%) * -1));
     opacity: 0;
   }
 }
 @keyframes tick-out-down {
   to {
-    transform: translateY(100%);
+    transform: translateY(var(--tick-y, 100%));
     opacity: 0;
   }
 }
