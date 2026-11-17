@@ -741,6 +741,7 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
     camera.updateMatrixWorld();
     const pills: { x: number; y: number }[] = []; // where each callout's label has been put, to keep the next one clear
     const taken: { x: number; y: number; w: number; h: number }[] = []; // labels already shown, which later ones must not cover
+    const pins: { l: number; r: number; t: number; b: number }[] = []; // match pins (with their tags) placed so far
     // Names are placed before room numbers, so on a crowded floor it is a number that gives way.
     const order = labels.map((_, i) => i).sort((a, b) => RANK[labels[a].style] - RANK[labels[b].style]);
     order.forEach((i) => {
@@ -752,13 +753,20 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
       const y = (-scratch.y * 0.5 + 0.5) * size.height;
       el.style.opacity = label.dim ? "0.35" : "1";
       if (label.style === "match") {
+        // A pin (and its tag, to the right) that would cover an earlier one rises above it; its stem just gets longer.
+        const pin = el.querySelector("button");
+        const half = (pin?.offsetHeight ?? 32) / 2 + 3;
+        const right = (pin?.offsetWidth ?? 32) / 2 + (label.tag ? ((pin?.lastElementChild as HTMLElement | null)?.offsetWidth ?? 60) + 10 : 3);
+        let py = y;
+        for (let k = 0, hit; k <= pins.length && (hit = pins.find((q) => x - half < q.r && x + right > q.l && py - half < q.b && py + half > q.t)); k++) py = hit.t - half - 0.5;
+        pins.push({ l: x - half, r: x + right, t: py - half, b: py + half });
         // The element sits on the pin's point; its stem and foot dot are placed relative to it.
-        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-        taken.push({ x, y, w: 32, h: 32 });
+        el.style.transform = `translate(${x.toFixed(1)}px, ${py.toFixed(1)}px)`;
+        taken.push({ x, y: py, w: 32, h: 32 });
         if (!label.foot) return;
         scratch.copy(label.foot).project(camera);
         const dx = (scratch.x * 0.5 + 0.5) * size.width - x;
-        const dy = (-scratch.y * 0.5 + 0.5) * size.height - y;
+        const dy = (-scratch.y * 0.5 + 0.5) * size.height - py;
         const [line, dot] = el.firstElementChild!.children as unknown as HTMLElement[];
         line.style.width = `${Math.hypot(dx, dy).toFixed(1)}px`;
         line.style.transform = `rotate(${Math.atan2(dy, dx).toFixed(3)}rad)`;
