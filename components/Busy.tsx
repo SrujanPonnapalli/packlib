@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { Space } from "@/data/hunt";
 import { BUSY_LABEL, STALE_MS, ago, people, zoneFor, type Busy, type Occupancy, type Reading } from "@/lib/occupancy";
 
@@ -50,27 +53,41 @@ export function LiveNote({ live, level, space, said = false }: { live: Live; lev
   );
 }
 
-/** Rolling digits: they spin up from zero on load and roll to each new reading. */
-export function Odometer({ value, className = "" }: { value: number; className?: string }) {
-  const digits = String(value).split("");
+/**
+ * Stock-ticker style number: when it changes, each changed digit slides out and the
+ * new one slides in (up if the number went up, down if it went down).
+ * `from` starts it there and ticks to `value` on mount.
+ */
+export function Ticker({ value, format = String, from, className = "", ms = 280 }: { value: number; format?: (v: number) => string; from?: number; className?: string; ms?: number }) {
+  const [t, setT] = useState({ shown: value, prev: from ?? value, n: 0 });
+  if (value !== t.shown) setT({ shown: value, prev: t.shown, n: t.n + 1 });
+  const now = format(t.shown);
+  const before = format(t.prev);
+  const dir = t.shown >= t.prev ? "up" : "down";
+  const len = Math.max(now.length, before.length);
+  const at = (s: string, i: number) => s[s.length - len + i] ?? "";
   return (
-    <span className={`inline-flex tabular-nums ${className}`}>
-      <span className="sr-only">{value}</span>
-      {digits.map((d, i) => (
+    <span className={`inline-flex tabular-nums ${className}`} style={{ ["--tick" as string]: `${ms}ms` }}>
+      <span className="sr-only">{now}</span>
+      {Array.from({ length: len }, (_, i) => {
+        const c = at(now, i);
+        const b = at(before, i);
+        const moved = c !== b;
         // keyed from the right so the ones column stays the ones column when 985 becomes 1,002
-        <span key={digits.length - i} aria-hidden="true" className="relative inline-block h-[1em] overflow-hidden">
-          <span
-            className="roll flex flex-col transition-transform duration-[900ms] ease-out-quint"
-            style={{ transform: `translateY(-${Number(d)}em)`, ["--d" as string]: `${300 + i * 70}ms` }}
-          >
-            {"0123456789".split("").map((n) => (
-              <span key={n} className="block h-[1em] leading-[1em]">
-                {n}
+        const delay = { animationDelay: `${(len - 1 - i) * 35}ms` };
+        return (
+          <span key={len - i} aria-hidden="true" className="relative inline-block overflow-hidden">
+            <span key={`in${t.n}`} className={`block ${moved ? `tick-in-${dir}` : ""}`} style={delay}>
+              {c || "\u200b"}
+            </span>
+            {moved && b && (
+              <span key={`out${t.n}`} className={`absolute inset-0 block tick-out-${dir}`} style={delay}>
+                {b}
               </span>
-            ))}
+            )}
           </span>
-        </span>
-      ))}
+        );
+      })}
     </span>
   );
 }
@@ -82,7 +99,7 @@ export function HeroCount({ live, where }: { live: Live; where: string }) {
   if (!data || !b || b.count === null || b.busy === null) return null;
   return (
     <div className="arrive [--d:140ms] lg:text-right">
-      <Odometer value={b.count} className="plaque text-[88px] font-semibold leading-none tracking-[-0.03em] sm:text-[112px] lg:text-[136px]" />
+      <Ticker value={b.count} from={0} ms={650} className="plaque text-[88px] font-semibold leading-none tracking-[-0.03em] sm:text-[112px] lg:text-[136px]" />
       <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[13px] leading-5 tabular-nums text-graphite lg:justify-end">
         <BusyDot busy={b.busy} className="mr-0.5" />
         <span className="font-medium text-ink">people in {where} now</span>

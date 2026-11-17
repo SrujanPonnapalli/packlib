@@ -27,6 +27,13 @@ const WALL_H = 0.55; // open room: low cut-away walls so you can see inside
 const STAIR_FULL = RISE; // a stair comes up through the opening in the floor above, flush with it...
 const STAIR_OPEN = 2.2; // ...and folds down low while a level is open so it doesn't tower over the rooms
 const GLASS = 0.5; // how solid a floor is in the whole-building view
+// Every material can fade, so three.js would sort them all by distance from the
+// camera, and rotating the model flips which transparent layer is on top (colors
+// snap instead of changing smoothly). So floors draw bottom to top instead, and by
+// layer within a floor, which is a fixed order that doesn't depend on the camera.
+// (Set per mesh because three.js resets a group's order at every nested group.)
+const DRAW = { plate: 0, floor: 1, heat: 2, rooms: 3 };
+const drawOrder = (n: number, layer: keyof typeof DRAW) => n * 10 + DRAW[layer];
 const FLAT = 0.25; // how flat closed rooms get while another room is open
 const WALL_T = 2.5; // px
 
@@ -243,6 +250,7 @@ function Slab({
   cast,
   edges,
   floor,
+  order = 0,
   onClick,
   onHover,
 }: {
@@ -254,6 +262,8 @@ function Slab({
   edges?: boolean;
   /** Part of the floor itself, turns to glass in the whole-building view. */
   floor?: boolean;
+  /** Fixed draw order (see DRAW). */
+  order?: number;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
   onHover?: Hover;
 }) {
@@ -262,6 +272,7 @@ function Slab({
     <mesh
       geometry={geo}
       material={material}
+      renderOrder={order}
       castShadow={cast}
       receiveShadow
       onClick={onClick}
@@ -269,7 +280,7 @@ function Slab({
       onPointerOut={onHover && ((e) => onHover(e, false))}
     >
       {!material && <meshLambertMaterial color={color} transparent userData={{ floor }} />}
-      {edges && <Edges threshold={15} color={P.blockEdge} transparent />}
+      {edges && <Edges threshold={15} color={P.blockEdge} transparent renderOrder={order} />}
     </mesh>
   );
 }
@@ -556,6 +567,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       <mesh
         geometry={plate}
         material={mats.plate}
+        renderOrder={drawOrder(n, "plate")}
         position-y={-0.4}
         castShadow
         receiveShadow
@@ -563,7 +575,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
         onPointerOver={open || glassy ? undefined : (e) => point(null)(e, true)}
         onPointerOut={open || glassy ? undefined : (e) => point(null)(e, false)}
       >
-        <Edges threshold={20} color={P.edge} transparent />
+        <Edges threshold={20} color={P.edge} transparent renderOrder={drawOrder(n, "plate")} />
       </mesh>
 
       {floor.shapes.map((s, i) => {
@@ -578,6 +590,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
                 height={0.03}
                 color={picked ? P.pickWash : hot ? P.hover : s.ref ? P.zone : P.overlook}
                 floor
+                order={drawOrder(n, "floor")}
                 onClick={glassy ? undefined : click(() => openRef(s.ref))}
                 onHover={onHover}
               />
@@ -602,13 +615,14 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
           const onClick = click(() => openRef(r.ref));
           // an open room is just its floor (walls/furniture come from <Inside>), every other room stays a block
           return picked && opened ? (
-            <Slab key={r.ref ?? i} poly={r.poly} height={0.04} color={P.pickWash} onClick={onClick} onHover={onHover} />
+            <Slab key={r.ref ?? i} poly={r.poly} height={0.04} color={P.pickWash} order={drawOrder(n, "rooms")} onClick={onClick} onHover={onHover} />
           ) : (
             <Slab
               key={r.ref ?? i}
               poly={r.poly}
               height={ROOM_H}
               material={picked ? [mats.blockHover[0], mats.block[1]] : hot ? mats.blockHover : mats.block}
+              order={drawOrder(n, "rooms")}
               cast
               edges
               onClick={onClick}
@@ -639,7 +653,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
           if (!busy) return [];
           return polys.map((poly, i) => (
             <group key={`${zone.id}-${i}`} position-y={room ? ROOM_H : 0.03}>
-              <Slab poly={poly} height={0.02} material={mats.heat[busy]} />
+              <Slab poly={poly} height={0.02} material={mats.heat[busy]} order={drawOrder(n, "heat")} />
             </group>
           ));
         })}
@@ -740,7 +754,9 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
       // label goes up and to the right of its dot, then moves down until it's clear of the others
       const px = x + PILL.dx;
       let py = y + PILL.dy;
-      for (let hit; (hit = pills.find((q) => Math.abs(q.x - px) < PILL.w && Math.abs(q.y - py) < PILL.h)); ) py = hit.y + PILL.h;
+      // step slightly past the label we hit, exactly PILL.h can round down and hit the same label forever.
+      // the loop limit is just a safety net, each step clears one earlier label so it never needs more
+      for (let k = 0, hit; k <= pills.length && (hit = pills.find((q) => Math.abs(q.x - px) < PILL.w && Math.abs(q.y - py) < PILL.h)); k++) py = hit.y + PILL.h + 0.5;
       pills.push({ x: px, y: py });
       const [, line, pill] = el.children as unknown as HTMLElement[];
       const dy = py - y;
