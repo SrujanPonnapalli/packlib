@@ -183,7 +183,7 @@ const level3: Floor = {
         [910, 548],
       ],
     },
-    { kind: "core", poly: rect(523, 447, 627, 550) }, // an enclosed exit stair, drawn closed on every floor
+    { kind: "stair", dir: "up", front: W, poly: rect(523, 447, 627, 550) }, // a second flight up to Level 4, beside the Monumental Stair
     { kind: "stair", dir: "down", front: N, poly: rect(125, 225, 180, 305) },
     { kind: "core", poly: rect(527, 157, 588, 287) },
     { kind: "core", poly: rect(673, 447, 780, 550) },
@@ -517,7 +517,6 @@ const level4 = aligned(
     },
     { kind: "core", poly: rect(470, 194, 512, 270) },
     { kind: "core", poly: rect(538, 132, 590, 266) },
-    { kind: "core", poly: rect(525, 432, 628, 525) },
     { kind: "core", poly: rect(672, 422, 758, 525) },
     { kind: "core", poly: rect(783, 422, 883, 525) },
     {
