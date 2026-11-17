@@ -41,35 +41,35 @@ const WALL_T = 2.5; // px
 // nothing inside. Opening a room shows its walls, glass and furniture,
 // outlined in teal.
 const P = {
-  plate: "#ece8df",
-  plateSide: "#8a8478",
-  zone: "#f3efe6",
-  overlook: "#e6e2d8",
-  block: "#fbfaf6",
-  blockSide: "#e6e1d6",
-  blockEdge: "#a39d90",
+  plate: "#ebebeb",
+  plateSide: "#878787",
+  zone: "#f4f4f4",
+  overlook: "#e4e4e4",
+  block: "#fcfcfc",
+  blockSide: "#e3e3e3",
+  blockEdge: "#a0a0a0",
   hover: "#e2f4ef",
   pick: "#1ec7b1",
   pickDeep: "#0e8f7f",
   pickWash: "#d3eee7",
-  wall: "#fbfaf6",
+  wall: "#fcfcfc",
   glass: "#cfe5e0",
-  core: "#cfc8ba",
-  coreTop: "#dcd6ca",
+  core: "#cccccc",
+  coreTop: "#d9d9d9",
   counter: "#e9e0cd",
   counterSide: "#c9bfa9",
   table: "#ddd0b7",
-  chair: "#8e877c",
+  chair: "#868686",
   soft: "#cdc4b2",
   screen: "#34322e",
   desk: "#e8dfcc",
-  stair: "#d6cdb9",
-  edge: "#9d978a",
+  stair: "#d4d4d4",
+  edge: "#999999",
 };
 
-// busyness, pale to strong (same ramp as the page). dots use darker shades so the faintest one still shows
+// busyness, pale to strong (same ramp as the page). the floor hatch shows it, people are small marks on top
 const HEAT: Record<Busy, string> = { quiet: "#9dd08a", busy: "#f2b84b", packed: "#d9533a" };
-const DOT: Record<Busy, string> = { quiet: "#d9946a", busy: "#d0683c", packed: "#a8321f" };
+const INK = "#333333";
 const CLOTHES = ["#45413b", "#5d5850", "#776d61", "#4c5864", "#8b5b4a", "#6a7461"];
 const PEOPLE_ZOOM = 14; // closer than this and dots turn into people
 const CROWD_CAP = 220; // per zone, keeps a packed commons readable and cheap to draw
@@ -202,6 +202,8 @@ function useMaterials() {
       counter: [lambert(P.counter), lambert(P.counterSide)],
       hit: lambert("#ffffff", 0), // invisible, but catches clicks
       heat: Object.fromEntries((Object.keys(HEAT) as Busy[]).map((b) => [b, hatched(b)])) as Record<Busy, THREE.MeshLambertMaterial>,
+      // on the open level, just a light wash so the labels and people stay readable
+      wash: Object.fromEntries((Object.keys(HEAT) as Busy[]).map((b) => [b, lambert(HEAT[b], 0.3, true)])) as Record<Busy, THREE.MeshLambertMaterial>,
     };
   }, []);
 }
@@ -409,12 +411,11 @@ function Walkers({ crowd, base, count, mats }: { crowd: Crowd; base: number; cou
 }
 
 /** A zone's people based on zoom: little people up close, dots for a whole level. */
-function People({ crowd, base, close, dot = 0.55, mats }: { crowd: Crowd; base: number; close: boolean; dot?: number; mats: ReturnType<typeof useMaterials> }) {
+function People({ crowd, base, close, dot = 0.3, mats }: { crowd: Crowd; base: number; close: boolean; dot?: number; mats: ReturnType<typeof useMaterials> }) {
   const moving = close && !reduceMotion() ? Math.round(crowd.standing.length * 0.35) : 0;
   const items = useMemo(() => {
     if (!close) {
-      const color = DOT[crowd.zone.busy ?? "quiet"];
-      return { dots: [...crowd.seated.map((s) => s.at), ...crowd.standing].map(([x, y]) => ({ m: placed(wx(x), base + 0.02, wz(y), dot, 0.03, dot, 0), color })), body: [], head: [] };
+      return { dots: [...crowd.seated.map((s) => s.at), ...crowd.standing].map(([x, y]) => ({ m: placed(wx(x), base + 0.03, wz(y), dot, 0.02, dot, 0), color: INK })), body: [], head: [] };
     }
     const still = [
       ...crowd.seated.map((s, k) => person(wx(s.at[0]), wz(s.at[1]), base, true, tint(k))),
@@ -634,7 +635,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
         {open &&
           crowds
             .filter((c) => c.room && !c.zone.refs.includes(selectedRef ?? ""))
-            .map((c) => <People key={c.zone.id} crowd={c} base={ROOM_H} close={false} dot={close ? 0.22 : 0.55} mats={mats} />)}
+            .map((c) => <People key={c.zone.id} crowd={c} base={ROOM_H} close={false} dot={close ? 0.16 : 0.26} mats={mats} />)}
       </group>
 
       <group ref={flights} scale-y={STAIR_FULL * SPREAD}>
@@ -646,14 +647,14 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       </group>
       {opened && <Inside key={selectedRef} detail={opened} mats={mats} />}
 
-      {/* whole building: each counted zone glows by how busy it is */}
-      {glassy &&
+      {/* hatch each counted zone by how busy it is: every level in the whole-building view, otherwise the open level */}
+      {(glassy || open) &&
         crowds.flatMap(({ zone, room, polys }) => {
           const busy = zone.busy;
           if (!busy) return [];
           return polys.map((poly, i) => (
             <group key={`${zone.id}-${i}`} position-y={room ? ROOM_H : 0.03}>
-              <Slab poly={poly} height={0.02} material={mats.heat[busy]} order={drawOrder(n, "heat")} />
+              <Slab poly={poly} height={0.02} material={glassy ? mats.heat[busy] : mats.wash[busy]} order={drawOrder(n, "heat")} />
             </group>
           ));
         })}

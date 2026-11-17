@@ -61,14 +61,14 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
         <defs>
           {(Object.entries(PITCH) as [Busy, number][]).map(([b, p]) => (
             <pattern key={b} id={`stack-hatch-${b}`} width={p} height={p} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <line x1={0} y1={0} x2={0} y2={p} stroke="rgb(29 28 26 / 0.3)" strokeWidth={1} />
-              {b === "packed" && <line x1={0} y1={0} x2={p} y2={0} stroke="rgb(29 28 26 / 0.3)" strokeWidth={1} />}
+              <line x1={0} y1={0} x2={0} y2={p} stroke="rgb(23 23 23 / 0.3)" strokeWidth={1} />
+              {b === "packed" && <line x1={0} y1={0} x2={p} y2={0} stroke="rgb(23 23 23 / 0.3)" strokeWidth={1} />}
             </pattern>
           ))}
         </defs>
         <polygon
           points={[iso(8, 8, -16), iso(238, 8, -16), iso(238, 108, -16), iso(8, 108, -16)].join(" ")}
-          fill="rgb(29 28 26 / 0.07)"
+          fill="rgb(23 23 23 / 0.07)"
           style={{ filter: "blur(7px)" }}
         />
         {[...LEVELS].reverse().map(({ n }) => {
