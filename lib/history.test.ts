@@ -94,5 +94,6 @@ test("now against yesterday at this time, and the week's peak", () => {
   assert.equal(s.yesterday, 400, "within 15 minutes of exactly a day earlier");
   assert.equal(s.change, 25);
   assert.deepEqual(s.peak, { t: t0 - 3600_000, count: 900 });
+  assert.equal(s.hourChange, -44, "an hour ago there were 900");
   assert.equal(summary({ ...h, t: [t0], total: [500], share: [0.28] }, t0).change, null, "no reading yesterday, no comparison");
 });

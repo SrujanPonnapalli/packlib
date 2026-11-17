@@ -17,9 +17,14 @@ the darker teal is for thin lines and text where the bright one is too faint. */
   --color-accent-deep: #0e8f7f;
   --color-accent-wash: #d3eee7;
   /* busyness: one warm ramp from pale to strong so it doesn't clash with the teal used for selection */
-  --color-quiet: #f0c4a0;
-  --color-busy: #e8865a;
-  --color-packed: #c4452e;
+  /* busyness colors: green = room, amber = filling up, red = packed */
+  --color-quiet: #9dd08a;
+  --color-busy: #f2b84b;
+  --color-packed: #d9533a;
+  /* darker versions of the same three, for text */
+  --color-quiet-ink: #3b7d2c;
+  --color-busy-ink: #94650a;
+  --color-packed-ink: #b23a24;
   --color-slab: #e9e5dc;
   --color-slab-side: #d8d3c8;
   --color-slab-end: #cbc5b8;
@@ -47,6 +52,31 @@ the darker teal is for thin lines and text where the bright one is too faint. */
       transform: translateX(12px);
     }
   }
+  /* chart draws in from left to right */
+  --animate-reveal: reveal 1100ms var(--ease-out-quint) 200ms both;
+  @keyframes reveal {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  --animate-fade: fade 260ms ease-out both;
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  /* loading skeleton shimmer */
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  @keyframes shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-vellum) 25%, #f3f0ea 50%, var(--color-vellum) 75%) 0 0 / 200% 100%;
+  animation: var(--animate-shimmer);
 }
 
 /* hatching that gets denser as a space fills up, so busyness still shows
