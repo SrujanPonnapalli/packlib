@@ -140,7 +140,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
               role="radio"
               aria-checked={mode === m}
               onClick={() => setMode(m)}
-              className={`h-7 rounded-full px-3 text-[12px] font-medium transition-colors duration-150 ${mode === m ? "bg-ink text-sheet" : "text-graphite hover:text-ink"}`}
+              className={`relative h-7 rounded-full px-3 text-[12px] font-medium transition-colors duration-150 before:absolute before:-inset-x-1 before:-inset-y-2 before:content-[''] ${mode === m ? "bg-ink text-sheet" : "text-graphite hover:text-ink"}`}
             >
               {m === "count" ? "People" : "% full"}
             </button>
@@ -197,9 +197,9 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
 
             {shown >= 0 && n > 0 && (
               <g pointerEvents="none">
-                <line x1={xs[shown]} x2={xs[shown]} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--color-ink)" strokeDasharray="2 3" />
+                <line x1={xs[shown]} x2={xs[shown]} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--color-accent-deep)" strokeDasharray="2 3" />
                 {(mode === "count" ? h.total[shown] : h.share[shown]) !== null && (
-                  <circle cx={xs[shown]} cy={y((mode === "count" ? h.total[shown] : h.share[shown])!)} r={3.5} fill="var(--color-ink)" stroke="var(--color-sheet)" strokeWidth={1.5} />
+                  <circle cx={xs[shown]} cy={y((mode === "count" ? h.total[shown] : h.share[shown])!)} r={3.5} fill="var(--color-accent-deep)" stroke="var(--color-sheet)" strokeWidth={1.5} />
                 )}
               </g>
             )}

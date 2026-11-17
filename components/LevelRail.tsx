@@ -31,7 +31,7 @@ export function LevelButton({ n, landmark, count, on, dim, onClick, onHover, com
       className={`group flex w-full items-center gap-2.5 rounded-md py-1 text-left transition-opacity duration-200 ${dim ? "opacity-50" : ""}`}
     >
       <span
-        className={`plaque relative grid size-7 shrink-0 place-items-center rounded-md text-[18px] font-semibold leading-none transition-colors duration-200 sm:size-9 sm:text-[22px] ${
+        className={`plaque relative grid size-10 shrink-0 place-items-center rounded-[5px] text-[21px] font-semibold leading-none transition-colors duration-200 sm:size-9 sm:text-[22px] ${
           on ? "bg-accent text-ink" : "text-ink group-hover:bg-vellum"
         }`}
       >

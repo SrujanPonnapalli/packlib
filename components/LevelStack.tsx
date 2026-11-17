@@ -13,6 +13,9 @@ const FOOTPRINT: Record<number, [number, number]> = {
   4: [250, 100],
   5: [150, 100],
 };
+// Live busyness on each slab's top, as on the 3D model: the ramp colour plus hatching.
+const HEAT_FILL: Record<Busy, string> = { quiet: "var(--color-quiet)", busy: "var(--color-busy)", packed: "var(--color-packed)" };
+const PITCH: Record<Busy, number> = { quiet: 7, busy: 4, packed: 4.5 };
 const GAP = 40;
 const THICK = 9;
 const VB = { x: -290, y: -181, w: 517, h: 366 };
@@ -54,6 +57,15 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
         className="absolute inset-0 h-full w-full"
         aria-hidden="true"
       >
+        {/* The same hatching as the busy swatches: denser lines, more people. */}
+        <defs>
+          {(Object.entries(PITCH) as [Busy, number][]).map(([b, p]) => (
+            <pattern key={b} id={`stack-hatch-${b}`} width={p} height={p} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1={0} y1={0} x2={0} y2={p} stroke="rgb(29 28 26 / 0.3)" strokeWidth={1} />
+              {b === "packed" && <line x1={0} y1={0} x2={p} y2={0} stroke="rgb(29 28 26 / 0.3)" strokeWidth={1} />}
+            </pattern>
+          ))}
+        </defs>
         <polygon
           points={[iso(8, 8, -16), iso(238, 8, -16), iso(238, 108, -16), iso(8, 108, -16)].join(" ")}
           fill="rgb(29 28 26 / 0.07)"
@@ -64,6 +76,7 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
           const on = active === n;
           const dim = active !== null && !on;
           const lift = on ? -6 : hover === n ? -3 : 0;
+          const heat = busy[n];
           return (
             <g key={n}>
               <line
@@ -85,9 +98,10 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
                 strokeWidth={0.75}
                 strokeLinejoin="round"
               >
-                <polygon points={s.side} fill={on ? "#d9ab1f" : "var(--color-slab-side)"} className="transition-[fill] duration-200" />
-                <polygon points={s.end} fill={on ? "#c49917" : "var(--color-slab-end)"} className="transition-[fill] duration-200" />
-                <polygon points={s.top} fill={on ? "var(--color-accent)" : "var(--color-slab)"} className="transition-[fill] duration-200" />
+                <polygon points={s.side} fill={on ? "var(--color-accent-deep)" : "var(--color-slab-side)"} className="transition-[fill] duration-200" />
+                <polygon points={s.end} fill={on ? "#0b7365" : "var(--color-slab-end)"} className="transition-[fill] duration-200" />
+                <polygon points={s.top} fill={on ? "var(--color-accent)" : heat ? HEAT_FILL[heat] : "var(--color-slab)"} className="transition-[fill] duration-200" />
+                {heat && !on && <polygon points={s.top} fill={`url(#stack-hatch-${heat})`} stroke="none" pointerEvents="none" />}
               </g>
             </g>
           );

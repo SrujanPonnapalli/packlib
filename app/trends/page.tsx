@@ -25,7 +25,7 @@ export default function TrendsPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl px-5 pb-16 pt-8 sm:px-10">
           <p className="annot text-pencil">James B. Hunt Jr. Library</p>
-          <h1 className="mt-2 text-[30px] font-semibold leading-tight tracking-[-0.02em]">How busy Hunt gets</h1>
+          <h1 className="mt-2 text-[30px] [text-wrap:balance] font-semibold leading-tight tracking-[-0.02em]">How busy Hunt gets</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-graphite [text-wrap:pretty]">
             StudyScape saves NC State&apos;s sensor headcounts every 5 minutes. Here is the last week, for the whole building and each level.
           </p>
@@ -71,14 +71,14 @@ async function Trends() {
             <Small>No readings yet</Small>
           )}
         </Stat>
-        <Stat label="Against yesterday, same time">
+        <Stat label={s.change !== null ? "Against yesterday, same time" : "Collecting history"}>
           {s.change !== null ? (
             <>
               <Big>{`${s.change > 0 ? "+" : ""}${s.change}%`}</Big>
               <Small>{s.yesterday} people then</Small>
             </>
           ) : (
-            <Small>Shows once there&apos;s a full day of readings</Small>
+            <Collecting days={days} />
           )}
         </Stat>
         <Stat label="Busiest this week">
@@ -115,5 +115,22 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-const Big = ({ children }: { children: React.ReactNode }) => <span className="plaque mr-1 text-[32px] font-semibold leading-none text-ink">{children}</span>;
+const Big = ({ children }: { children: React.ReactNode }) => <span className="plaque mr-1 text-[44px] font-semibold leading-none tracking-[-0.01em] text-ink">{children}</span>;
+// Until there's a day to compare against, show the history filling up toward forecasts.
+function Collecting({ days }: { days: number }) {
+  const n = Math.min(days + 1, FORECAST_AFTER_DAYS);
+  return (
+    <>
+      <span className="plaque mr-1 text-[44px] font-semibold leading-none text-ink">Day {n}</span>
+      <span className="text-pencil">of {FORECAST_AFTER_DAYS}</span>
+      <span className="mt-2.5 flex gap-[3px]" aria-hidden="true">
+        {Array.from({ length: FORECAST_AFTER_DAYS }, (_, i) => (
+          <span key={i} className={`h-2.5 w-1.5 rounded-[1px] ${i < n ? "bg-accent-deep" : "bg-rule"}`} />
+        ))}
+      </span>
+      <Small>Comparisons from tomorrow, forecasts after day {FORECAST_AFTER_DAYS}</Small>
+    </>
+  );
+}
+
 const Small = ({ children }: { children: React.ReactNode }) => <span className="mt-1.5 flex items-center gap-1.5 text-[12px] text-pencil">{children}</span>;

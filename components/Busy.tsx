@@ -1,10 +1,11 @@
 import type { Space } from "@/data/hunt";
 import { BUSY_LABEL, STALE_MS, ago, people, zoneFor, type Busy, type Occupancy, type Reading } from "@/lib/occupancy";
 
-const DOT: Record<Busy, string> = { quiet: "bg-quiet", busy: "bg-busy", packed: "bg-packed" };
+const HATCH: Record<Busy, string> = { quiet: "hatch-quiet", busy: "hatch-busy", packed: "hatch-packed" };
 
+/** A hatched swatch: denser lines, more people (see the hatch classes in globals.css). */
 export function BusyDot({ busy, className = "" }: { busy: Busy; className?: string }) {
-  return <span aria-hidden="true" className={`inline-block size-2 shrink-0 rounded-full ${DOT[busy]} ${className}`} />;
+  return <span aria-hidden="true" className={`inline-block size-2.5 shrink-0 rounded-[2px] shadow-[inset_0_0_0_1px_rgb(29_28_26/0.22)] ${HATCH[busy]} ${className}`} />;
 }
 
 export type Live = { data: Occupancy | null | undefined; now: number };
@@ -20,9 +21,9 @@ export function readingFor({ data }: Live, space: Space): { reading: Reading; ow
 const stale = ({ data, now }: Live) => data != null && now - Date.parse(data.at) > STALE_MS;
 
 /** One line under the heading: how busy the building, level or space is right now. */
-export function LiveNote({ live, level, space }: { live: Live; level: number | null; space: Space | null }) {
+export function LiveNote({ live, level, space, said = false }: { live: Live; level: number | null; space: Space | null; said?: boolean }) {
   const { data, now } = live;
-  const base = "mt-3 flex min-h-5 flex-wrap items-center gap-x-1.5 text-[13px] leading-5";
+  const base = "mt-3 flex min-h-5 flex-wrap items-center gap-x-1.5 text-[13px] leading-5 tabular-nums";
   if (data === undefined) return <p className={`${base} text-pencil`}>Checking how busy it is…</p>;
   if (data === null) return <p className={`${base} text-pencil`}>Live headcounts are unavailable right now.</p>;
 
@@ -35,9 +36,11 @@ export function LiveNote({ live, level, space }: { live: Live; level: number | n
   return (
     <p className={base}>
       <BusyDot busy={reading.busy} className="mr-0.5" />
-      <span className="font-semibold">{BUSY_LABEL[reading.busy]}</span>
+      {/* When the heading already says how busy it is, the note only adds the count. */}
+      {!said && <span className="font-semibold">{BUSY_LABEL[reading.busy]}</span>}
       <span className="text-graphite">
-        · {people(reading.count)} {where}
+        {!said && "· "}
+        {people(reading.count)} {where}
       </span>
       <span className="text-pencil">
         · updated {ago(data.at, now)}

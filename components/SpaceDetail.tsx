@@ -26,11 +26,11 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
   if (s.features.length) facts.push(["In the room", s.features.join(" · ")]);
 
   return (
-    <article key={s.id} className="animate-enter px-5 pb-10 pt-4 sm:px-7">
+    <article key={s.id} className="animate-enter-x px-5 pb-10 pt-4 sm:px-7">
       <button
         type="button"
         onClick={onBack}
-        className="-ml-2 flex h-9 items-center gap-1 rounded-md px-2 text-[13px] font-medium text-graphite transition-colors duration-150 hover:bg-vellum hover:text-ink"
+        className="-ml-2 flex h-9 items-center gap-1 rounded-md px-2 text-[13px] font-medium text-graphite transition-[background-color,color,transform] duration-150 ease-out-quint hover:bg-vellum hover:text-ink active:scale-[0.96]"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
           <path d="M10 3.5 5.5 8 10 12.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
