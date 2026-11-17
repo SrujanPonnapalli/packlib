@@ -76,6 +76,43 @@
   }
 }
 
+/* Arrival, first visit of a session only: the building is drawn, then the words
+   and answers follow. html[data-arrived] (set in the layout) skips it after that. */
+.arrive {
+  animation: enter 560ms var(--ease-out-quint) var(--d, 0ms) backwards;
+}
+.draw {
+  stroke-dasharray: 1;
+  animation:
+    draw 900ms var(--ease-out-quint) var(--d, 0ms) backwards,
+    fill-in 600ms var(--ease-out-quint) calc(var(--d, 0ms) + 450ms) backwards;
+}
+.fill-in {
+  animation: fill-in 600ms var(--ease-out-quint) calc(var(--d, 0ms) + 450ms) backwards;
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes fill-in {
+  from {
+    fill-opacity: 0;
+  }
+}
+html[data-arrived] :is(.arrive, .draw, .fill-in) {
+  animation: none;
+}
+/* The live count rolls into place like an odometer; later readings roll by transition. */
+.roll {
+  animation: roll 1100ms var(--ease-out-quint) var(--d, 0ms) backwards;
+}
+@keyframes roll {
+  from {
+    transform: translateY(0);
+  }
+}
+
 .skeleton {
   background: linear-gradient(90deg, var(--color-vellum) 25%, #f3f0ea 50%, var(--color-vellum) 75%) 0 0 / 200% 100%;
   animation: var(--animate-shimmer);

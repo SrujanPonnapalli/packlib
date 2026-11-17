@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import type { History } from "@/lib/history";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { typical, type History } from "@/lib/history";
 import { BUSY_LABEL, type Busy } from "@/lib/occupancy";
 import { BusyDot } from "./Busy";
 
@@ -18,6 +18,8 @@ const tz = { timeZone: "America/New_York" } as const;
 const dayFmt = new Intl.DateTimeFormat("en-US", { ...tz, weekday: "short", day: "numeric" });
 const hourFmt = new Intl.DateTimeFormat("en-US", { ...tz, hour: "numeric" });
 const hour24 = new Intl.DateTimeFormat("en-US", { ...tz, hour: "numeric", hourCycle: "h23" });
+const dayKey = new Intl.DateTimeFormat("en-CA", { ...tz, year: "numeric", month: "2-digit", day: "2-digit" });
+const NIGHT = (hour: number) => hour >= 22 || hour < 7;
 const fullFmt = new Intl.DateTimeFormat("en-US", { ...tz, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 function niceMax(v: number) {
@@ -59,6 +61,8 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
   const [mode, setMode] = useState<"count" | "percent">("count");
   const [at, setAt] = useState<number | null>(null);
   const [last, setLast] = useState(0); // where the tooltip was, so it fades out in place
+  const usual = useMemo(() => typical(h), [h]);
+  const hasUsual = usual.some((v) => v !== null);
 
   useEffect(() => {
     const el = box.current!;
@@ -98,6 +102,26 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
   for (let t = Math.ceil(t0 / 3_600_000) * 3_600_000; t <= t1; t += 3_600_000) {
     if (Number(hour24.format(t)) % stepH === 0) xTicks.push({ t, label: stepH === 24 ? dayFmt.format(t) : hourFmt.format(t) });
   }
+
+  // Night, 10 pm to 7 am: shaded so each day reads as its own skyline.
+  const nights: [number, number][] = [];
+  for (let t = Math.floor(t0 / 3_600_000) * 3_600_000; t < t1; t += 3_600_000) {
+    if (!NIGHT(Number(hour24.format(t)))) continue;
+    const run = nights.at(-1);
+    if (run && run[1] === t) run[1] = t + 3_600_000;
+    else nights.push([t, t + 3_600_000]);
+  }
+
+  // Each day's peak, labelled where there's room for it.
+  const series = mode === "count" ? h.total : h.share;
+  const peakOf = new Map<string, number>();
+  series.forEach((v, i) => {
+    if (v === null || h.t[i] < t0) return;
+    const k = dayKey.format(h.t[i]);
+    const p = peakOf.get(k);
+    if (p === undefined || v > series[p]!) peakOf.set(k, i);
+  });
+  const peaks = innerW * (86_400_000 / span) >= 84 ? [...peakOf.values()] : [];
 
   const show = (i: number) => {
     setAt(i);
@@ -141,6 +165,14 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
                   <span className="size-2.5 rounded-[2px]" style={{ background: LEVEL_FILL[lv] }} aria-hidden="true" /> Level {lv}
                 </span>
               ))}
+              {hasUsual && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-4 border-t-[1.5px] border-dashed border-graphite" aria-hidden="true" /> Typical for the time
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-[2px] bg-[rgb(29_28_26/0.07)]" aria-hidden="true" /> Night
+              </span>
               <span className="text-pencil">Level 1 has no sensor</span>
             </>
           ) : (
@@ -204,6 +236,9 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
               </linearGradient>
             </defs>
 
+            {nights.map(([a, b]) => (
+              <rect key={a} x={x(Math.max(a, t0))} width={Math.max(0, x(Math.min(b, t1)) - x(Math.max(a, t0)))} y={PAD.top} height={innerH} fill="rgb(29 28 26 / 0.045)" />
+            ))}
             <g key={mode} className="animate-fade">
               {mode === "percent" &&
                 CUTS.map(([to, b], i) => (
@@ -235,6 +270,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
                       <path key={l.lv} d={l.d} fill={LEVEL_FILL[l.lv]} />
                     ))}
                     <path d={line(xs, h.total.map((v) => (v === null ? null : y(v))), h.t)} fill="none" stroke="var(--color-ink)" strokeWidth={1.5} strokeLinejoin="round" />
+                    {hasUsual && <path d={line(xs, usual.map((v) => (v === null ? null : y(v))), h.t)} fill="none" stroke="var(--color-graphite)" strokeWidth={1.25} strokeDasharray="4 3" strokeLinejoin="round" />}
                   </>
                 ) : (
                   <>
@@ -243,6 +279,23 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
                   </>
                 )}
               </g>
+            </g>
+
+            <g key={`peaks-${mode}`} pointerEvents="none" className="animate-fade [animation-delay:900ms]">
+              {peaks.map((i) => {
+                const v = series[i]!;
+                const px = xs[i];
+                const anchor = px > PAD.left + innerW - 70 ? "end" : px < PAD.left + 50 ? "start" : "middle";
+                return (
+                  <g key={i}>
+                    <circle cx={px} cy={y(v)} r={2.5} fill="var(--color-ink)" />
+                    <text x={px + (anchor === "end" ? -6 : anchor === "start" ? 6 : 0)} y={Math.max(PAD.top + 22, y(v) - 9)} textAnchor={anchor} className="plaque fill-ink text-[12px] font-semibold">
+                      {mode === "count" ? v.toLocaleString("en-US") : `${Math.round(v * 100)}%`}
+                      <tspan className="fill-pencil font-normal"> · {hourFmt.format(h.t[i])}</tspan>
+                    </text>
+                  </g>
+                );
+              })}
             </g>
 
             {/* Now: the right edge of what's been measured. */}
@@ -300,6 +353,13 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
                         <span className="plaque ml-auto text-[13px] tabular-nums text-sheet">{h.levels[lv][tip] ?? "–"}</span>
                       </li>
                     ))}
+                    {usual[tip] !== null && (
+                      <li className="mt-1 flex items-center gap-2 border-t border-sheet/15 pt-1.5 text-[12px] text-sheet/80">
+                        <span className="w-2 border-t-[1.5px] border-dashed border-sheet/70" aria-hidden="true" />
+                        Typical
+                        <span className="plaque ml-auto text-[13px] tabular-nums text-sheet">{usual[tip]}</span>
+                      </li>
+                    )}
                   </ul>
                 )}
               </>

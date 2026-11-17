@@ -77,6 +77,8 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
           const dim = active !== null && !on;
           const lift = on ? -6 : hover === n ? -3 : 0;
           const heat = busy[n];
+          // On arrival the slabs are drafted bottom to top: outline first, then the fill.
+          const draft = { ["--d" as string]: `${120 + (n - 1) * 110}ms` };
           return (
             <g key={n}>
               <line
@@ -98,10 +100,10 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
                 strokeWidth={0.75}
                 strokeLinejoin="round"
               >
-                <polygon points={s.side} fill={on ? "var(--color-accent-deep)" : "var(--color-slab-side)"} className="transition-[fill] duration-200" />
-                <polygon points={s.end} fill={on ? "#0b7365" : "var(--color-slab-end)"} className="transition-[fill] duration-200" />
-                <polygon points={s.top} fill={on ? "var(--color-accent)" : heat ? HEAT_FILL[heat] : "var(--color-slab)"} className="transition-[fill] duration-200" />
-                {heat && !on && <polygon points={s.top} fill={`url(#stack-hatch-${heat})`} stroke="none" pointerEvents="none" />}
+                <polygon points={s.side} pathLength={1} style={draft} fill={on ? "var(--color-accent-deep)" : "var(--color-slab-side)"} className="draw transition-[fill] duration-200" />
+                <polygon points={s.end} pathLength={1} style={draft} fill={on ? "#0b7365" : "var(--color-slab-end)"} className="draw transition-[fill] duration-200" />
+                <polygon points={s.top} pathLength={1} style={draft} fill={on ? "var(--color-accent)" : heat ? HEAT_FILL[heat] : "var(--color-slab)"} className="draw transition-[fill] duration-200" />
+                {heat && !on && <polygon points={s.top} style={draft} fill={`url(#stack-hatch-${heat})`} stroke="none" pointerEvents="none" className="fill-in" />}
               </g>
             </g>
           );

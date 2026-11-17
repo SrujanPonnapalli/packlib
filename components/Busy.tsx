@@ -50,6 +50,51 @@ export function LiveNote({ live, level, space, said = false }: { live: Live; lev
   );
 }
 
+/** Digits on rollers: they spin up from zero on arrival and roll to each new reading. */
+export function Odometer({ value, className = "" }: { value: number; className?: string }) {
+  const digits = String(value).split("");
+  return (
+    <span className={`inline-flex tabular-nums ${className}`}>
+      <span className="sr-only">{value}</span>
+      {digits.map((d, i) => (
+        // Keyed from the right, so the ones column stays the ones column when 985 becomes 1,002.
+        <span key={digits.length - i} aria-hidden="true" className="relative inline-block h-[1em] overflow-hidden">
+          <span
+            className="roll flex flex-col transition-transform duration-[900ms] ease-out-quint"
+            style={{ transform: `translateY(-${Number(d)}em)`, ["--d" as string]: `${300 + i * 70}ms` }}
+          >
+            {"0123456789".split("").map((n) => (
+              <span key={n} className="block h-[1em] leading-[1em]">
+                {n}
+              </span>
+            ))}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** The first answer, at the size of an answer: how many people are in the building right now. */
+export function HeroCount({ live, where }: { live: Live; where: string }) {
+  const { data, now } = live;
+  const b = data?.building;
+  if (!data || !b || b.count === null || b.busy === null) return null;
+  return (
+    <div className="arrive [--d:140ms] lg:text-right">
+      <Odometer value={b.count} className="plaque text-[88px] font-semibold leading-none tracking-[-0.03em] sm:text-[112px] lg:text-[136px]" />
+      <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[13px] leading-5 tabular-nums text-graphite lg:justify-end">
+        <BusyDot busy={b.busy} className="mr-0.5" />
+        <span className="font-medium text-ink">people in {where} now</span>
+        <span className="text-pencil">
+          · updated {ago(data.at, now)}
+          {stale(live) && ", may be out of date"}
+        </span>
+      </p>
+    </div>
+  );
+}
+
 /** Swatches for the model's heat colours. */
 export function BusyKey() {
   return (
