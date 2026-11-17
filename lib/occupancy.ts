@@ -32,11 +32,44 @@ export type Occupancy = {
 export const LEVEL_IDS: Record<number, number> = { 2: 1352, 3: 1353, 4: 1354, 5: 1355 };
 export const BUILDING_ID = 1356;
 
+/** Which sensors make up a library: its building total and each floor (one sensor, or several added up). */
+export type Sensors = {
+  slug: "hunt" | "hill";
+  building: number;
+  levels: Record<number, number[]>;
+  /** Seats per sensor, for floors made of several sensors. */
+  capacity: Record<number, number>;
+};
+
+export const HUNT_SENSORS: Sensors = {
+  slug: "hunt",
+  building: BUILDING_ID,
+  levels: Object.fromEntries(Object.entries(LEVEL_IDS).map(([n, id]) => [n, [id]])),
+  capacity: {},
+};
+
+// Hill nests building → wing (West, Tower, East) → floor → area, so Floors 1
+// and 2 are three sensors each. G is level 0; Floor B has no sensor.
+export const HILL_SENSORS: Sensors = {
+  slug: "hill",
+  building: 264,
+  levels: { 0: [280], 1: [266, 4478, 273], 2: [269, 282, 278], 3: [286], 4: [290], 5: [291], 6: [292], 7: [293], 8: [294], 9: [295] },
+  // shortcut: count ÷ share from one reading on 17 Nov 2026 (shares come rounded to 1%, so ±2%); remeasure if NC State changes a floor.
+  capacity: { 266: 191, 4478: 76, 273: 493, 269: 144, 282: 282, 278: 27 },
+};
+
 // "Feels like" cut-offs (upper % for not busy, then busy) from NC State's
-// occupancy script. Hunt uses the first set everywhere except Level 3, which
-// uses the one they made for a mezzanine.
+// occupancy script. Most areas use the first set; Hunt's Level 3 and Hill's
+// Mezzanine use the mezzanine set, Hill's carrel floors 4–9 and Learning
+// Commons have their own. Sensor IDs are unique across both libraries.
 const STANDARD: [number, number] = [25, 45];
-const THRESHOLDS: Record<number, [number, number]> = { 1353: [19.8, 35.6] };
+const CARRELS: [number, number] = [40, 60];
+const THRESHOLDS: Record<number, [number, number]> = {
+  1353: [19.8, 35.6],
+  281: [19.8, 35.6],
+  274: [30, 55],
+  290: CARRELS, 291: CARRELS, 292: CARRELS, 293: CARRELS, 294: CARRELS, 295: CARRELS,
+};
 
 export function busyness(id: number, share: number): Busy {
   const [quiet, busy] = THRESHOLDS[id] ?? STANDARD;
@@ -88,18 +121,36 @@ export function parse(raw: unknown): { self: Reading; at: string; children: Read
   return { self, at, children };
 }
 
-async function read(id: number): Promise<unknown> {
-  const res = await fetch(`${SOURCE}?id=${id}&library=hunt`, { signal: AbortSignal.timeout(8000) });
+async function read(id: number, library: Sensors["slug"]): Promise<unknown> {
+  const res = await fetch(`${SOURCE}?id=${id}&library=${library}`, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`occupancy ${id}: HTTP ${res.status}`);
   return res.json();
 }
 
-/** Five requests cover all of Hunt. Levels that fail come back null; a failed building request throws. */
-export async function readHunt(): Promise<{ building: unknown; levels: Record<number, unknown> }> {
-  const ids = Object.entries(LEVEL_IDS);
-  const [building, ...rest] = await Promise.allSettled([read(BUILDING_ID), ...ids.map(([, id]) => read(id))]);
+/** The building plus every floor sensor (5 requests for Hunt, 15 for Hill). Sensors that fail come back null; a failed building request throws. */
+export async function readLibrary(s: Sensors): Promise<{ building: unknown; sensors: Record<number, unknown> }> {
+  const ids = Object.values(s.levels).flat();
+  const [building, ...rest] = await Promise.allSettled([read(s.building, s.slug), ...ids.map((id) => read(id, s.slug))]);
   if (building.status === "rejected") throw building.reason;
-  return { building: building.value, levels: Object.fromEntries(ids.map(([n], i) => [n, rest[i].status === "fulfilled" ? rest[i].value : null])) };
+  return { building: building.value, sensors: Object.fromEntries(ids.map((id, i) => [id, rest[i].status === "fulfilled" ? rest[i].value : null])) };
+}
+
+export async function readHunt(): Promise<{ building: unknown; levels: Record<number, unknown> }> {
+  const { building, sensors } = await readLibrary(HUNT_SENSORS);
+  return { building, levels: Object.fromEntries(Object.entries(LEVEL_IDS).map(([n, id]) => [n, sensors[id]])) };
+}
+
+/**
+ * A floor made of several sensors: people added up, share against their
+ * combined seats. If any part has no reading the floor has none either, so a
+ * missing wing never shows as a quieter floor.
+ */
+export function sumLevel(parts: (Reading | null)[], capacity: Record<number, number>): { count: number | null; share: number | null } {
+  if (parts.length === 1) return { count: parts[0]?.count ?? null, share: parts[0]?.share ?? null };
+  if (parts.some((r) => r?.count == null || !capacity[r.id])) return { count: null, share: null };
+  const count = parts.reduce((a, r) => a + r!.count!, 0);
+  const seats = parts.reduce((a, r) => a + capacity[r!.id], 0);
+  return { count, share: Math.min(count / seats, 1) };
 }
 
 /** Joins the building response and one response per level into what the page shows. */
