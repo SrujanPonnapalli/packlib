@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { typical, type History } from "@/lib/history";
 import { BUSY_LABEL, type Busy } from "@/lib/occupancy";
-import { BusyDot } from "./Busy";
+import { BusyDot, Ticker } from "./Busy";
 
 // Levels as a blue ramp, darkest at the bottom of the stack; blue stays clear of the green/amber/red busyness colours.
 const LEVEL_FILL: Record<number, string> = { 2: "#2f5f91", 3: "#4f86bd", 4: "#86b2dc", 5: "#c2d9ef" };
@@ -20,6 +20,7 @@ const hourFmt = new Intl.DateTimeFormat("en-US", { ...tz, hour: "numeric" });
 const hour24 = new Intl.DateTimeFormat("en-US", { ...tz, hour: "numeric", hourCycle: "h23" });
 const dayKey = new Intl.DateTimeFormat("en-CA", { ...tz, year: "numeric", month: "2-digit", day: "2-digit" });
 const NIGHT = (hour: number) => hour >= 22 || hour < 7;
+const timeFmt = new Intl.DateTimeFormat("en-US", { ...tz, hour: "numeric", minute: "2-digit" });
 const fullFmt = new Intl.DateTimeFormat("en-US", { ...tz, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 function niceMax(v: number) {
@@ -61,6 +62,9 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
   const [mode, setMode] = useState<"count" | "percent">("count");
   const [at, setAt] = useState<number | null>(null);
   const [last, setLast] = useState(0); // where the tooltip was, so it fades out in place
+  // Hold and drag: the reading you pressed on, and the one you've dragged to.
+  const [press, setPress] = useState<{ a: number; x0: number } | null>(null);
+  const [to, setTo] = useState<number | null>(null);
   const usual = useMemo(() => typical(h), [h]);
   const hasUsual = usual.some((v) => v !== null);
 
@@ -127,12 +131,30 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
     setAt(i);
     setLast(i);
   };
-  const pick = (e: PointerEvent<SVGSVGElement>) => {
-    if (!n) return;
+  const indexAt = (e: PointerEvent<SVGSVGElement>) => {
     const px = e.clientX - e.currentTarget.getBoundingClientRect().left;
     let best = 0;
     xs.forEach((v, i) => Math.abs(v - px) < Math.abs(xs[best] - px) && (best = i));
-    show(best);
+    return best;
+  };
+  const down = (e: PointerEvent<SVGSVGElement>) => {
+    if (!n) return;
+    const i = indexAt(e);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setPress({ a: i, x0: e.clientX });
+    setTo(null);
+    show(i);
+  };
+  const move = (e: PointerEvent<SVGSVGElement>) => {
+    if (!n) return;
+    const i = indexAt(e);
+    // A few pixels of travel turn a press into a comparison, so a tap still just shows the reading.
+    if (press && (to !== null || Math.abs(e.clientX - press.x0) > 6)) setTo(i);
+    else show(i);
+  };
+  const up = () => {
+    setPress(null);
+    setTo(null);
   };
   const key = (e: KeyboardEvent) => {
     const cur = at ?? n - 1;
@@ -150,6 +172,25 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
   const tipLeft = tip >= 0 ? xs[tip] : 0;
   const flip = tipLeft > PAD.left + innerW * 0.62;
   const nowX = x(now);
+
+  // The comparison between the pressed reading and the dragged-to one, as stock apps show it.
+  const cmp = press && to !== null && to !== press.a ? { lo: Math.min(press.a, to), hi: Math.max(press.a, to) } : null;
+  const diff = (() => {
+    if (!cmp) return null;
+    const a = series[cmp.lo];
+    const b = series[cmp.hi];
+    const mins = Math.round((h.t[cmp.hi] - h.t[cmp.lo]) / 60_000);
+    const sameDay = dayKey.format(h.t[cmp.lo]) === dayKey.format(h.t[cmp.hi]);
+    const base = {
+      when: `${fullFmt.format(h.t[cmp.lo])} → ${(sameDay ? timeFmt : fullFmt).format(h.t[cmp.hi])}`,
+      long: mins >= 60 ? `${Math.floor(mins / 60)} h${mins % 60 ? ` ${mins % 60} min` : ""}` : `${mins} min`,
+    };
+    if (a === null || b === null) return { ...base, a, b, delta: null, pct: null, tone: "busy" as Busy };
+    const delta = mode === "count" ? b - a : Math.round((b - a) * 100);
+    return { ...base, a, b, delta, pct: mode === "count" && a > 0 ? Math.round((100 * (b - a)) / a) : null, tone: (delta === 0 ? "busy" : delta < 0 ? "quiet" : "packed") as Busy };
+  })();
+  const cmpMid = cmp ? (xs[cmp.lo] + xs[cmp.hi]) / 2 : 0;
+  const shown = (v: number) => (mode === "count" ? v.toLocaleString("en-US") : `${Math.round(v * 100)}%`);
 
   return (
     <figure className="mt-10 animate-enter [animation-delay:180ms]">
@@ -173,14 +214,17 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
               <span className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-[2px] bg-[rgb(29_28_26/0.07)]" aria-hidden="true" /> Night
               </span>
-              <span className="text-pencil">Level 1 has no sensor</span>
+              <span className="text-pencil">Level 1 has no sensor · Drag across the chart to compare</span>
             </>
           ) : (
-            CUTS.map(([, b]) => (
-              <span key={b} className="flex items-center gap-1.5">
-                <BusyDot busy={b} /> {BUSY_LABEL[b]}
-              </span>
-            ))
+            <>
+              {CUTS.map(([, b]) => (
+                <span key={b} className="flex items-center gap-1.5">
+                  <BusyDot busy={b} /> {BUSY_LABEL[b]}
+                </span>
+              ))}
+              <span className="text-pencil">Drag across the chart to compare</span>
+            </>
           )}
         </figcaption>
         <div role="radiogroup" aria-label="Show" className="relative grid grid-cols-2 rounded-full p-0.5 shadow-[inset_0_0_0_1px_var(--color-rule)]">
@@ -212,13 +256,15 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
             role="img"
             aria-label={`Headcount in Hunt Library over the last ${Math.max(1, Math.round(span / 86_400_000))} days. Use the arrow keys to step through readings.`}
             tabIndex={0}
-            onPointerMove={pick}
-            onPointerDown={pick}
+            onPointerMove={move}
+            onPointerDown={down}
+            onPointerUp={up}
+            onPointerCancel={up}
             onPointerLeave={() => setAt(null)}
             onFocus={() => show(at ?? n - 1)}
             onBlur={() => setAt(null)}
             onKeyDown={key}
-            className="block touch-pan-y select-none rounded-xl"
+            className={`block touch-pan-y select-none rounded-xl ${cmp ? "cursor-ew-resize" : "cursor-crosshair"}`}
           >
             <defs>
               {/* The data draws in from the left once, on arrival. */}
@@ -306,8 +352,20 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
               </text>
             </g>
 
+            {cmp && diff && (
+              <g pointerEvents="none">
+                <rect x={xs[cmp.lo]} width={xs[cmp.hi] - xs[cmp.lo]} y={PAD.top} height={innerH} fill={`var(--color-${diff.tone})`} fillOpacity={0.16} />
+                {[cmp.lo, cmp.hi].map((i) => (
+                  <g key={i}>
+                    <line x1={xs[i]} x2={xs[i]} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--color-ink)" strokeOpacity={0.7} />
+                    {series[i] !== null && <circle cx={xs[i]} cy={y(series[i]!)} r={4} fill="var(--color-sheet)" stroke="var(--color-ink)" strokeWidth={2} />}
+                  </g>
+                ))}
+              </g>
+            )}
+
             {tip >= 0 && (
-              <g pointerEvents="none" className={`transition-opacity duration-150 ${at === null ? "opacity-0" : "opacity-100"}`}>
+              <g pointerEvents="none" className={`transition-opacity duration-150 ${at === null || cmp ? "opacity-0" : "opacity-100"}`}>
                 <line x1={tipLeft} x2={tipLeft} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--color-ink)" strokeOpacity={0.45} strokeDasharray="2 3" />
                 {mode === "count" &&
                   layers.map((l) =>
@@ -325,7 +383,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
           <div
             aria-live="polite"
             className={`pointer-events-none absolute top-3 left-0 w-[190px] rounded-lg bg-ink/95 px-3 py-2.5 text-sheet shadow-lift transition-[opacity,transform,translate] duration-150 ease-out-quint ${
-              at === null ? "scale-[0.97] opacity-0" : "scale-100 opacity-100"
+              at === null || cmp ? "scale-[0.97] opacity-0" : "scale-100 opacity-100"
             } ${flip ? "origin-top-right" : "origin-top-left"}`}
             style={{ translate: `${flip ? tipLeft - 190 - 12 : tipLeft + 12}px 0` }}
           >
@@ -335,12 +393,12 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
             ) : (
               <>
                 <p className="mt-1 flex items-baseline gap-1.5">
-                  <span className="plaque text-[24px] font-semibold leading-none tabular-nums">{h.total[tip]}</span>
+                  <Ticker value={h.total[tip]!} format={(v) => v.toLocaleString("en-US")} className="plaque text-[24px] font-semibold leading-none" />
                   <span className="text-[12px] text-sheet/75">people</span>
                   {h.share[tip] !== null && (
                     <span className="ml-auto flex items-center gap-1.5 text-[12px] tabular-nums text-sheet/85">
                       <BusyDot busy={busyAt(h.share[tip]!)} />
-                      {Math.round(h.share[tip]! * 100)}%
+                      <Ticker value={Math.round(h.share[tip]! * 100)} format={(v) => `${v}%`} />
                     </span>
                   )}
                 </p>
@@ -350,18 +408,49 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
                       <li key={lv} className="flex items-center gap-2 text-[12px] text-sheet/80">
                         <span className="size-2 rounded-[2px]" style={{ background: LEVEL_FILL[lv] }} aria-hidden="true" />
                         Level {lv}
-                        <span className="plaque ml-auto text-[13px] tabular-nums text-sheet">{h.levels[lv][tip] ?? "–"}</span>
+                        <span className="plaque ml-auto text-[13px] text-sheet">{h.levels[lv][tip] === null ? "–" : <Ticker value={h.levels[lv][tip]!} />}</span>
                       </li>
                     ))}
                     {usual[tip] !== null && (
                       <li className="mt-1 flex items-center gap-2 border-t border-sheet/15 pt-1.5 text-[12px] text-sheet/80">
                         <span className="w-2 border-t-[1.5px] border-dashed border-sheet/70" aria-hidden="true" />
                         Typical
-                        <span className="plaque ml-auto text-[13px] tabular-nums text-sheet">{usual[tip]}</span>
+                        <span className="plaque ml-auto text-[13px] text-sheet"><Ticker value={usual[tip]!} /></span>
                       </li>
                     )}
                   </ul>
                 )}
+              </>
+            )}
+          </div>
+        )}
+
+        {cmp && diff && (
+          <div
+            aria-live="polite"
+            className="pointer-events-none absolute top-3 left-0 w-[264px] animate-fade rounded-lg bg-ink/95 px-3 py-2.5 text-sheet shadow-lift transition-[translate] duration-100 ease-out-quint"
+            style={{ translate: `${Math.min(Math.max(cmpMid - 132, 8), width - 272)}px 0` }}
+          >
+            <p className="text-[11px] text-sheet/65">
+              {diff.when} · {diff.long}
+            </p>
+            {diff.delta === null ? (
+              <p className="mt-1 text-[13px]">No reading at one end</p>
+            ) : (
+              <>
+                <p className="mt-1 flex items-baseline gap-2" style={{ color: `var(--color-${diff.tone})` }}>
+                  <span className="plaque flex items-baseline text-[26px] font-semibold leading-none">
+                    {diff.delta === 0 ? "No change" : <>{diff.delta > 0 ? "↑" : "↓"}&nbsp;<Ticker value={Math.abs(diff.delta)} format={(v) => (mode === "count" ? v.toLocaleString("en-US") : `${v} pts`)} /></>}
+                  </span>
+                  {diff.pct !== null && diff.delta !== 0 && (
+                    <span className="plaque text-[15px] font-semibold">
+                      <Ticker value={Math.abs(diff.pct)} format={(v) => `${diff.pct! > 0 ? "+" : "−"}${v}%`} />
+                    </span>
+                  )}
+                </p>
+                <p className="mt-1 text-[12px] tabular-nums text-sheet/75">
+                  {shown(diff.a!)} → {shown(diff.b!)} {mode === "count" ? "people" : "full"}
+                </p>
               </>
             )}
           </div>

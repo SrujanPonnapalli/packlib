@@ -103,13 +103,41 @@
 html[data-arrived] :is(.arrive, .draw, .fill-in) {
   animation: none;
 }
-/* The live count rolls into place like an odometer; later readings roll by transition. */
-.roll {
-  animation: roll 1100ms var(--ease-out-quint) var(--d, 0ms) backwards;
+/* Ticker digits: a changed digit leaves and its replacement arrives, up when the number rose, down when it fell. */
+.tick-in-up {
+  animation: tick-in-up var(--tick, 280ms) var(--ease-out-quint) backwards;
 }
-@keyframes roll {
+.tick-in-down {
+  animation: tick-in-down var(--tick, 280ms) var(--ease-out-quint) backwards;
+}
+.tick-out-up {
+  animation: tick-out-up var(--tick, 280ms) var(--ease-out-quint) forwards;
+}
+.tick-out-down {
+  animation: tick-out-down var(--tick, 280ms) var(--ease-out-quint) forwards;
+}
+@keyframes tick-in-up {
   from {
-    transform: translateY(0);
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+@keyframes tick-in-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+@keyframes tick-out-up {
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+@keyframes tick-out-down {
+  to {
+    transform: translateY(100%);
+    opacity: 0;
   }
 }
 
