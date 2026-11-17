@@ -1009,8 +1009,15 @@ export default function BuildingScene(props: Common) {
                     <span className="absolute left-0 top-0 size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-deep ring-2 ring-sheet" />
                   </>
                 )}
-                <span
-                  className={`plaque absolute left-0 top-0 grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-semibold leading-none shadow-lift transition-[scale] duration-150 ease-out-quint ${
+                {/* Clicking a pin opens its space. Mouse only: the overlay is hidden from assistive tech, and the result cards are the keyboard path. */}
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => {
+                    const space = spaceByRef(label.key.slice("match-".length));
+                    if (space) props.onOpenSpace(space.id);
+                  }}
+                  className={`plaque pointer-events-auto absolute left-0 top-0 grid -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full font-semibold leading-none shadow-lift transition-[scale] duration-150 ease-out-quint hover:scale-[1.15] active:scale-95 ${
                     label.picked ? "size-8 bg-accent text-[17px] text-ink ring-2 ring-sheet" : "size-6 bg-sheet text-[14px] text-ink ring-2 ring-accent-deep"
                   } ${props.highlight && label.key === `match-${props.highlight}` ? "scale-[1.2]" : ""}`}
                 >
@@ -1020,7 +1027,7 @@ export default function BuildingScene(props: Common) {
                       {label.tag}
                     </span>
                   )}
-                </span>
+                </button>
               </span>
             ) : (
               <span
