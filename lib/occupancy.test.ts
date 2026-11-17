@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ago, busyness, combine, parse, people } from "./occupancy.ts";
+import { ago, busyness, combine, parse, people, sumLevel } from "./occupancy.ts";
 
 const at = "2026-11-17T05:14:46.292Z";
 const building = {
@@ -25,6 +25,23 @@ test("NC State's cut-offs: 25/45 everywhere, 19.8/35.6 for Level 3", () => {
   assert.equal(busyness(1352, 0.46), "packed");
   assert.equal(busyness(1353, 0.25), "busy");
   assert.equal(busyness(1353, 0.36), "packed");
+});
+
+test("Hill's own cut-offs: carrel floors 40/60, Learning Commons 30/55, Mezzanine 19.8/35.6", () => {
+  assert.equal(busyness(290, 0.5), "busy");
+  assert.equal(busyness(295, 0.61), "packed");
+  assert.equal(busyness(274, 0.3), "quiet");
+  assert.equal(busyness(274, 0.56), "packed");
+  assert.equal(busyness(281, 0.2), "busy");
+  assert.equal(busyness(280, 0.46), "packed", "Floor G uses the standard set");
+});
+
+test("a floor of several sensors adds up, and has no reading if any part is missing", () => {
+  const r = (id: number, count: number | null) => ({ id, name: "", count, share: null, busy: null });
+  assert.deepEqual(sumLevel([r(1, 30), r(2, 10)], { 1: 60, 2: 40 }), { count: 40, share: 0.4 });
+  assert.deepEqual(sumLevel([r(1, 30), r(2, null)], { 1: 60, 2: 40 }), { count: null, share: null });
+  assert.deepEqual(sumLevel([r(1, 30), null], { 1: 60, 2: 40 }), { count: null, share: null });
+  assert.deepEqual(sumLevel([r(1, 30), r(3, 5)], { 1: 60 }), { count: null, share: null }, "unknown seats, no guess");
 });
 
 test("a full response becomes building, level and zone readings", () => {

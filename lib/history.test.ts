@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { instant, lineUp, observations, slot, summary } from "./history.ts";
+import { HILL_SENSORS, HUNT_SENSORS } from "./occupancy.ts";
 
 const at = "2026-11-17T19:45:10Z"; // 2:45 pm in Raleigh
 const building = {
@@ -26,7 +27,7 @@ test("days split at New York midnight, including across the clocks changing", ()
 });
 
 test("one poll stores the building, each level and every zone, keeping switched-off sensors as no reading", () => {
-  const { day, rows } = observations(building, { 2: level2, 3: null });
+  const { day, rows } = observations(HUNT_SENSORS, building, { 1352: level2, 1353: null });
   assert.equal(day, "2026-11-17");
   assert.deepEqual(Object.fromEntries(rows), {
     building: [885, 350, 0.193],
@@ -39,7 +40,31 @@ test("one poll stores the building, each level and every zone, keeping switched-
 });
 
 test("an unusable building response writes nothing", () => {
-  assert.throws(() => observations({ error: "down" }, {}));
+  assert.throws(() => observations(HUNT_SENSORS, { error: "down" }, {}));
+});
+
+test("Hill: prefixed keys, a floor added up from its wings, and each wing kept as a zone", () => {
+  const hill = { id: 264, name: "Hill Library", count: 1065, percentage: 0.46, timestamp: at, isActive: true, childCounts: [] };
+  const wing = (id: number, count: number, percentage: number, kids: object[] = []) => ({ id, name: "", count, percentage, timestamp: at, isActive: true, childCounts: kids });
+  const { rows } = observations(HILL_SENSORS, hill, {
+    266: wing(266, 105, 0.55, [{ id: 267, name: "Quiet Reading Rooms", count: 65, percentage: 0.61, isActive: true }]),
+    4478: wing(4478, 25, 0.33),
+    273: wing(273, 296, 0.6),
+    269: wing(269, 39, 0.27),
+    282: null, // Floor 2's tower sensor failed
+    278: wing(278, 13, 0.48),
+    290: wing(290, 75, 0.5),
+  });
+  const got = Object.fromEntries(rows);
+  assert.deepEqual(got["hill#building"], [885, 1065, 0.46]);
+  assert.deepEqual(got["hill#level#1"], [885, 426, 0.561], "105 + 25 + 296 people against 191 + 76 + 493 seats");
+  assert.deepEqual(got["zone#267"], [885, 65, 0.61]);
+  assert.deepEqual(got["zone#4478"], [885, 25, 0.33]);
+  assert.deepEqual(got["hill#level#2"], [885, null, null], "a missing wing makes the floor no reading, not a quieter floor");
+  assert.deepEqual(got["zone#269"], [885, 39, 0.27]);
+  assert.deepEqual(got["hill#level#4"], [885, 75, 0.5]);
+  assert.equal(got["hill#level#5"], undefined, "a single-sensor floor with no response and no building total writes nothing");
+  assert.equal(rows.filter(([k]) => k === "building" || k.startsWith("level#")).length, 0, "nothing lands in Hunt's keys");
 });
 
 test("stored days become one time-ordered history, with repeated minutes collapsed", () => {
