@@ -1,14 +1,16 @@
 import Link from "next/link";
 
+import { LIBRARIES, type LibrarySlug } from "@/data/libraries";
+
 const PAGES = [
-  { href: "/", label: "Find a place" },
-  { href: "/trends", label: "Trends" },
+  { id: "find", path: "", label: "Find a place" },
+  { id: "trends", path: "/trends", label: "Trends" },
 ] as const;
 
-export default function SiteHeader({ current }: { current: (typeof PAGES)[number]["href"] }) {
+export default function SiteHeader({ library, current }: { library: LibrarySlug; current: (typeof PAGES)[number]["id"] }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-rule px-5 sm:px-10">
-      <Link href="/" className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.02em]">
+      <Link href={`/${library}`} className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.02em]">
         {/* Three stacked plates, one picked out: the site's whole idea in a mark. */}
         <svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true">
           <path d="M9 1.5 16.5 4.5 9 7.5 1.5 4.5Z" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
@@ -21,18 +23,18 @@ export default function SiteHeader({ current }: { current: (typeof PAGES)[number
       <nav aria-label="Pages" className="flex gap-1">
         {PAGES.map((p) => (
           <Link
-            key={p.href}
-            href={p.href}
-            aria-current={p.href === current ? "page" : undefined}
+            key={p.id}
+            href={`/${library}${p.path}`}
+            aria-current={p.id === current ? "page" : undefined}
             className={`rounded-md px-2 py-1 text-[13px] font-medium transition-colors duration-150 ${
-              p.href === current ? "text-ink" : "text-pencil hover:bg-vellum hover:text-ink"
+              p.id === current ? "text-ink" : "text-pencil hover:bg-vellum hover:text-ink"
             }`}
           >
             {p.label}
           </Link>
         ))}
       </nav>
-      <p className="ml-auto hidden text-[12px] text-pencil md:block">Hunt Library · an independent NC State study-space explorer</p>
+      <p className="ml-auto hidden text-[12px] text-pencil md:block">{LIBRARIES[library].name} · an independent NC State study-space explorer</p>
     </header>
   );
 }
