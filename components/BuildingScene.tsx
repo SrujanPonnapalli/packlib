@@ -647,8 +647,8 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       </group>
       {opened && <Inside key={selectedRef} detail={opened} mats={mats} />}
 
-      {/* hatch each counted zone by how busy it is: every level in the whole-building view, otherwise the open level */}
-      {(glassy || open) &&
+      {/* hatch each counted zone by how busy it is: every level in the whole-building view, the open level until a room is opened */}
+      {(glassy || (open && !opened)) &&
         crowds.flatMap(({ zone, room, polys }) => {
           const busy = zone.busy;
           if (!busy) return [];

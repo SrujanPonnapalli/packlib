@@ -11,8 +11,10 @@ async function huntOccupancy() {
   return combine(building, levels);
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   await connection(); // read at request time, never baked into the build
+  // ?library= picks the building. only Hunt for now until Hill is hooked up to the page (H4)
+  if ((new URL(req.url).searchParams.get("library") ?? "hunt") !== "hunt") return Response.json({ error: "unknown library" }, { status: 404 });
   try {
     return Response.json(await huntOccupancy());
   } catch (err) {

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { notFound } from "next/navigation";
+import { isLibrary, libraryParams } from "@/data/libraries";
 import SiteHeader from "@/components/SiteHeader";
 import TrendsChart from "@/components/TrendsChart";
 import { BusyDot } from "@/components/Busy";
@@ -18,10 +20,14 @@ const tz = { timeZone: "America/New_York" } as const;
 const when = new Intl.DateTimeFormat("en-US", { ...tz, weekday: "short", hour: "numeric", minute: "2-digit" });
 const date = new Intl.DateTimeFormat("en-US", { ...tz, day: "numeric", month: "short", year: "numeric" });
 
-export default function TrendsPage() {
+export const generateStaticParams = libraryParams;
+
+export default async function TrendsPage({ params }: PageProps<"/[library]/trends">) {
+  const { library } = await params;
+  if (!isLibrary(library)) notFound();
   return (
     <>
-      <SiteHeader current="/trends" />
+      <SiteHeader library={library} current="trends" />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl px-5 pb-16 pt-8 sm:px-10">
           <p className="annot text-pencil">James B. Hunt Jr. Library</p>
