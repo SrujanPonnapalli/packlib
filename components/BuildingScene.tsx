@@ -18,7 +18,10 @@ const wz = (y: number) => (y - 451) / U;
 const RISE = 5; // floor-to-floor spacing, exaggerated so the stack is easier to read
 const LIFT = 26; // how far the floors above an open level move away
 const DROP = 9; // and how far the floors below it sink
-const HOME: [number, number, number] = [0, 2 * RISE, 0];
+// in the whole-building view the floors spread apart (exploded view) so each
+// level's heat shows on its own instead of blending through the glass
+const SPREAD = 1.5;
+const HOME: [number, number, number] = [0, 2 * RISE * SPREAD, 0];
 const ROOM_H = 0.5; // closed room: just a block
 const WALL_H = 0.55; // open room: low cut-away walls so you can see inside
 const STAIR_FULL = RISE; // a stair comes up through the opening in the floor above, flush with it...
@@ -191,9 +194,43 @@ function useMaterials() {
       core: [lambert(P.coreTop), lambert(P.core)],
       counter: [lambert(P.counter), lambert(P.counterSide)],
       hit: lambert("#ffffff", 0), // invisible, but catches clicks
-      heat: { quiet: lambert(HEAT.quiet, 0.75, true), busy: lambert(HEAT.busy, 0.75, true), packed: lambert(HEAT.packed, 0.75, true) },
+      heat: Object.fromEntries((Object.keys(HEAT) as Busy[]).map((b) => [b, hatched(b)])) as Record<Busy, THREE.MeshLambertMaterial>,
     };
   }, []);
+}
+
+// hatch spacing in scene units (about 6, 4, 3 px at overview zoom). denser = more people, same as the swatches
+const HATCH: Record<Busy, { pitch: number; cross: boolean }> = { quiet: { pitch: 1, cross: false }, busy: { pitch: 0.6, cross: false }, packed: { pitch: 0.55, cross: true } };
+
+/** Heat material: ramp color with hatching on top. Cap UVs are in scene units so the hatch is even across rooms. */
+function hatched(b: Busy) {
+  const m = lambert(HEAT[b], 0.8, true);
+  if (typeof document === "undefined") return m;
+  const size = 32;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#fff";
+  g.fillRect(0, 0, size, size);
+  g.strokeStyle = "#8f8f8f"; // darkens the heat color for the hatch lines
+  g.lineWidth = 5;
+  // draw the diagonals past the corners so the tile repeats without seams
+  const diag = (flip: boolean) => {
+    for (const o of [-size, 0, size]) {
+      g.beginPath();
+      if (flip) { g.moveTo(o, 0); g.lineTo(o + size, size); } else { g.moveTo(o, size); g.lineTo(o + size, 0); }
+      g.stroke();
+    }
+  };
+  diag(false);
+  if (HATCH[b].cross) diag(true);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(1 / HATCH[b].pitch, 1 / HATCH[b].pitch);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  m.map = t;
+  return m;
 }
 
 type Hover = (e: ThreeEvent<PointerEvent>, over: boolean) => void;
@@ -391,6 +428,8 @@ type Common = {
   occupancy?: Occupancy | null;
   /** Study Match results, best first, tinted and numbered on the model. */
   matches?: string[];
+  /** The match whose card is hovered/focused in the list, so its pin can stand out. */
+  highlight?: string | null;
 };
 
 function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy, matches = [] }: Common & { n: number; floor: Floor }) {
@@ -415,17 +454,17 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const away = active !== null && n > active;
   const under = active !== null && n < active;
   const opened = open && selectedRef ? fit.detail[selectedRef] : undefined;
-  const targetY = (n - 1) * RISE + (away ? LIFT : under ? -DROP : 0);
+  const targetY = (n - 1) * RISE * (active === null ? SPREAD : 1) + (away ? LIFT : under ? -DROP : 0);
   // in the whole-building view, untraced floors are glass so you can see through them
   const ghost = active === null && !floor.traced;
   const targetOpacity = away ? 0 : under ? 0.05 : ghost ? 0.14 : 1;
   // start assembled so opening a level on page load still animates
-  const now = useRef({ y: (n - 1) * RISE, opacity: 1, flat: 1, stair: STAIR_FULL, glass: 1 });
+  const now = useRef({ y: (n - 1) * RISE * SPREAD, opacity: 1, flat: 1, stair: STAIR_FULL * SPREAD, glass: 1 });
   // in the whole-building view the floors are glass so you can see every level's rooms and the stairs
   const glassy = active === null;
   const targetGlass = glassy ? GLASS : 1;
   const flights = useRef<THREE.Group>(null);
-  const targetStair = active === null ? STAIR_FULL : STAIR_OPEN;
+  const targetStair = active === null ? STAIR_FULL * SPREAD : STAIR_OPEN; // still reaching the spread-out floor above
   const blocks = useRef<THREE.Group>(null!);
   const targetFlat = opened ? FLAT : 1;
 
@@ -450,7 +489,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       if (flights.current) flights.current.scale.y = s.stair;
     }
     if (s.y === targetY && s.opacity === targetOpacity && s.glass === targetGlass) return;
-    const k = ease(dt, 0.11);
+    const k = reduceMotion() ? 1 : ease(dt, 0.11);
     s.y += (targetY - s.y) * k;
     s.opacity += (targetOpacity - s.opacity) * k;
     s.glass += (targetGlass - s.glass) * k;
@@ -576,7 +615,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
             .map((c) => <People key={c.zone.id} crowd={c} base={ROOM_H} close={false} dot={close ? 0.22 : 0.55} mats={mats} />)}
       </group>
 
-      <group ref={flights} scale-y={STAIR_FULL}>
+      <group ref={flights} scale-y={STAIR_FULL * SPREAD}>
         <Blocks geometry={BOX} material={mats.piece} items={stairs} />
       </group>
       {/* stairs going down, seen from this floor. only on the open level, otherwise the floor below already shows them */}
@@ -622,7 +661,7 @@ function labelsFor(active: number | null, selectedRef: string | null, matches: s
     const shape = FLOORS[n]?.shapes.find((s) => s.ref === ref);
     if (!shape || (active !== null && n !== active) || ref === selectedRef) return [];
     const [px, py] = shape.at ?? centre(shape.poly);
-    const y = (n - 1) * RISE + (shape.kind === "room" ? ROOM_H : 0.3) + 0.35;
+    const y = (n - 1) * RISE * (active === null ? SPREAD : 1) + (shape.kind === "room" ? ROOM_H : 0.3) + 0.35;
     return [{ key: `match-${ref}`, text: String(i + 1), at: new THREE.Vector3(wx(px), y, wz(py)), style: "match" as const, dim: false, picked: i === 0 }];
   });
   if (active === null) return pins;
@@ -756,7 +795,7 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
     if (active === null)
       return {
         at: new THREE.Vector3(...HOME),
-        zoom: Math.min((size.width - 110) / 104, size.height / 96),
+        zoom: Math.min((size.width - 110) / 104, size.height / 104),
       };
     const poly = focus?.poly ?? FLOORS[active].plate;
     const xs = poly.map((p) => wx(p[0]));
@@ -808,7 +847,7 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
       update: () => void;
     } | null;
     if (!moving.current || !c) return;
-    const k = ease(dt, 0.16);
+    const k = reduceMotion() ? 1 : ease(dt, 0.16); // biggest animation on the page, so reduced motion just jumps there
     const step = goal.at.clone().sub(c.target).multiplyScalar(k);
     c.target.add(step);
     state.camera.position.add(step); // keep the viewing angle
@@ -880,10 +919,11 @@ export default function BuildingScene(props: Common) {
                 </span>
               </>
             ) : label.style === "match" ? (
+              // all three matches in teal, ranked like the cards: #1 solid and bigger, #2 and #3 outlined
               <span
-                className={`plaque grid size-6 place-items-center rounded-full text-[14px] font-semibold leading-none shadow-lift ring-2 ring-sheet ${
-                  label.picked ? "bg-accent text-ink" : "bg-ink text-sheet"
-                }`}
+                className={`plaque grid place-items-center rounded-full font-semibold leading-none shadow-lift transition-transform duration-150 ease-out-quint ${
+                  label.picked ? "size-8 bg-accent text-[17px] text-ink ring-2 ring-sheet" : "size-6 bg-sheet text-[14px] text-ink ring-2 ring-accent-deep"
+                } ${props.highlight && label.key === `match-${props.highlight}` ? "scale-[1.2]" : ""}`}
               >
                 {label.text}
               </span>

@@ -8,8 +8,14 @@ const PAGES = [
 export default function SiteHeader({ current }: { current: (typeof PAGES)[number]["href"] }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-rule px-5 sm:px-10">
-      <Link href="/" className="text-[17px] font-bold tracking-[-0.02em]">
-        Study<span className="rounded-[3px] bg-accent px-0.5">Scape</span>
+      <Link href="/" className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.02em]">
+        {/* three stacked plates with one highlighted */}
+        <svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true">
+          <path d="M9 1.5 16.5 4.5 9 7.5 1.5 4.5Z" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+          <path d="M9 5 16.5 8 9 11 1.5 8Z" fill="var(--color-accent)" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+          <path d="M1.5 11.5 9 14.5l7.5-3" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        StudyScape
       </Link>
       <span className="h-4 w-px bg-rule-strong" aria-hidden="true" />
       <nav aria-label="Pages" className="flex gap-1">

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { KINDS, spaces, type Space } from "@/data/hunt";
 import { hoursOf, match, type Ask, type Candidate, type Match, type Vibe } from "@/lib/match";
-import { zoneFor, type Occupancy } from "@/lib/occupancy";
+import { zoneFor, type Busy, type Occupancy } from "@/lib/occupancy";
+import { BusyDot } from "./Busy";
 
 // how each open space feels, based on the Libraries' own descriptions
 // ("a tranquil, light-filled space", "colorful soft seating", "promotes group collaboration")
@@ -72,13 +74,54 @@ type Props = {
   /** Whether the 3D model (and its pins) is on screen. */
   onModel: boolean;
   onOpen: (s: Space) => void;
+  /** A result card was hovered or focused (its space's geometry ref), or stopped being. */
+  onHover?: (ref: string | null) => void;
 };
 
-export default function StudyMatch({ ask, onAsk, result, onModel, onOpen }: Props) {
+export const CHIP =
+  "h-10 rounded-full px-3.5 text-[14px] font-medium transition-[background-color,color,transform] duration-150 ease-out-quint active:scale-[0.96] sm:h-8 sm:px-3 sm:text-[13px]";
+export const chipState = (on: boolean) => (on ? "bg-ink text-sheet" : "text-graphite shadow-[inset_0_0_0_1px_var(--color-rule)] hover:bg-vellum hover:text-ink");
+
+export default function StudyMatch({ ask, onAsk, result, onModel, onOpen, onHover }: Props) {
   const { matches, ruled } = result;
+  // the defaults already give an answer, so show the answer first and fold the questions into one sentence you can expand
+  const [editing, setEditing] = useState(false);
+  const sentence = QUESTIONS.map((q) => q.options.find(([v]) => v === ask[q.key])![1]);
   return (
     <div className="px-5 pb-12 pt-5 sm:px-7">
-      <div className="flex flex-col gap-4">
+      <button
+        type="button"
+        aria-expanded={editing}
+        aria-controls="match-questions"
+        onClick={() => setEditing(!editing)}
+        className="group -mx-2 flex w-[calc(100%+1rem)] items-start gap-3 rounded-lg px-2 py-2 text-left transition-colors duration-150 hover:bg-vellum/60"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="annot block text-pencil">Matching for</span>
+          <span className="mt-1 block text-[15px] font-medium leading-snug text-ink [text-wrap:pretty]">
+            {sentence.map((s, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-faint"> · </span>}
+                <span className="underline decoration-rule-strong decoration-dotted underline-offset-4">{s}</span>
+              </span>
+            ))}
+          </span>
+        </span>
+        <span className="mt-[18px] flex h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[13px] font-medium text-graphite shadow-[inset_0_0_0_1px_var(--color-rule)] group-hover:text-ink">
+          {editing ? "Done" : "Change"}
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className={`transition-transform duration-200 ease-out-quint ${editing ? "rotate-180" : ""}`}>
+            <path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      <div
+        id="match-questions"
+        inert={!editing}
+        className={`grid transition-[grid-template-rows,opacity] duration-[240ms] ease-out-quint ${editing ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+      >
+      <div className="min-h-0 overflow-hidden">
+      <div className="flex flex-col gap-4 pb-1 pt-4">
         {QUESTIONS.map((q) => (
           <fieldset key={q.key}>
             <legend className="mb-1.5 text-[12px] font-medium text-pencil">{q.label}</legend>
@@ -92,9 +135,7 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen }: Prop
                     role="radio"
                     aria-checked={on}
                     onClick={() => onAsk({ ...ask, [q.key]: value })}
-                    className={`h-8 rounded-full px-3 text-[13px] font-medium transition-[background-color,color,transform] duration-150 ease-out-quint active:scale-[0.97] ${
-                      on ? "bg-ink text-sheet" : "text-graphite shadow-[inset_0_0_0_1px_var(--color-rule)] hover:bg-vellum hover:text-ink"
-                    }`}
+                    className={`${CHIP} ${chipState(on)}`}
                   >
                     {label}
                   </button>
@@ -104,8 +145,10 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen }: Prop
           </fieldset>
         ))}
       </div>
+      </div>
+      </div>
 
-      <h2 className="mt-8 flex items-baseline gap-2 border-b border-rule pb-2" aria-live="polite">
+      <h2 className="mt-6 flex items-baseline gap-2 border-b border-rule pb-2" aria-live="polite">
         <span className="text-[14px] font-semibold">{matches.length ? "Best places for you" : "Nothing fits all of that"}</span>
         <span className="ml-auto text-[12px] text-pencil">{matches.length && onModel ? "Also marked on the model" : ""}</span>
       </h2>
@@ -113,7 +156,7 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen }: Prop
       {matches.length ? (
         <ol className="mt-3 flex flex-col gap-2.5">
           {matches.map((m, i) => (
-            <Result key={m.id} rank={i + 1} m={m} onOpen={onOpen} />
+            <Result key={m.id} rank={i + 1} m={m} onOpen={onOpen} onHover={onHover} />
           ))}
         </ol>
       ) : (
@@ -133,40 +176,60 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen }: Prop
   );
 }
 
-function Result({ rank, m, onOpen }: { rank: number; m: Match; onOpen: (s: Space) => void }) {
+// live line drawn separately in the busyness style so it doesn't get lost in the reasons
+const LIVE: Record<string, Busy> = { "Not busy right now": "quiet", "Busy right now": "busy", "Very busy right now": "packed" };
+
+function Result({ rank, m, onOpen, onHover }: { rank: number; m: Match; onOpen: (s: Space) => void; onHover?: (ref: string | null) => void }) {
   const s = spaces.find((x) => x.id === m.id)!;
+  const ref = s.room ?? s.title;
+  const live = [...m.reasons, ...m.cautions].find((r) => LIVE[r]);
+  const first = rank === 1;
   return (
     <li>
       <button
         type="button"
         onClick={() => onOpen(s)}
-        className="group w-full rounded-xl p-4 text-left shadow-[inset_0_0_0_1px_var(--color-rule)] transition-[background-color,box-shadow] duration-150 hover:bg-sheet hover:shadow-lift"
+        onPointerEnter={() => onHover?.(ref)}
+        onPointerLeave={() => onHover?.(null)}
+        onFocus={() => onHover?.(ref)}
+        onBlur={() => onHover?.(null)}
+        className={`group w-full rounded-xl p-4 text-left transition-[background-color,box-shadow,transform] duration-150 ease-out-quint hover:bg-sheet hover:shadow-lift active:scale-[0.99] ${
+          first ? "bg-sheet shadow-[inset_0_0_0_1.5px_var(--color-accent-deep)]" : "shadow-[inset_0_0_0_1px_var(--color-rule)]"
+        }`}
       >
         <div className="flex items-start gap-3">
           <span
-            className={`plaque grid size-8 shrink-0 place-items-center rounded-md text-[19px] font-semibold leading-none ${rank === 1 ? "bg-accent text-ink" : "bg-vellum text-graphite"}`}
+            className={`plaque grid shrink-0 place-items-center rounded-[5px] font-semibold leading-none ${
+              first ? "size-10 bg-accent text-[23px] text-ink" : "mt-0.5 ml-1 size-8 text-[18px] text-ink shadow-[inset_0_0_0_1.5px_var(--color-accent-deep)]"
+            }`}
             aria-label={`Match ${rank}`}
           >
             {rank}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold leading-snug">{s.title}</span>
+            <span className={`block font-semibold leading-snug [text-wrap:balance] ${first ? "text-[17px]" : "text-[15px]"}`}>{s.title}</span>
             <span className="block text-[12px] text-pencil">
               Level {s.level} · {s.reservable ? kindLabel(s) : "Open seating"}
               {s.reservable && " · Book on NC State"}
             </span>
           </span>
         </div>
-        <ul className="mt-3 flex flex-col gap-1 pl-11">
-          {m.reasons.slice(0, 3).map((r) => (
+        <ul className="mt-3 flex flex-col gap-1 pl-[52px]">
+          {live && (
+            <li className="flex items-center gap-2 text-[13px] font-medium leading-snug text-ink">
+              <BusyDot busy={LIVE[live]} className="mx-[2px]" />
+              {live}
+            </li>
+          )}
+          {m.reasons.filter((r) => !LIVE[r]).slice(0, 3).map((r) => (
             <li key={r} className="flex gap-2 text-[13px] leading-snug text-graphite">
               <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="mt-px shrink-0 text-accent-deep">
-                <path d="m3 7.5 2.5 2.5L11 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="m3 7.5 2.5 2.5L11 4.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               {r}
             </li>
           ))}
-          {m.cautions.slice(0, 2).map((c) => (
+          {m.cautions.filter((c) => !LIVE[c]).slice(0, 2).map((c) => (
             <li key={c} className="flex gap-2 text-[12.5px] leading-snug text-pencil">
               <span aria-hidden="true" className="mx-[5px] mt-[6px] size-1 shrink-0 rounded-full bg-faint" />
               {c}
@@ -174,7 +237,7 @@ function Result({ rank, m, onOpen }: { rank: number; m: Match; onOpen: (s: Space
           ))}
         </ul>
         {m.similar.length > 0 && (
-          <p className="mt-2.5 pl-11 text-[12px] text-pencil">
+          <p className="mt-2.5 pl-[52px] text-[12px] text-pencil">
             Same kind of room: <span className="plaque text-[13px] text-graphite">{m.similar.join(", ")}</span>
           </p>
         )}

@@ -39,6 +39,33 @@ the darker teal is for thin lines and text where the bright one is too faint. */
       transform: translateY(6px);
     }
   }
+  /* slide in from the side when going from the list into a space */
+  --animate-enter-x: enter-x 240ms var(--ease-out-quint) both;
+  @keyframes enter-x {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+  }
+}
+
+/* hatching that gets denser as a space fills up, so busyness still shows
+without relying on color. teal stays reserved for the selected item. */
+.hatch-quiet {
+  background: repeating-linear-gradient(135deg, rgb(29 28 26 / 0.34) 0 1px, transparent 1px 4.5px), var(--color-quiet);
+}
+.hatch-busy {
+  background: repeating-linear-gradient(135deg, rgb(29 28 26 / 0.34) 0 1px, transparent 1px 2.75px), var(--color-busy);
+}
+.hatch-packed {
+  background:
+    repeating-linear-gradient(135deg, rgb(29 28 26 / 0.38) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(45deg, rgb(29 28 26 / 0.38) 0 1px, transparent 1px 3px),
+    var(--color-packed);
+}
+
+::selection {
+  background: var(--color-accent-wash);
 }
 
 html {
@@ -75,7 +102,6 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {

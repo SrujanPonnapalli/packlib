@@ -10,7 +10,8 @@ import SpaceList from "./SpaceList";
 import SpaceDetail from "./SpaceDetail";
 import { BusyKey, LiveNote } from "./Busy";
 import { useOccupancy } from "./useOccupancy";
-import StudyMatch, { DEFAULT_ASK, findMatches } from "./StudyMatch";
+import StudyMatch, { CHIP, DEFAULT_ASK, chipState, findMatches } from "./StudyMatch";
+import { BUSY_LABEL } from "@/lib/occupancy";
 import type { Ask } from "@/lib/match";
 
 // only load three.js where the 3D model is actually shown
@@ -38,6 +39,7 @@ export default function Explorer() {
   // panel opens on Study Match since most people come looking for a spot, not to browse
   const [mode, setMode] = useState<"match" | "browse">("match");
   const [ask, setAsk] = useState<Ask>(DEFAULT_ASK);
+  const [highlight, setHighlight] = useState<string | null>(null);
   const result = useMemo(() => findMatches(ask, live.data), [ask, live.data]);
   const matchRefs = mode === "match" ? result.matches.map((m) => { const s = spaces.find((x) => x.id === m.id)!; return s.room ?? s.title; }) : [];
   const busy = useMemo(
@@ -68,6 +70,10 @@ export default function Explorer() {
     return out;
   }, [matching]);
 
+  // with nothing selected, the heading shows how busy it is
+  const overall = live.data?.building.busy ?? null;
+  const said = !selected && level === null && overall !== null;
+
   const listed = level === null ? matching : matching.filter((s) => s.level === level);
   const stackLevel = selected ? selected.level : level;
   // picking a level while a space is open closes the space
@@ -78,8 +84,8 @@ export default function Explorer() {
       <section aria-label="Building" className="dot-grid relative flex min-w-0 flex-col px-5 pb-5 pt-6 sm:px-10 lg:pb-8 lg:pt-9">
         <div className="pointer-events-none relative z-10 [&_button]:pointer-events-auto">
           <p className="annot text-pencil">James B. Hunt Jr. Library</p>
-          <h1 className="mt-1.5 text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[36px]">
-            {selected ? selected.title : level !== null ? `Level ${level}` : "Pick a level, find a place."}
+          <h1 className="mt-1.5 text-[28px] [text-wrap:balance] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[36px]">
+            {selected ? selected.title : level !== null ? `Level ${level}` : said ? `Hunt is ${BUSY_LABEL[overall!].toLowerCase()} right now.` : "Find a place to study in Hunt."}
           </h1>
           <p className="mt-2 text-[14px] text-graphite">
             {selected ? (
@@ -103,7 +109,7 @@ export default function Explorer() {
               `Showing ${matching.length} of ${spaces.length} rooms and spaces.`
             )}
           </p>
-          <LiveNote live={live} level={level} space={selected} />
+          <LiveNote live={live} level={level} space={selected} said={said} />
         </div>
 
         {wide ? (
@@ -117,6 +123,7 @@ export default function Explorer() {
               onClear={() => go({ space: null }, true)}
               occupancy={live.data}
               matches={matchRefs}
+              highlight={highlight}
             />
             <div className="absolute left-10 top-1/2 z-10 -translate-y-1/2">
               <LevelRail active={stackLevel} counts={counts} busy={busy} onSelect={selectLevel} />
@@ -167,7 +174,7 @@ export default function Explorer() {
               ))}
             </div>
             {mode === "match" ? (
-              <StudyMatch ask={ask} onAsk={setAsk} result={result} onModel={wide} onOpen={(s) => go({ space: s.id }, true)} />
+              <StudyMatch ask={ask} onAsk={setAsk} result={result} onModel={wide} onOpen={(s) => go({ space: s.id }, true)} onHover={setHighlight} />
             ) : (
             <>
             <div className="sticky top-0 z-10 border-b border-rule bg-sheet/95 px-5 pb-3 pt-5 backdrop-blur-sm sm:px-7">
@@ -194,9 +201,7 @@ export default function Explorer() {
                       type="button"
                       aria-pressed={on}
                       onClick={() => setKind(k.id)}
-                      className={`h-8 shrink-0 rounded-full px-3 text-[13px] font-medium transition-[background-color,color,transform] duration-150 ease-out-quint active:scale-[0.97] ${
-                        on ? "bg-ink text-sheet" : "text-graphite shadow-[inset_0_0_0_1px_var(--color-rule)] hover:bg-vellum hover:text-ink"
-                      }`}
+                      className={`shrink-0 ${CHIP} ${chipState(on)}`}
                     >
                       {k.label}
                     </button>
