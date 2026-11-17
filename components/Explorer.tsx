@@ -10,6 +10,8 @@ import SpaceList from "./SpaceList";
 import SpaceDetail from "./SpaceDetail";
 import { BusyKey, LiveNote } from "./Busy";
 import { useOccupancy } from "./useOccupancy";
+import StudyMatch, { DEFAULT_ASK, findMatches } from "./StudyMatch";
+import type { Ask } from "@/lib/match";
 
 // only load three.js where the 3D model is actually shown
 const BuildingScene = dynamic(() => import("./BuildingScene"), { ssr: false });
@@ -33,6 +35,11 @@ export default function Explorer() {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind | "all">("study"); // most visitors want a study room
   const live = useOccupancy();
+  // panel opens on Study Match since most people come looking for a spot, not to browse
+  const [mode, setMode] = useState<"match" | "browse">("match");
+  const [ask, setAsk] = useState<Ask>(DEFAULT_ASK);
+  const result = useMemo(() => findMatches(ask, live.data), [ask, live.data]);
+  const matchRefs = mode === "match" ? result.matches.map((m) => { const s = spaces.find((x) => x.id === m.id)!; return s.room ?? s.title; }) : [];
   const busy = useMemo(
     () => Object.fromEntries(LEVELS.map(({ n }) => [n, live.data?.levels[n]?.busy ?? null])),
     [live.data],
@@ -84,6 +91,12 @@ export default function Explorer() {
                   Show all five levels
                 </button>
               </>
+            ) : mode === "match" ? (
+              result.matches.length ? (
+                `Your best match is on Level ${spaces.find((x) => x.id === result.matches[0].id)!.level}${wide ? ", numbered on the model" : ""}.`
+              ) : (
+                "Nothing fits those answers yet."
+              )
             ) : kind === "all" && !query.trim() ? (
               `${spaces.length} rooms and spaces across five levels.`
             ) : (
@@ -103,6 +116,7 @@ export default function Explorer() {
               onOpenSpace={(id) => go({ space: id }, true)}
               onClear={() => go({ space: null }, true)}
               occupancy={live.data}
+              matches={matchRefs}
             />
             <div className="absolute left-10 top-1/2 z-10 -translate-y-1/2">
               <LevelRail active={stackLevel} counts={counts} busy={busy} onSelect={selectLevel} />
@@ -131,6 +145,31 @@ export default function Explorer() {
           <SpaceDetail space={selected} live={live} onBack={() => go({ space: null }, true)} />
         ) : (
           <>
+            <div className="flex gap-1 border-b border-rule px-5 pt-4 sm:px-7" role="tablist" aria-label="Find or browse">
+              {(
+                [
+                  ["match", "Find a spot"],
+                  ["browse", "Browse all"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === id}
+                  onClick={() => setMode(id)}
+                  className={`-mb-px h-10 border-b-2 px-2 text-[14px] font-medium transition-colors duration-150 ${
+                    mode === id ? "border-ink text-ink" : "border-transparent text-pencil hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {mode === "match" ? (
+              <StudyMatch ask={ask} onAsk={setAsk} result={result} onModel={wide} onOpen={(s) => go({ space: s.id }, true)} />
+            ) : (
+            <>
             <div className="sticky top-0 z-10 border-b border-rule bg-sheet/95 px-5 pb-3 pt-5 backdrop-blur-sm sm:px-7">
               <label className="relative block">
                 <span className="sr-only">Search rooms and spaces</span>
@@ -185,6 +224,8 @@ export default function Explorer() {
                 </div>
               )}
             </div>
+            </>
+            )}
           </>
         )}
       </section>

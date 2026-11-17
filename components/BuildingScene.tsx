@@ -389,9 +389,11 @@ type Common = {
   onOpenSpace: (id: string) => void;
   onClear: () => void;
   occupancy?: Occupancy | null;
+  /** Study Match results, best first, tinted and numbered on the model. */
+  matches?: string[];
 };
 
-function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy }: Common & { n: number; floor: Floor }) {
+function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy, matches = [] }: Common & { n: number; floor: Floor }) {
   const group = useRef<THREE.Group>(null!);
   const [hover, setHover] = useState<string | null>(null);
   const mats = useMaterials();
@@ -497,7 +499,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
     const linked = ref !== undefined && spaceByRef(ref) !== undefined;
     return {
       picked: linked && ref === selectedRef,
-      hot: open && linked && hover === ref,
+      hot: (open && linked && hover === ref) || (ref !== undefined && matches.includes(ref)),
       onHover: open && linked ? point(ref) : undefined,
     };
   };
@@ -607,18 +609,27 @@ type Label = {
   key: string;
   text: string;
   at: THREE.Vector3;
-  style: "room" | "name" | "callout";
+  style: "room" | "name" | "callout" | "match";
   dim: boolean;
   picked: boolean;
 };
 
 /** Labels for the open level, plus callouts for the open room. */
-function labelsFor(active: number | null, selectedRef: string | null): Label[] {
-  if (active === null) return [];
+function labelsFor(active: number | null, selectedRef: string | null, matches: string[]): Label[] {
+  // Study Match pins: on every floor in the whole-building view, otherwise just on the open floor
+  const pins: Label[] = matches.flatMap((ref, i) => {
+    const n = Number(Object.keys(FLOORS).find((k) => FLOORS[Number(k)].shapes.some((s) => s.ref === ref)));
+    const shape = FLOORS[n]?.shapes.find((s) => s.ref === ref);
+    if (!shape || (active !== null && n !== active) || ref === selectedRef) return [];
+    const [px, py] = shape.at ?? centre(shape.poly);
+    const y = (n - 1) * RISE + (shape.kind === "room" ? ROOM_H : 0.3) + 0.35;
+    return [{ key: `match-${ref}`, text: String(i + 1), at: new THREE.Vector3(wx(px), y, wz(py)), style: "match" as const, dim: false, picked: i === 0 }];
+  });
+  if (active === null) return pins;
   const y = (active - 1) * RISE;
   const focus = selectedRef ? FLOORS[active].shapes.find((s) => s.ref === selectedRef) : undefined;
   const callouts = focus ? (FITS[active].detail[selectedRef!]?.callouts ?? []) : [];
-  const out: Label[] = [];
+  const out: Label[] = [...pins];
   for (const [i, s] of FLOORS[active].shapes.entries()) {
     const mine = focus !== undefined && s.ref === selectedRef;
     if (!s.label || mine) continue;
@@ -646,7 +657,7 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
 }
 
 const scratch = new THREE.Vector3();
-const RANK = { name: 0, room: 1, callout: 2 };
+const RANK = { match: -1, name: 0, room: 1, callout: 2 };
 
 // callout label: offset from its dot, plus its box (px) that other labels have to avoid
 const PILL = { dx: 22, dy: -18, w: 200, h: 24 };
@@ -814,7 +825,9 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
 
 export default function BuildingScene(props: Common) {
   const { active, selectedRef } = props;
-  const labels = useMemo(() => labelsFor(active, selectedRef), [active, selectedRef]);
+  const matchKey = (props.matches ?? []).join("|");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the joined refs so a new array with the same matches keeps the labels
+  const labels = useMemo(() => labelsFor(active, selectedRef, props.matches ?? []), [active, selectedRef, matchKey]);
   const focus = useMemo(
     () => (active !== null && selectedRef ? (FLOORS[active].shapes.find((s) => s.ref === selectedRef) ?? null) : null),
     [active, selectedRef],
@@ -866,6 +879,14 @@ export default function BuildingScene(props: Common) {
                   {label.text}
                 </span>
               </>
+            ) : label.style === "match" ? (
+              <span
+                className={`plaque grid size-6 place-items-center rounded-full text-[14px] font-semibold leading-none shadow-lift ring-2 ring-sheet ${
+                  label.picked ? "bg-accent text-ink" : "bg-ink text-sheet"
+                }`}
+              >
+                {label.text}
+              </span>
             ) : (
               <span
                 className={`block rounded-[3px] px-1 ${
