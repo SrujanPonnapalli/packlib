@@ -21,8 +21,8 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
   const facts: [string, string][] = [];
   if (s.level !== null) facts.push(["Level", String(s.level)]);
   if (s.reservableBy.length) facts.push([s.reservable ? "Who can reserve" : "Open to", audience(s.reservableBy)]);
-  const seats = ["study", "grad", "faculty"].includes(s.kind) ? s.fitout?.seats : null;
-  if (seats) facts.push(["Seats", String(seats)]);
+  const seats = s.reservable ? s.seats : null;
+  if (seats) facts.push(["Seats", s.title === "Audio Rooms" ? `${seats} in each room` : String(seats)]);
   if (s.features.length) facts.push(["In the room", s.features.join(" · ")]);
 
   return (
@@ -86,7 +86,7 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
         ))}
       </dl>
       {(seats || s.features.length > 0) && (
-        <p className="mt-2 text-[12px] text-pencil">Seats and room features are read from the Libraries&apos; photo captions.</p>
+        <p className="mt-2 text-[12px] text-pencil">{sourceNote(seats ? s.seatsFrom : null, s.features.length > 0)}</p>
       )}
 
       {s.reservable && <BookingHandoff space={s} />}
@@ -165,4 +165,9 @@ function Arrow() {
       <path d="M4.5 9.5 9.5 4.5M5 4.5h4.5V9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
+}
+
+function sourceNote(seats: Space["seatsFrom"], features: boolean) {
+  if (seats === "booking") return features ? "Seats are from NC State's booking site; room features from the Libraries' photo captions." : "Seats are from NC State's booking site.";
+  return seats ? "Seats and room features are read from the Libraries' photo captions." : "Room features are read from the Libraries' photo captions.";
 }

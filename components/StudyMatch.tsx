@@ -34,7 +34,7 @@ export function candidates(occupancy: Occupancy | null | undefined): Candidate[]
         room: s.room,
         bookable: s.reservable,
         eligible: s.reservableBy,
-        seats: s.fitout?.seats ?? (Number(/seating for (\d+)/.exec(s.description ?? "")?.[1]) || null),
+        seats: s.seats ?? (Number(/seating for (\d+)/.exec(s.description ?? "")?.[1]) || null),
         solo: /Focus/.test(s.title),
         individual: s.title === "Carrel Corridor",
         display: Boolean(s.fitout?.display || /screen|display/i.test(s.description ?? "")),

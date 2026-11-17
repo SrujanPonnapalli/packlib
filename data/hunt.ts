@@ -10,6 +10,9 @@ export type Space = (typeof snapshot.spaces)[number] & {
   reservable: boolean;
   /** Read from the photo caption; null when there is no photo. */
   fitout: Fitout | null;
+  /** Official count from the booking site where it lists one, else the photo caption's. */
+  seats: number | null;
+  seatsFrom: "booking" | "caption" | null;
   /** Human-readable fit-out, shown only for bookable rooms. */
   features: string[];
 };
@@ -95,9 +98,10 @@ function kindOf(title: string): Kind {
 
 const NUMBERS: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12 };
 
-// The Libraries publish no capacities for Hunt rooms, but photo captions say
+// The Spaces API has no capacities for Hunt rooms, but photo captions say
 // things like "table surrounded by eight task chairs, wall-mounted display,
-// and whiteboard walls". That is the only source for seats and fit-out.
+// and whiteboard walls". That is the only source for fit-out, and for seats
+// where the booking site lists none (see BOOKING_SEATS).
 export function readCaption(alt: string): Fitout {
   const a = alt.toLowerCase();
   const word = /\b(\w+) (?:task |work )?chairs\b/.exec(a)?.[1] ?? /seating for (\w+)/.exec(a)?.[1];
@@ -122,15 +126,34 @@ function featuresOf(f: Fitout): string[] {
 
 const ROOM_KINDS: Kind[] = ["study", "grad", "faculty"];
 
+// Seat counts NC State's booking site (rooms.lib.ncsu.edu) shows beside each
+// room in its day grid, read signed in on 17 Nov 2026. It shows graduate and
+// faculty rooms only to graduate students and faculty, so those still rely on
+// photo captions. Keyed by room number; the four Audio Rooms seat 2 each.
+const BOOKING_SEATS: Record<string, number> = {
+  2304: 4, 2305: 6, 2306: 4, 2307: 6, 2308: 4, 2309: 6, 2312: 6, 2313: 4, 2314: 4, 2315: 4,
+  2322: 6, 2323: 4, 2324: 4, 2325: 4, 2326: 6, 2327: 4, 2328: 6,
+  3208: 10, 3209: 10, 3212: 8, 3213: 8, 3214: 6, 3215: 4, 3217: 4, 3218: 4, 3219: 4, 3220: 4,
+  3241: 4, 3242: 4, 3243: 2, 3304: 4, 3305: 6, 3306: 4, 3307: 6, 3309: 6, 3312: 6, 3313: 6,
+  3314: 6, 3315: 6, 3316: 6,
+  4411: 10, 4502: 12, 4510: 6, 4511: 6, 4512: 4, 4513: 4, 4514: 4, 4515: 4, 4215: 4,
+  "Audio Rooms": 2,
+};
+
 export const spaces: Space[] = snapshot.spaces.map((s) => {
   const kind = kindOf(s.title);
-  const fitout = s.photo ? readCaption(s.photo.alt) : null;
+  const caption = s.photo ? readCaption(s.photo.alt) : null;
+  const official = BOOKING_SEATS[s.room ?? s.title] ?? null;
+  // The model draws chairs from the fit-out, so the official count goes there too.
+  const fitout = caption && official ? { ...caption, seats: official } : caption;
   return {
     ...s,
     level: s.room ? Number(s.room[0]) : (LEVEL_BY_TITLE[s.title] ?? null),
     kind,
     reservable: Boolean(s.bookAhead || s.maxBooking),
     fitout,
+    seats: official ?? caption?.seats ?? null,
+    seatsFrom: official ? "booking" : caption?.seats ? "caption" : null,
     features: fitout && ROOM_KINDS.includes(kind) ? featuresOf(fitout) : [],
   };
 });
