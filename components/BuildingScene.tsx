@@ -8,7 +8,7 @@ import { FLOORS, type Floor, type Pt, type Shape } from "@/data/hunt-geometry";
 import { fitoutFor, spaceByRef, spaces } from "@/data/hunt";
 import { inset, fitFloor, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
 import { scatter, seeded } from "@/lib/crowd";
-import type { Busy, Occupancy, Zone } from "@/lib/occupancy";
+import { BUSY_LABEL, zoneFor, type Busy, type Occupancy, type Zone } from "@/lib/occupancy";
 
 // Map pixels -> scene units, centred on the building envelope.
 const U = 20;
@@ -440,7 +440,7 @@ type Common = {
   highlight?: string | null;
 };
 
-function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy, matches = [] }: Common & { n: number; floor: Floor }) {
+function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy, matches = [], onTip }: Common & { n: number; floor: Floor; onTip?: (ref: string | null) => void }) {
   const group = useRef<THREE.Group>(null!);
   const [hover, setHover] = useState<string | null>(null);
   const mats = useMaterials();
@@ -541,6 +541,7 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       if (away || ghost) return;
       e.stopPropagation();
       setHover(over ? ref : null);
+      onTip?.(over ? ref : null);
       document.body.style.cursor = over ? "pointer" : "";
     };
   const openRef = (ref?: string) => {
@@ -886,9 +887,21 @@ export default function BuildingScene(props: Common) {
     [active, selectedRef],
   );
   const els = useRef<(HTMLElement | null)[]>([]);
+  // A hovered space's name, live count and seats, following the pointer (moved directly, not re-rendered).
+  const [tipRef, setTipRef] = useState<string | null>(null);
+  const tipEl = useRef<HTMLDivElement>(null);
+  const tipSpace = tipRef && tipRef !== selectedRef ? spaceByRef(tipRef) : undefined;
+  const tipZone = tipRef ? zoneFor(props.occupancy, tipRef) : null;
 
   return (
-    <div className="absolute inset-0">
+    <div
+      className="absolute inset-0"
+      onPointerMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        tipEl.current?.style.setProperty("translate", `${e.clientX - r.left + 14}px ${e.clientY - r.top + 16}px`);
+      }}
+      onPointerLeave={() => setTipRef(null)}
+    >
       <Canvas
         shadows
         orthographic
@@ -905,9 +918,30 @@ export default function BuildingScene(props: Common) {
         <Rig active={active} focus={focus} />
         <LabelSync labels={labels} els={els} />
         {Object.entries(FLOORS).map(([n, floor]) => (
-          <FloorModel key={n} n={Number(n)} floor={floor} {...props} />
+          <FloorModel key={n} n={Number(n)} floor={floor} {...props} onTip={setTipRef} />
         ))}
       </Canvas>
+
+      <div
+        ref={tipEl}
+        aria-hidden="true"
+        className={`pointer-events-none absolute left-0 top-0 z-20 max-w-[220px] rounded-lg bg-ink/95 px-2.5 py-2 text-sheet shadow-lift transition-opacity duration-150 [@media(hover:none)]:hidden ${tipSpace ? "opacity-100" : "opacity-0"}`}
+      >
+        {tipSpace && (
+          <>
+            <p className="text-[13px] font-semibold leading-snug">{tipSpace.title}</p>
+            <p className="mt-0.5 text-[11px] tabular-nums text-sheet/70">
+              {[
+                tipZone?.busy && `${BUSY_LABEL[tipZone.busy]} · ${tipZone.count} ${tipZone.count === 1 ? "person" : "people"}`,
+                tipSpace.seats && `${tipSpace.seats} seats`,
+                tipSpace.room && tipSpace.room !== tipSpace.title && `Room ${tipSpace.room}`,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "Click to open"}
+            </p>
+          </>
+        )}
+      </div>
 
       {/* Paper fades so the heading, level rail and caption stay legible over a zoomed-in model. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-48 bg-gradient-to-b from-paper via-paper/80 to-transparent" />

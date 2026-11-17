@@ -1,8 +1,9 @@
 import { useState } from "react";
+import Image from "next/image";
 import { KINDS, spaces, type Space } from "@/data/hunt";
 import { hoursOf, match, type Ask, type Candidate, type Match, type Vibe } from "@/lib/match";
-import { zoneFor, type Busy, type Occupancy } from "@/lib/occupancy";
-import { BusyDot } from "./Busy";
+import { BUSY_LABEL, zoneFor, type Busy, type Occupancy } from "@/lib/occupancy";
+import { BusyDot, readingFor, type Live } from "./Busy";
 
 // How each open space feels, from the Libraries' own descriptions
 // ("a tranquil, light-filled space", "colorful soft seating", "promotes group collaboration").
@@ -71,6 +72,8 @@ type Props = {
   ask: Ask;
   onAsk: (a: Ask) => void;
   result: ReturnType<typeof match>;
+  /** Live headcounts, for each result's count. */
+  live: Live;
   /** Whether the 3D model (and its numbered pins) is on screen. */
   onModel: boolean;
   onOpen: (s: Space) => void;
@@ -82,7 +85,7 @@ export const CHIP =
   "h-10 rounded-full px-3.5 text-[14px] font-medium transition-[background-color,color,transform] duration-150 ease-out-quint active:scale-[0.96] sm:h-8 sm:px-3 sm:text-[13px]";
 export const chipState = (on: boolean) => (on ? "bg-ink text-sheet" : "text-graphite shadow-[inset_0_0_0_1px_var(--color-rule)] hover:bg-vellum hover:text-ink");
 
-export default function StudyMatch({ ask, onAsk, result, onModel, onOpen, onHover }: Props) {
+export default function StudyMatch({ ask, onAsk, result, live, onModel, onOpen, onHover }: Props) {
   const { matches, ruled } = result;
   // The defaults already give an answer, so the answer leads and the questions fold into one sentence you can open.
   const [editing, setEditing] = useState(false);
@@ -154,9 +157,9 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen, onHove
       </h2>
 
       {matches.length ? (
-        <ol className="mt-3 flex flex-col gap-2.5">
+        <ol key={JSON.stringify(ask)} className="mt-3 flex flex-col gap-2.5">
           {matches.map((m, i) => (
-            <Result key={m.id} rank={i + 1} m={m} onOpen={onOpen} onHover={onHover} />
+            <Result key={m.id} rank={i + 1} m={m} live={live} onOpen={onOpen} onHover={onHover} />
           ))}
         </ol>
       ) : (
@@ -170,7 +173,7 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen, onHove
       )}
 
       <p className="mt-6 text-[12px] leading-relaxed text-pencil">
-        Ranked from the Libraries&apos; room details and live headcounts. NC State doesn&apos;t publish which rooms are booked, so check a room is free when you book it.
+        Ranked by room details and live headcounts. Bookings aren&apos;t public, so check a room is free.
       </p>
     </div>
   );
@@ -179,13 +182,41 @@ export default function StudyMatch({ ask, onAsk, result, onModel, onOpen, onHove
 // The live line is drawn on its own, in the busyness notation, so it isn't lost among the reasons.
 const LIVE: Record<string, Busy> = { "Not busy right now": "quiet", "Busy right now": "busy", "Very busy right now": "packed" };
 
-function Result({ rank, m, onOpen, onHover }: { rank: number; m: Match; onOpen: (s: Space) => void; onHover?: (ref: string | null) => void }) {
+// Reasons as short tags. Walking in is already said by "Open seating", so it isn't repeated.
+const TAG: Record<string, string | null> = {
+  "No booking needed: just walk in": null,
+  "A quiet space: no talking": "Quiet, no talking",
+  "A quiet space, so you'll work side by side in silence": "Quiet",
+  "An office-like room made for one": "Room for one",
+  "A room to yourself, with a door": "Private room",
+  "A room with a door, away from the noise": "Has a door",
+  "Soft seating, usually calm": "Soft seating",
+  "Whiteboard walls to work things out on": "Whiteboard walls",
+  "A room you can talk in": "Talking OK",
+  "An open area made for working together": "Group area",
+  "A wall display to share a laptop": "Wall display",
+  "A wall display to practise on": "Wall display",
+  "Soft seating and a relaxed feel": "Relaxed",
+  "Lively, with room to spread out": "Lively",
+  "Calm and light-filled": "Calm and bright",
+  "You can book it ahead": "Book ahead",
+  "Stay as long as you like": "No time limit",
+  "Outside windows": "Windows",
+};
+const tag = (r: string) => (r in TAG ? TAG[r] : r.startsWith("Seats ") ? r.split(",")[0] : r);
+
+function Result({ rank, m, live, onOpen, onHover }: { rank: number; m: Match; live: Live; onOpen: (s: Space) => void; onHover?: (ref: string | null) => void }) {
   const s = spaces.find((x) => x.id === m.id)!;
   const ref = s.room ?? s.title;
-  const live = [...m.reasons, ...m.cautions].find((r) => LIVE[r]);
+  const busy = LIVE[[...m.reasons, ...m.cautions].find((r) => LIVE[r]) ?? ""];
+  const found = readingFor(live, s);
+  const count = found?.reading.count;
+  const tags = m.reasons.filter((r) => !LIVE[r]).map(tag).filter((t): t is string => !!t).slice(0, 3);
+  const caution = m.cautions.find((c) => !LIVE[c]);
   const first = rank === 1;
   return (
-    <li className="arrive" style={{ ["--d" as string]: `${320 + rank * 80}ms` }}>
+    // First visit: part of the arrival. After that, each new answer (which remounts the list) staggers the results in.
+    <li className="arrive restagger" style={{ ["--d" as string]: `${320 + rank * 80}ms`, ["--s" as string]: `${(rank - 1) * 60}ms` }}>
       <button
         type="button"
         onClick={() => onOpen(s)}
@@ -212,32 +243,40 @@ function Result({ rank, m, onOpen, onHover }: { rank: number; m: Match; onOpen: 
               Level {s.level} · {s.reservable ? kindLabel(s) : "Open seating"}
               {s.reservable && " · Book on NC State"}
             </span>
+            {busy && (
+              <span className="mt-2 flex items-center gap-2 text-[13px] leading-snug">
+                <BusyDot busy={busy} />
+                <span className="font-medium text-ink">{BUSY_LABEL[busy]}</span>
+                {count != null && (
+                  <span className="tabular-nums text-graphite">
+                    · {count.toLocaleString("en-US")} {count === 1 ? "person" : "people"} {found!.own ? "here" : `on Level ${s.level}`}
+                  </span>
+                )}
+              </span>
+            )}
           </span>
-        </div>
-        <ul className="mt-3 flex flex-col gap-1 pl-[52px]">
-          {live && (
-            <li className="flex items-center gap-2 text-[13px] font-medium leading-snug text-ink">
-              <BusyDot busy={LIVE[live]} className="mx-[2px]" />
-              {live}
-            </li>
+          {s.photo && (
+            <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-vellum outline outline-1 -outline-offset-1 outline-black/10">
+              <Image src={s.photo.thumb} alt="" fill sizes="80px" className="object-cover transition-transform duration-300 ease-out-quint group-hover:scale-[1.04]" />
+            </span>
           )}
-          {m.reasons.filter((r) => !LIVE[r]).slice(0, 3).map((r) => (
-            <li key={r} className="flex gap-2 text-[13px] leading-snug text-graphite">
-              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="mt-px shrink-0 text-accent-deep">
-                <path d="m3 7.5 2.5 2.5L11 4.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {r}
-            </li>
-          ))}
-          {m.cautions.filter((c) => !LIVE[c]).slice(0, 2).map((c) => (
-            <li key={c} className="flex gap-2 text-[12.5px] leading-snug text-pencil">
-              <span aria-hidden="true" className="mx-[5px] mt-[6px] size-1 shrink-0 rounded-full bg-faint" />
-              {c}
-            </li>
-          ))}
-        </ul>
+        </div>
+        {(tags.length > 0 || caution) && (
+          <div className={`mt-3 ${first ? "pl-[52px]" : "pl-[48px]"}`}>
+            {tags.length > 0 && (
+              <ul className="flex flex-wrap gap-1.5" aria-label="Why it fits">
+                {tags.map((t) => (
+                  <li key={t} className="rounded-full bg-vellum px-2.5 py-1 text-[12px] font-medium leading-none text-graphite">
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {caution && <p className="mt-2 text-[12px] leading-snug text-pencil">{caution}</p>}
+          </div>
+        )}
         {m.similar.length > 0 && (
-          <p className="mt-2.5 pl-[52px] text-[12px] text-pencil">
+          <p className={`mt-2.5 text-[12px] text-pencil ${first ? "pl-[52px]" : "pl-[48px]"}`}>
             Same kind of room: <span className="plaque text-[13px] text-graphite">{m.similar.join(", ")}</span>
           </p>
         )}

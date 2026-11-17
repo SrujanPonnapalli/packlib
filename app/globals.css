@@ -103,6 +103,10 @@
 html[data-arrived] :is(.arrive, .draw, .fill-in) {
   animation: none;
 }
+/* After arrival, a .restagger element still fades in quickly whenever it mounts, after --s. */
+html[data-arrived] .arrive.restagger {
+  animation: enter 220ms var(--ease-out-quint) var(--s, 0ms) backwards;
+}
 /* Ticker digits: a changed digit leaves and its replacement arrives, up when the number rose, down when it fell. */
 .tick-in-up {
   animation: tick-in-up var(--tick, 280ms) var(--ease-out-quint) backwards;

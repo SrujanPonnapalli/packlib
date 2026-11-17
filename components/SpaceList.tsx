@@ -18,10 +18,11 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
 
   return (
     <div className="flex flex-col gap-9">
-      {groups.map(({ n, items }) => {
+      {groups.map(({ n, items }, gi) => {
         const levelBusy = n !== null ? live.data?.levels[n]?.busy : null;
         return (
-        <section key={n ?? "around"} aria-labelledby={`level-${n}`}>
+        // A new filter or floor remounts the list (keyed by the caller): each level fades in after the one above.
+        <section key={n ?? "around"} aria-labelledby={`level-${n}`} className="animate-enter" style={{ animationDelay: `${Math.min(gi, 4) * 50}ms` }}>
           <h2 id={`level-${n}`} className="flex items-baseline gap-2 border-b border-rule pb-2">
             <span className="text-[14px] font-semibold">{n === null ? "Around Hunt" : `Level ${n}`}</span>
             {levelBusy && (
@@ -75,16 +76,21 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
                 <h3 className="mb-2 text-[12px] text-pencil">
                   {kindLabel(k)} <span className="tabular-nums">· {rooms.length}</span>
                 </h3>
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-1.5">
                   {rooms.map((s) => (
                     <li key={s.id}>
                       <button
                         type="button"
                         onClick={() => onOpen(s)}
-                        aria-label={s.title}
-                        className="plaque h-11 w-full rounded-md bg-paper text-[17px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-rule)] transition-[background-color,box-shadow,transform] duration-150 ease-out-quint hover:bg-sheet hover:shadow-lift active:scale-[0.97]"
+                        aria-label={[s.title, s.seats && `${s.seats} seats`, s.fitout?.display && "wall display", s.fitout?.whiteboard && "whiteboard"].filter(Boolean).join(", ")}
+                        className="flex w-full flex-col items-start rounded-md bg-paper px-2.5 py-2 text-left shadow-[inset_0_0_0_1px_var(--color-rule)] transition-[background-color,box-shadow,transform] duration-150 ease-out-quint hover:bg-sheet hover:shadow-lift active:scale-[0.97]"
                       >
-                        {s.room}
+                        <span className="plaque text-[17px] font-semibold leading-none text-ink">{s.room}</span>
+                        <span className="mt-1.5 flex h-3.5 items-center gap-1.5 text-[11px] leading-none text-pencil">
+                          {s.seats ? <span className="tabular-nums">{s.seats} seats</span> : <span className="text-faint">–</span>}
+                          {s.fitout?.display && <DisplayIcon />}
+                          {s.fitout?.whiteboard && <BoardIcon />}
+                        </span>
                       </button>
                     </li>
                   ))}
@@ -96,6 +102,26 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
         );
       })}
     </div>
+  );
+}
+
+// Tiny fit-out marks for the room tiles: a screen on a stand, and a board with a line drawn on it.
+function DisplayIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className="text-graphite">
+      <title>Wall display</title>
+      <rect x="1" y="2" width="10" height="6.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4 10.5h4M6 8.5v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function BoardIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className="text-graphite">
+      <title>Whiteboard</title>
+      <rect x="1" y="1.5" width="10" height="9" rx="1" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="m3 7.5 2-2 1.5 1.5L9 4.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
