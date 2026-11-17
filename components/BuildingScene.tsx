@@ -61,7 +61,7 @@ const P = {
 };
 
 // Busyness, pale to strong (same ramp as the page). Dots use deeper shades so the faintest still shows on the floor.
-const HEAT: Record<Busy, string> = { quiet: "#f0c4a0", busy: "#e8865a", packed: "#c4452e" };
+const HEAT: Record<Busy, string> = { quiet: "#9dd08a", busy: "#f2b84b", packed: "#d9533a" };
 const DOT: Record<Busy, string> = { quiet: "#d9946a", busy: "#d0683c", packed: "#a8321f" };
 const CLOTHES = ["#45413b", "#5d5850", "#776d61", "#4c5864", "#8b5b4a", "#6a7461"];
 const PEOPLE_ZOOM = 14; // closer than this, dots become little people

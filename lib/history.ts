@@ -78,11 +78,14 @@ export function summary(h: History, now: number) {
   const latest = last >= 0 && h.total[last] !== null ? { t: h.t[last], count: h.total[last]!, share: h.share[last] } : null;
   const y = latest ? nearest(h, latest.t - 86_400_000) : null;
   const yesterday = y !== null ? h.total[y] : null;
+  const a = latest ? nearest(h, latest.t - 3_600_000) : null;
+  const hourAgo = a !== null ? h.total[a] : null;
   let peak: { t: number; count: number } | null = null;
   h.total.forEach((c, i) => {
     if (c !== null && h.t[i] >= now - 7 * 86_400_000 && (!peak || c > peak.count)) peak = { t: h.t[i], count: c };
   });
-  return { latest, yesterday, change: latest && yesterday ? Math.round((100 * (latest.count - yesterday)) / yesterday) : null, peak: peak as { t: number; count: number } | null };
+  const pct = (then: number | null) => (latest && then ? Math.round((100 * (latest.count - then)) / then) : null);
+  return { latest, yesterday, change: pct(yesterday), hourAgo, hourChange: pct(hourAgo), peak: peak as { t: number; count: number } | null };
 }
 
 /**

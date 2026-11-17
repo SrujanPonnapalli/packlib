@@ -29,7 +29,7 @@ export default function TrendsPage() {
           <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-graphite [text-wrap:pretty]">
             StudyScape saves NC State&apos;s sensor headcounts every 5 minutes. Here is the last week, for the whole building and each level.
           </p>
-          <Suspense fallback={<div className="mt-8 h-[420px] animate-pulse rounded-xl bg-vellum/60" />}>
+          <Suspense fallback={<TrendsSkeleton />}>
             <Trends />
           </Suspense>
         </div>
@@ -56,8 +56,8 @@ async function Trends() {
 
   return (
     <>
-      <dl className="mt-8 grid gap-px overflow-hidden rounded-xl bg-rule sm:grid-cols-3">
-        <Stat label="Now">
+      <dl className="mt-8 grid gap-px overflow-hidden rounded-xl bg-rule sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Now" i={0}>
           {s.latest ? (
             <>
               <Big>{s.latest.count}</Big> people
@@ -71,17 +71,13 @@ async function Trends() {
             <Small>No readings yet</Small>
           )}
         </Stat>
-        <Stat label={s.change !== null ? "Against yesterday, same time" : "Collecting history"}>
-          {s.change !== null ? (
-            <>
-              <Big>{`${s.change > 0 ? "+" : ""}${s.change}%`}</Big>
-              <Small>{s.yesterday} people then</Small>
-            </>
-          ) : (
-            <Collecting days={days} />
-          )}
+        <Stat label="Over the last hour" i={1}>
+          {s.hourChange !== null ? <Change pct={s.hourChange} then={`${s.hourAgo} people an hour ago`} /> : <Small>Needs an hour of readings</Small>}
         </Stat>
-        <Stat label="Busiest this week">
+        <Stat label={s.change !== null ? "Against yesterday, same time" : "Collecting history"} i={2}>
+          {s.change !== null ? <Change pct={s.change} then={`${s.yesterday} people then`} /> : <Collecting days={days} />}
+        </Stat>
+        <Stat label="Busiest this week" i={3}>
           {s.peak ? (
             <>
               <Big>{s.peak.count}</Big> people
@@ -95,7 +91,7 @@ async function Trends() {
 
       <TrendsChart h={h} now={now} />
 
-      <p className="mt-6 max-w-2xl text-[12px] leading-relaxed text-pencil [text-wrap:pretty]">
+      <p className="mt-6 max-w-2xl animate-enter text-[12px] [animation-delay:240ms] leading-relaxed text-pencil [text-wrap:pretty]">
         {since ? `Collecting since ${date.format(since)} (${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"}`}). ` : ""}
         {forecastFrom && forecastFrom > now
           ? `Forecasts start once there are ${FORECAST_AFTER_DAYS} days of readings, around ${date.format(forecastFrom)}. `
@@ -106,9 +102,9 @@ async function Trends() {
   );
 }
 
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+function Stat({ label, i, children }: { label: string; i: number; children: React.ReactNode }) {
   return (
-    <div className="bg-sheet px-5 py-4">
+    <div className="animate-enter bg-sheet px-5 py-4" style={{ animationDelay: `${i * 50}ms` }}>
       <dt className="text-[12px] font-medium text-pencil">{label}</dt>
       <dd className="mt-1 text-[14px] text-graphite">{children}</dd>
     </div>
@@ -133,4 +129,42 @@ function Collecting({ days }: { days: number }) {
   );
 }
 
-const Small = ({ children }: { children: React.ReactNode }) => <span className="mt-1.5 flex items-center gap-1.5 text-[12px] text-pencil">{children}</span>;
+// A change in headcount, coloured like busyness: fewer people is good news, more is a warning.
+function Change({ pct, then }: { pct: number; then: string }) {
+  const tone = Math.abs(pct) < 1 ? "busy" : pct < 0 ? "quiet" : "packed";
+  return (
+    <>
+      <span className="flex items-stretch gap-2.5">
+        <span className="w-[3px] rounded-full" style={{ background: `var(--color-${tone})` }} aria-hidden="true" />
+        <span className="plaque text-[44px] font-semibold leading-none tracking-[-0.01em]" style={{ color: `var(--color-${tone}-ink)` }}>
+          {tone === "busy" ? "No change" : `${pct < 0 ? "↓" : "↑"} ${Math.abs(pct)}%`}
+        </span>
+      </span>
+      <Small>{then}</Small>
+    </>
+  );
+}
+
+/** The shape of the page while the history loads: the same cells and chart frame, shimmering. */
+function TrendsSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading the saved history">
+      <div className="mt-8 grid gap-px overflow-hidden rounded-xl bg-rule sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="bg-sheet px-5 py-4">
+            <div className="skeleton h-3 w-20 rounded" />
+            <div className="skeleton mt-3 h-10 w-28 rounded-md" />
+            <div className="skeleton mt-2.5 h-3 w-36 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-10 flex items-center gap-3">
+        <div className="skeleton h-3 w-64 max-w-[60%] rounded" />
+        <div className="skeleton ml-auto h-8 w-[148px] rounded-full" />
+      </div>
+      <div className="skeleton mt-3 h-[320px] rounded-xl" />
+    </div>
+  );
+}
+
+const Small =({ children }: { children: React.ReactNode }) => <span className="mt-1.5 flex items-center gap-1.5 text-[12px] text-pencil">{children}</span>;
