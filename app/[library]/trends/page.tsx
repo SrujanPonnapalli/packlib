@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import { isLibrary, libraryParams } from "@/data/libraries";
 import SiteHeader from "@/components/SiteHeader";
 import TrendsChart from "@/components/TrendsChart";
-import { BusyDot } from "@/components/Busy";
-import { summary, instant } from "@/lib/history";
+import { BusyDot, Ticker } from "@/components/Busy";
+import { summary, instant, slot } from "@/lib/history";
 import { recentHistory } from "@/lib/history-store";
 import { BUILDING_ID, BUSY_LABEL, busyness } from "@/lib/occupancy";
 
@@ -60,44 +60,63 @@ async function Trends() {
   const forecastFrom = since ? since + FORECAST_AFTER_DAYS * 86_400_000 : null;
   const busy = s.latest?.share != null ? busyness(BUILDING_ID, s.latest.share) : null;
 
+  const isPeak = !!(s.latest && s.peak && s.latest.count >= s.peak.count);
+  // today since midnight (Raleigh time), for the sparkline next to the headcount
+  const today = s.latest ? slot(new Date(s.latest.t).toISOString()).day : null;
+  const todays = h.t.flatMap((t, i) => (today && h.total[i] !== null && slot(new Date(t).toISOString()).day === today ? [{ t, c: h.total[i]! }] : []));
+  // up to two smaller cards next to Now. only show the week's high if it isn't right now
+  const others = [
+    s.hourChange !== null && { label: "Over the last hour", body: <Change pct={s.hourChange} then={`${s.hourAgo!.toLocaleString("en-US")} people an hour ago`} /> },
+    s.change !== null && { label: "Against yesterday, same time", body: <Change pct={s.change} then={`${s.yesterday!.toLocaleString("en-US")} people then`} /> },
+    s.peak && !isPeak && {
+      label: "Busiest this week",
+      body: (
+        <>
+          <Ticker value={s.peak.count} from={0} ms={600} comma className={BIG_SM} /> <span>people</span>
+          <Small>{when.format(s.peak.t)}</Small>
+        </>
+      ),
+    },
+  ]
+    .filter((o) => !!o)
+    .slice(0, 2);
+
   return (
     <>
       <dl className="mt-8 grid gap-px overflow-hidden rounded-xl bg-rule sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Now" i={0}>
-          {s.latest ? (
-            <>
-              <Big>{s.latest.count}</Big> people
-              <Small>
-                {busy && <BusyDot busy={busy} />}
-                {s.latest.share != null && `${Math.round(s.latest.share * 100)}% full · `}
-                {busy ? BUSY_LABEL[busy] : ""} · {when.format(s.latest.t)}
-              </Small>
-            </>
-          ) : (
-            <Small>No readings yet</Small>
-          )}
-        </Stat>
-        <Stat label="Over the last hour" i={1}>
-          {s.hourChange !== null ? <Change pct={s.hourChange} then={`${s.hourAgo} people an hour ago`} /> : <Small>Needs an hour of readings</Small>}
-        </Stat>
-        <Stat label={s.change !== null ? "Against yesterday, same time" : "Collecting history"} i={2}>
-          {s.change !== null ? <Change pct={s.change} then={`${s.yesterday} people then`} /> : <Collecting days={days} />}
-        </Stat>
-        <Stat label="Busiest this week" i={3}>
-          {s.peak ? (
-            <>
-              <Big>{s.peak.count}</Big> people
-              <Small>{when.format(s.peak.t)}</Small>
-            </>
-          ) : (
-            <Small>No readings yet</Small>
-          )}
-        </Stat>
+        <div className="animate-enter bg-sheet px-5 py-5 sm:col-span-2">
+          <dt className="flex items-center gap-2 text-[12px] font-medium text-pencil">
+            Now
+            {isPeak && <span className="rounded-full bg-[var(--color-packed)]/12 px-2 py-0.5 text-[11px] font-semibold text-packed-ink">Week&apos;s high</span>}
+          </dt>
+          <dd className="mt-1 flex items-end justify-between gap-6 text-[14px] text-graphite">
+            {s.latest ? (
+              <div>
+                <Ticker value={s.latest.count} from={0} ms={700} comma className="plaque mr-1.5 text-[64px] font-semibold leading-none tracking-[-0.02em] text-ink" />
+                <span>people</span>
+                <Small>
+                  {busy && <BusyDot busy={busy} />}
+                  {s.latest.share != null && `${Math.round(s.latest.share * 100)}% full · `}
+                  {busy ? BUSY_LABEL[busy] : ""} · {when.format(s.latest.t)}
+                </Small>
+              </div>
+            ) : (
+              <Small>No readings yet</Small>
+            )}
+            {todays.length > 1 && <TodayLine points={todays} />}
+          </dd>
+        </div>
+        {others.map((o, i) => (
+          <Stat key={o.label} label={o.label} i={i + 1} wide={others.length === 1}>
+            {o.body}
+          </Stat>
+        ))}
       </dl>
 
       <TrendsChart h={h} now={now} />
 
-      <p className="mt-6 max-w-2xl animate-enter text-[12px] [animation-delay:240ms] leading-relaxed text-pencil [text-wrap:pretty]">
+      {s.change === null && <Collecting days={days} />}
+      <p className="mt-3 max-w-2xl animate-enter text-[12px] [animation-delay:240ms] leading-relaxed text-pencil [text-wrap:pretty]">
         {since ? `Collecting since ${date.format(since)} (${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"}`}). ` : ""}
         {forecastFrom && forecastFrom > now
           ? `Forecasts start once there are ${FORECAST_AFTER_DAYS} days of readings, around ${date.format(forecastFrom)}. `
@@ -108,43 +127,74 @@ async function Trends() {
   );
 }
 
-function Stat({ label, i, children }: { label: string; i: number; children: React.ReactNode }) {
+function Stat({ label, i, wide, children }: { label: string; i: number; wide?: boolean; children: React.ReactNode }) {
   return (
-    <div className="animate-enter bg-sheet px-5 py-4" style={{ animationDelay: `${i * 50}ms` }}>
+    <div className={`animate-enter bg-sheet px-5 py-5 ${wide ? "sm:col-span-2" : ""}`} style={{ animationDelay: `${i * 50}ms` }}>
       <dt className="text-[12px] font-medium text-pencil">{label}</dt>
       <dd className="mt-1 text-[14px] text-graphite">{children}</dd>
     </div>
   );
 }
 
-const Big = ({ children }: { children: React.ReactNode }) => <span className="plaque mr-1 text-[44px] font-semibold leading-none tracking-[-0.01em] text-ink">{children}</span>;
-// until there's a full day to compare against, show the history filling up toward forecasts
-function Collecting({ days }: { days: number }) {
-  const n = Math.min(days + 1, FORECAST_AFTER_DAYS);
+const BIG_SM = "plaque mr-1 text-[32px] font-semibold leading-none tracking-[-0.01em] text-ink";
+
+/** Sparkline of today's headcount so far. */
+function TodayLine({ points }: { points: { t: number; c: number }[] }) {
+  const W = 180;
+  const H = 48;
+  const t0 = points[0].t;
+  const span = Math.max(points[points.length - 1].t - t0, 1);
+  const max = Math.max(...points.map((p) => p.c), 1);
+  const xy = points.map((p) => [((p.t - t0) / span) * W, H - 2 - (p.c / max) * (H - 4)] as const);
+  const d = xy.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join("");
+  const [lx, ly] = xy[xy.length - 1];
   return (
-    <>
-      <span className="plaque mr-1 text-[44px] font-semibold leading-none text-ink">Day {n}</span>
-      <span className="text-pencil">of {FORECAST_AFTER_DAYS}</span>
-      <span className="mt-2.5 flex gap-[3px]" aria-hidden="true">
-        {Array.from({ length: FORECAST_AFTER_DAYS }, (_, i) => (
-          <span key={i} className={`h-2.5 w-1.5 rounded-[1px] ${i < n ? "bg-accent-deep" : "bg-rule"}`} />
-        ))}
-      </span>
-      <Small>Comparisons from tomorrow, forecasts after day {FORECAST_AFTER_DAYS}</Small>
-    </>
+    <figure className="hidden shrink-0 sm:block" aria-label="Today's headcount so far">
+      <svg width={W} height={H} viewBox={`-2 0 ${W + 6} ${H}`} className="overflow-visible">
+        <path d={`${d}L${W},${H}L0,${H}Z`} fill="var(--color-ink)" fillOpacity={0.05} />
+        <path d={d} fill="none" stroke="var(--color-ink)" strokeWidth={1.5} strokeLinejoin="round" pathLength={1} className="draw" />
+        <circle cx={lx} cy={ly} r={3} fill="var(--color-ink)" />
+      </svg>
+      <figcaption className="mt-1 text-right text-[11px] text-pencil">Today so far</figcaption>
+    </figure>
   );
 }
 
-// headcount change, colored like busyness (fewer people is good, more is bad)
+// until there's a full day to compare against, show a progress bar toward forecasts
+function Collecting({ days }: { days: number }) {
+  const n = Math.min(days + 1, FORECAST_AFTER_DAYS);
+  return (
+    <p className="mt-6 flex animate-enter flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-pencil [animation-delay:200ms]">
+      <span className="font-medium text-graphite">
+        Collecting history: day {n} of {FORECAST_AFTER_DAYS}
+      </span>
+      <span className="flex gap-[3px]" aria-hidden="true">
+        {Array.from({ length: FORECAST_AFTER_DAYS }, (_, i) => (
+          <span key={i} className={`h-2 w-1.5 rounded-[1px] ${i < n ? "bg-accent-deep" : "bg-rule-strong"}`} />
+        ))}
+      </span>
+      <span>Comparisons from tomorrow, forecasts after day {FORECAST_AFTER_DAYS}.</span>
+    </p>
+  );
+}
+
+// headcount change with a small arrow, colored like busyness so fewer people = green
 function Change({ pct, then }: { pct: number; then: string }) {
   const tone = Math.abs(pct) < 1 ? "busy" : pct < 0 ? "quiet" : "packed";
   return (
     <>
-      <span className="flex items-stretch gap-2.5">
-        <span className="w-[3px] rounded-full" style={{ background: `var(--color-${tone})` }} aria-hidden="true" />
-        <span className="plaque text-[44px] font-semibold leading-none tracking-[-0.01em]" style={{ color: `var(--color-${tone}-ink)` }}>
-          {tone === "busy" ? "No change" : `${pct < 0 ? "↓" : "↑"} ${Math.abs(pct)}%`}
-        </span>
+      <span className="flex items-center gap-1.5">
+        {tone !== "busy" && (
+          <span className="text-[22px] font-semibold leading-none" style={{ color: `var(--color-${tone}-ink)` }} aria-hidden="true">
+            {pct < 0 ? "↓" : "↑"}
+          </span>
+        )}
+        {tone === "busy" ? (
+          <span className={BIG_SM}>No change</span>
+        ) : (
+          <Ticker value={Math.abs(pct)} from={0} ms={600} suffix="%" className={BIG_SM} />
+        )}
+        <span className="sr-only">{pct < 0 ? "fewer" : "more"}</span>
       </span>
       <Small>{then}</Small>
     </>
@@ -156,8 +206,8 @@ function TrendsSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading the saved history">
       <div className="mt-8 grid gap-px overflow-hidden rounded-xl bg-rule sm:grid-cols-2 lg:grid-cols-4">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="bg-sheet px-5 py-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className={`bg-sheet px-5 py-5 ${i === 0 ? "sm:col-span-2" : ""}`}>
             <div className="skeleton h-3 w-20 rounded" />
             <div className="skeleton mt-3 h-10 w-28 rounded-md" />
             <div className="skeleton mt-2.5 h-3 w-36 rounded" />

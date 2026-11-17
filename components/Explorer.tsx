@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { KINDS, LEVELS, landmark, spaces, type Kind } from "@/data/hunt";
@@ -169,29 +169,9 @@ export default function Explorer() {
           <SpaceDetail space={selected} live={live} onBack={() => go({ space: null }, true)} />
         ) : (
           <>
-            <div className="flex gap-1 border-b border-rule px-5 pt-4 sm:px-7" role="tablist" aria-label="Find or browse">
-              {(
-                [
-                  ["match", "Find a spot"],
-                  ["browse", "Browse all"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === id}
-                  onClick={() => setMode(id)}
-                  className={`-mb-px h-10 border-b-2 px-2 text-[14px] font-medium transition-colors duration-150 ${
-                    mode === id ? "border-ink text-ink" : "border-transparent text-pencil hover:text-ink"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <Tabs mode={mode} onMode={setMode} />
             {mode === "match" ? (
-              <StudyMatch ask={ask} onAsk={setAsk} result={result} onModel={wide} onOpen={(s) => go({ space: s.id }, true)} onHover={setHighlight} />
+              <StudyMatch ask={ask} onAsk={setAsk} result={result} live={live} onModel={wide} onOpen={(s) => go({ space: s.id }, true)} onHover={setHighlight} />
             ) : (
             <>
             <div className="sticky top-0 z-10 border-b border-rule bg-sheet/95 px-5 pb-3 pt-5 backdrop-blur-sm sm:px-7">
@@ -209,8 +189,8 @@ export default function Explorer() {
                   className="h-10 w-full rounded-lg bg-sheet pl-9 pr-3 text-[14px] shadow-[inset_0_0_0_1px_var(--color-rule-strong)] transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_rgb(23_23_23/0.35)] placeholder:text-pencil focus-visible:outline-offset-0"
                 />
               </label>
-              <div className="-mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-7 sm:px-7" role="group" aria-label="Filter by type">
-                {[...KINDS, { id: "all" as const, label: "Everything" }].map((k) => {
+              <div className="-mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5 pb-1 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] [scrollbar-width:none] sm:-mx-7 sm:px-7" role="group" aria-label="Filter by type">
+                {[...KINDS, { id: "all" as const, label: "Everything" }].map((k, i, all) => {
                   const on = kind === k.id;
                   return (
                     <button
@@ -218,7 +198,7 @@ export default function Explorer() {
                       type="button"
                       aria-pressed={on}
                       onClick={() => setKind(k.id)}
-                      className={`shrink-0 ${CHIP} ${chipState(on)}`}
+                      className={`shrink-0 ${CHIP} ${chipState(on)} ${i === all.length - 1 ? "mr-6" : ""}`}
                     >
                       {k.label}
                     </button>
@@ -229,7 +209,7 @@ export default function Explorer() {
 
             <div className="px-5 pb-12 pt-6 sm:px-7">
               {listed.length > 0 ? (
-                <SpaceList spaces={listed} live={live} onOpen={(s) => go({ space: s.id }, true)} />
+                <SpaceList key={`${kind}-${level}`} spaces={listed} live={live} onOpen={(s) => go({ space: s.id }, true)} />
               ) : (
                 <div className="py-16 text-center">
                   <p className="text-[16px] font-semibold">Nothing matches that.</p>
@@ -252,5 +232,46 @@ export default function Explorer() {
         )}
       </section>
     </main>
+  );
+}
+
+const TABS = [
+  ["match", "Find a spot"],
+  ["browse", "Browse all"],
+] as const;
+
+/** The two panel tabs, with an underline that slides to the selected one. */
+function Tabs({ mode, onMode }: { mode: (typeof TABS)[number][0]; onMode: (m: (typeof TABS)[number][0]) => void }) {
+  const refs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [bar, setBar] = useState<{ x: number; w: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = refs.current[mode];
+    if (el) setBar({ x: el.offsetLeft, w: el.offsetWidth });
+  }, [mode]);
+  return (
+    <div className="relative flex gap-1 border-b border-rule px-5 pt-4 sm:px-7" role="tablist" aria-label="Find or browse">
+      {TABS.map(([id, label]) => (
+        <button
+          key={id}
+          ref={(el) => {
+            refs.current[id] = el;
+          }}
+          type="button"
+          role="tab"
+          aria-selected={mode === id}
+          onClick={() => onMode(id)}
+          className={`h-10 rounded-t-md px-2 text-[14px] font-medium transition-colors duration-150 focus-visible:outline-offset-[-2px] ${mode === id ? "text-ink" : "text-pencil hover:text-ink"}`}
+        >
+          {label}
+        </button>
+      ))}
+      {bar && (
+        <span
+          aria-hidden="true"
+          className="absolute -bottom-px left-0 h-0.5 bg-ink transition-[translate,width] duration-300 ease-out-quint motion-reduce:transition-none"
+          style={{ translate: `${bar.x}px 0`, width: bar.w }}
+        />
+      )}
+    </div>
   );
 }

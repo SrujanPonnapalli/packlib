@@ -77,7 +77,9 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
 
   const n = h.t.length;
   const t0 = Math.max(h.t[0] ?? now, now - 7 * 86_400_000);
-  const t1 = Math.max(h.t[n - 1] ?? now, now, t0 + 3_600_000); // right edge is now, so a stalled collector shows up as a gap
+  // the last reading counts as now unless it's overdue (polls are 5 min apart), so only a stalled collector shows a gap
+  const end = n && now - h.t[n - 1] <= 10 * 60_000 ? h.t[n - 1] : now;
+  const t1 = Math.max(h.t[n - 1] ?? end, end, t0 + 3_600_000);
   const innerW = Math.max(0, width - PAD.left - PAD.right);
   const innerH = HEIGHT - PAD.top - PAD.bottom;
   const x = (t: number) => PAD.left + ((t - t0) / (t1 - t0)) * innerW;
@@ -171,7 +173,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
   const tipValue = tip >= 0 ? (mode === "count" ? h.total[tip] : h.share[tip]) : null;
   const tipLeft = tip >= 0 ? xs[tip] : 0;
   const flip = tipLeft > PAD.left + innerW * 0.62;
-  const nowX = x(now);
+  const nowX = x(end);
 
   // comparison between the pressed and dragged-to readings, like stock apps do
   const cmp = press && to !== null && to !== press.a ? { lo: Math.min(press.a, to), hi: Math.max(press.a, to) } : null;

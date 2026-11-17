@@ -59,7 +59,9 @@ export function LiveNote({ live, level, space, said = false }: { live: Live; lev
  * `from` starts it there and ticks to `value` on mount.
  */
 /** `lift` is how far digits move (fraction of their height), `stagger` delays each column after the ones. */
-export function Ticker({ value, format = String, from, className = "", ms = 280, lift = 100, stagger = 35 }: { value: number; format?: (v: number) => string; from?: number; className?: string; ms?: number; lift?: number; stagger?: number }) {
+export function Ticker({ value, format: fmt, comma, suffix = "", from, className = "", ms = 280, lift = 100, stagger = 35 }: { value: number; format?: (v: number) => string; comma?: boolean; suffix?: string; from?: number; className?: string; ms?: number; lift?: number; stagger?: number }) {
+  // `comma`/`suffix` exist because server components can't pass a function
+  const format = fmt ?? ((v: number) => (comma ? v.toLocaleString("en-US") : String(v)) + suffix);
   const [t, setT] = useState({ shown: value, prev: from ?? value, n: 0 });
   if (value !== t.shown) setT({ shown: value, prev: t.shown, n: t.n + 1 });
   const now = format(t.shown);
@@ -117,7 +119,7 @@ function useCountUp(target: number, ms = 1400) {
 function HeroNumber({ value }: { value: number }) {
   const counting = useCountUp(value);
   const cls = "plaque text-[88px] font-semibold leading-none tracking-[-0.03em] sm:text-[112px] lg:text-[136px]";
-  return counting === null ? <Ticker value={value} ms={650} className={cls} /> : <span className={`inline-flex tabular-nums ${cls}`}>{counting}</span>;
+  return counting === null ? <Ticker value={value} ms={650} comma className={cls} /> : <span className={`inline-flex tabular-nums ${cls}`}>{counting.toLocaleString("en-US")}</span>;
 }
 
 /** The big number: how many people are in the building right now. */
@@ -140,14 +142,28 @@ export function HeroCount({ live, where }: { live: Live; where: string }) {
   );
 }
 
-/** Swatches for the model's heat colors. */
+// what each level means, using NC State's cut-offs for most areas (exceptions are in lib/occupancy.ts)
+const MEANS: Record<Busy, string> = {
+  quiet: "Up to a quarter of the seats taken",
+  busy: "A quarter to just under half the seats taken",
+  packed: "Almost half the seats or more taken",
+};
+
+/** Swatches for the model's heat colors. Hover or focus one to see what it means. */
 export function BusyKey() {
   return (
-    <div className="flex items-center gap-3 text-[11px] text-graphite">
+    <div className="pointer-events-auto flex items-center gap-1 text-[11px] text-graphite">
       {(Object.keys(BUSY_LABEL) as Busy[]).map((b) => (
-        <span key={b} className="flex items-center gap-1.5">
+        <span key={b} tabIndex={0} aria-describedby={`means-${b}`} className="group relative flex cursor-help items-center gap-1.5 rounded px-1 py-0.5 hover:text-ink">
           <BusyDot busy={b} />
           {BUSY_LABEL[b]}
+          <span
+            id={`means-${b}`}
+            role="tooltip"
+            className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] translate-y-1 rounded-md bg-ink/95 px-2.5 py-1.5 text-[11px] leading-snug text-sheet opacity-0 shadow-lift transition-[opacity,translate] duration-150 ease-out-quint group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+          >
+            {MEANS[b]}. Some areas use different cut-offs.
+          </span>
         </span>
       ))}
     </div>

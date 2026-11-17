@@ -101,6 +101,10 @@ html[data-arrived] after that so it gets skipped. */
 html[data-arrived] :is(.arrive, .draw, .fill-in) {
   animation: none;
 }
+/* after the intro, .restagger elements still fade in quickly when they mount (after --s) */
+html[data-arrived] .arrive.restagger {
+  animation: enter 220ms var(--ease-out-quint) var(--s, 0ms) backwards;
+}
 /* ticker digits: the old digit slides out and the new one slides in (up if the number went up, down if it went down) */
 .tick-in-up {
   animation: tick-in-up var(--tick, 280ms) var(--ease-out-quint) backwards;
