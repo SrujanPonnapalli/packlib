@@ -171,7 +171,6 @@ const level3: Floor = {
         [1025, 300],
       ],
     },
-    // The two stairs by the overlook are one run: up to Level 4 from the east, and beside it down to Level 2.
     { kind: "stair", ref: "Monumental Stair with Roman Seating", dir: "up", front: E, poly: rect(545, 360, 612, 447) },
     {
       kind: "stair",
@@ -184,7 +183,7 @@ const level3: Floor = {
         [910, 548],
       ],
     },
-    { kind: "stair", dir: "down", front: W, poly: rect(523, 447, 627, 550) },
+    { kind: "core", poly: rect(523, 447, 627, 550) }, // an enclosed exit stair, drawn closed on every floor
     { kind: "stair", dir: "down", front: N, poly: rect(125, 225, 180, 305) },
     { kind: "core", poly: rect(527, 157, 588, 287) },
     { kind: "core", poly: rect(673, 447, 780, 550) },
@@ -291,28 +290,11 @@ const level2Shapes: Shape[] = [
   { kind: "counter", ref: "Ask Us", label: "Ask Us", poly: rect(1145, 435, 1212, 500) },
   { kind: "core", poly: rect(498, 220, 552, 252) },
   { kind: "core", poly: rect(1198, 130, 1280, 300) },
+  { kind: "core", poly: rect(492, 405, 590, 500) }, // the enclosed exit stair
   { kind: "core", poly: rect(630, 405, 712, 500) },
   { kind: "core", poly: rect(732, 405, 855, 497) },
   { kind: "core", poly: rect(1090, 372, 1140, 498) },
   { kind: "core", poly: rect(1240, 372, 1282, 490) },
-  {
-    kind: "core", // staff area
-    poly: [
-      [1472, 128],
-      [1590, 105],
-      [1640, 320],
-      [1520, 345],
-    ],
-  },
-  {
-    kind: "core",
-    poly: [
-      [1620, 62],
-      [1738, 40],
-      [1760, 162],
-      [1642, 192],
-    ],
-  },
   // The stairs up to Level 3 are not traced here: they are added from Level 3's "down" stairs, so the two ends always meet.
   {
     kind: "stair", // to the Institute for Emerging Issues and Level 4
@@ -356,7 +338,12 @@ const level2 = aligned(
     [1198, 372],
     [1198, 125],
     [1280, 125],
-    [1740, 35],
+    // staff offices in the north-east corner are left out; the outline steps in around Duke Energy Hall
+    [1470, 88],
+    [1504, 295],
+    [1575, 280],
+    [1556, 203],
+    [1764, 162],
     [1850, 608],
     [1280, 722],
     [1280, 775],
@@ -372,7 +359,9 @@ const level4 = aligned(
   [
     [45, 128],
     [1355, 128],
-    [1842, 35],
+    // the Institute for Emerging Issues' offices are left out; what stays holds its lecture hall and meeting rooms
+    [1355, 388],
+    [1896, 308],
     [1963, 660],
     [1405, 755],
     [1065, 815],
@@ -441,10 +430,10 @@ const level4 = aligned(
     {
       kind: "zone", // not part of the Libraries; its two bookable rooms are drawn inside it
       label: "Institute for Emerging Issues",
-      at: [1600, 215],
+      at: [1560, 520],
       poly: [
-        [1358, 132],
-        [1838, 40],
+        [1358, 392],
+        [1893, 313],
         [1958, 656],
         [1408, 750],
         [1388, 640],
@@ -561,14 +550,21 @@ const level4 = aligned(
 const level5 = aligned(
   ([x, y]) => [x - 7, y + 12],
   [
-    // The planted roofs north and south of the floor are left out.
+    // The planted roofs north and south of the floor are left out too.
     [55, 138],
     [150, 138],
     [150, 200],
-    [1360, 140],
-    [1845, 45],
-    [1967, 672],
-    [1380, 770],
+    // the staff floor and the University Centers suite are left out
+    [312, 198],
+    [332, 400],
+    [470, 400],
+    [470, 478],
+    [640, 478],
+    [640, 432],
+    [890, 432],
+    [890, 516],
+    [1266, 522],
+    [1266, 750],
     [1250, 750],
     [150, 563],
     [150, 672],
@@ -603,48 +599,6 @@ const level5 = aligned(
         [1193, 572],
         [1193, 736],
         [792, 668],
-      ],
-    },
-    {
-      kind: "zone",
-      label: "Staff only",
-      at: [1125, 315],
-      poly: [
-        [312, 198],
-        [1360, 144],
-        [1840, 52],
-        [1896, 344],
-        [1500, 424],
-        [1500, 386],
-        [1392, 386],
-        [1392, 432],
-        [1322, 432],
-        [1322, 500],
-        [890, 518],
-        [890, 432],
-        [640, 432],
-        [640, 478],
-        [440, 478],
-        [420, 428],
-        [332, 445],
-      ],
-    },
-    {
-      kind: "zone",
-      label: "University Centers",
-      at: [1640, 540],
-      poly: [
-        [1264, 526],
-        [1322, 522],
-        [1322, 434],
-        [1392, 434],
-        [1392, 388],
-        [1498, 388],
-        [1498, 427],
-        [1898, 348],
-        [1962, 668],
-        [1380, 766],
-        [1264, 748],
       ],
     },
     ...strip(["5241", "5242", "5243", "5244", "5245"], 890, 526, 1140, 568, S),
