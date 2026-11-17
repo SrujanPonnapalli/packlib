@@ -21,6 +21,7 @@ const ROOM_H = 0.5; // closed room: just a block
 const WALL_H = 0.55; // open room: low cut-away walls so you can see inside
 const STAIR_FULL = RISE; // a stair comes up through the opening in the floor above, flush with it...
 const STAIR_OPEN = 2.2; // ...and folds down low while a level is open so it doesn't tower over the rooms
+const GLASS = 0.5; // how solid a floor is in the whole-building view
 const FLAT = 0.25; // how flat closed rooms get while another room is open
 const WALL_T = 2.5; // px
 
@@ -172,7 +173,7 @@ function useMaterials() {
       wall: [wall, wall, rim, wall, wall, wall],
       glass: [glass, glass, rim, glass, glass, glass],
       piece: lambert("#ffffff"), // tinted per instance
-      plate: [lambert(P.plate), lambert(P.plateSide)],
+      plate: [lambert(P.plate), lambert(P.plateSide)].map((m) => ((m.userData.floor = true), m)),
       block: [lambert(P.block), lambert(P.blockSide)],
       blockHover: [lambert(P.hover), lambert(P.blockSide)],
       core: [lambert(P.coreTop), lambert(P.core)],
@@ -191,6 +192,7 @@ function Slab({
   material,
   cast,
   edges,
+  floor,
   onClick,
   onHover,
 }: {
@@ -200,6 +202,8 @@ function Slab({
   material?: THREE.Material | THREE.Material[];
   cast?: boolean;
   edges?: boolean;
+  /** Part of the floor itself, turns to glass in the whole-building view. */
+  floor?: boolean;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
   onHover?: Hover;
 }) {
@@ -214,7 +218,7 @@ function Slab({
       onPointerOver={onHover && ((e) => onHover(e, true))}
       onPointerOut={onHover && ((e) => onHover(e, false))}
     >
-      {!material && <meshLambertMaterial color={color} transparent />}
+      {!material && <meshLambertMaterial color={color} transparent userData={{ floor }} />}
       {edges && <Edges threshold={15} color={P.blockEdge} transparent />}
     </mesh>
   );
@@ -285,7 +289,10 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const ghost = active === null && !floor.traced;
   const targetOpacity = away ? 0 : under ? 0.05 : ghost ? 0.14 : 1;
   // start assembled so opening a level on page load still animates
-  const now = useRef({ y: (n - 1) * RISE, opacity: 1, flat: 1, stair: STAIR_FULL });
+  const now = useRef({ y: (n - 1) * RISE, opacity: 1, flat: 1, stair: STAIR_FULL, glass: 1 });
+  // in the whole-building view the floors are glass so you can see every level's rooms and the stairs
+  const glassy = active === null;
+  const targetGlass = glassy ? GLASS : 1;
   const flights = useRef<THREE.Group>(null);
   const targetStair = active === null ? STAIR_FULL : STAIR_OPEN;
   const blocks = useRef<THREE.Group>(null!);
@@ -305,26 +312,30 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       else state.invalidate();
       if (flights.current) flights.current.scale.y = s.stair;
     }
-    if (s.y === targetY && s.opacity === targetOpacity) return;
+    if (s.y === targetY && s.opacity === targetOpacity && s.glass === targetGlass) return;
     const k = ease(dt, 0.11);
     s.y += (targetY - s.y) * k;
     s.opacity += (targetOpacity - s.opacity) * k;
-    if (Math.abs(targetY - s.y) < 0.01 && Math.abs(targetOpacity - s.opacity) < 0.005) {
+    s.glass += (targetGlass - s.glass) * k;
+    if (Math.abs(targetY - s.y) < 0.01 && Math.abs(targetOpacity - s.opacity) < 0.005 && Math.abs(targetGlass - s.glass) < 0.005) {
       s.y = targetY;
       s.opacity = targetOpacity;
+      s.glass = targetGlass;
     } else state.invalidate();
     group.current.position.y = s.y;
     group.current.visible = s.opacity > 0.01; // floors above the open level move away completely
     const fade = (m: THREE.Material) => {
       const base = (m.userData.base as number | undefined) ?? 1;
-      m.opacity = base * s.opacity;
-      m.depthWrite = s.opacity > 0.5 && base > 0.5 && !m.userData.glass;
+      const seen = s.opacity * (m.userData.floor ? s.glass : 1);
+      m.opacity = base * seen;
+      m.depthWrite = seen > 0.5 && base > 0.5 && !m.userData.glass;
     };
     group.current.traverse((o) => {
       const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
       if (mat) [mat].flat().forEach(fade);
       o.userData.cast ??= o.castShadow;
-      o.castShadow = o.userData.cast && s.opacity > 0.5; // faded floors don't cast shadows
+      const glassFloor = s.glass < 0.5 && mat !== undefined && [mat].flat()[0].userData.floor;
+      o.castShadow = o.userData.cast && s.opacity > 0.5 && !glassFloor; // faded/glass floors don't cast shadows
     });
   });
 
@@ -364,9 +375,9 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
         position-y={-0.4}
         castShadow
         receiveShadow
-        onClick={click(() => (open ? selectedRef && onClear() : onSelectLevel(n)))}
-        onPointerOver={open ? undefined : (e) => point(null)(e, true)}
-        onPointerOut={open ? undefined : (e) => point(null)(e, false)}
+        onClick={glassy ? undefined : click(() => (open ? selectedRef && onClear() : onSelectLevel(n)))}
+        onPointerOver={open || glassy ? undefined : (e) => point(null)(e, true)}
+        onPointerOut={open || glassy ? undefined : (e) => point(null)(e, false)}
       >
         <Edges threshold={20} color={P.edge} transparent />
       </mesh>
@@ -382,7 +393,8 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
                 poly={s.poly}
                 height={0.03}
                 color={picked ? P.pickWash : hot ? P.hover : s.ref ? P.zone : P.overlook}
-                onClick={click(() => openRef(s.ref))}
+                floor
+                onClick={glassy ? undefined : click(() => openRef(s.ref))}
                 onHover={onHover}
               />
             );
@@ -450,12 +462,12 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
   const focus = selectedRef ? FLOORS[active].shapes.find((s) => s.ref === selectedRef) : undefined;
   const callouts = focus ? (FITS[active].detail[selectedRef!]?.callouts ?? []) : [];
   const out: Label[] = [];
-  for (const s of FLOORS[active].shapes) {
+  for (const [i, s] of FLOORS[active].shapes.entries()) {
     const mine = focus !== undefined && s.ref === selectedRef;
     if (!s.label || mine) continue;
     const [px, py] = s.at ?? centre(s.poly);
     out.push({
-      key: s.label,
+      key: `${active}-${i}`,
       text: s.label,
       at: new THREE.Vector3(wx(px), y + (s.kind === "room" ? ROOM_H : 0.3) + 0.2, wz(py)),
       style: /^\d/.test(s.label) ? "room" : "name",
@@ -477,6 +489,7 @@ function labelsFor(active: number | null, selectedRef: string | null): Label[] {
 }
 
 const scratch = new THREE.Vector3();
+const RANK = { name: 0, room: 1, callout: 2 };
 
 // callout label: offset from its dot, plus its box (px) that other labels have to avoid
 const PILL = { dx: 22, dy: -18, w: 200, h: 24 };
@@ -488,7 +501,11 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
   useFrame(({ camera, size }) => {
     camera.updateMatrixWorld();
     const pills: { x: number; y: number }[] = []; // where each callout label ended up, so the next one can avoid it
-    labels.forEach((label, i) => {
+    const taken: { x: number; y: number; w: number; h: number }[] = []; // labels already placed, later ones can't overlap them
+    // names get placed before room numbers, so on a crowded floor the numbers are what get dropped
+    const order = labels.map((_, i) => i).sort((a, b) => RANK[labels[a].style] - RANK[labels[b].style]);
+    order.forEach((i) => {
+      const label = labels[i];
       const el = els.current[i];
       if (!el) return;
       scratch.copy(label.at).project(camera);
@@ -499,6 +516,9 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
         el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
         // room numbers scale with the model so small rooms stay readable on a big floor
         if (label.style === "room") (el.firstElementChild as HTMLElement).style.fontSize = `${Math.min(10, Math.max(6.5, camera.zoom * 0.9)).toFixed(1)}px`;
+        const box = { x, y, w: el.offsetWidth, h: el.offsetHeight };
+        if (taken.some((o) => Math.abs(o.x - x) < (o.w + box.w) / 2 && Math.abs(o.y - y) < (o.h + box.h) / 2)) el.style.opacity = "0";
+        else taken.push(box);
         return;
       }
       el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;

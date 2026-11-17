@@ -300,6 +300,26 @@ function special(fit: NonNullable<Shape["fit"]>, poly: Pt[], front: number, avoi
       return gridIn(poly, 50, 20, avoid).flatMap(([x, y], k) =>
         k % 2 ? [disc([x, y], 15, 0.3, "table"), ...ring([x, y], 12, 4, Math.PI / 4).map(({ p }) => disc(p, 5.5, 0.2, "chair"))] : [box([x, y], 28, 2.5, 0.55, "desk")],
       );
+    case "cafe": // small tables for two
+      return gridIn(poly, 34, 14, avoid).flatMap(([x, y]) => [disc([x, y], 10, 0.3, "table"), disc([x - 8.5, y], 5, 0.2, "chair"), disc([x + 8.5, y], 5, 0.2, "chair")]);
+    case "auditorium": { // curved rows of seating facing a stage at the front
+      const f = flight(poly, front);
+      const local = (v: number, u = 0): Pt => {
+        const q = f.place(v, u);
+        return [q.x, q.y];
+      };
+      const rows = Math.max(3, Math.floor((f.D * 0.68) / 20));
+      return [
+        box(local(f.D * 0.07), f.W * 0.5, f.D * 0.08, 0.12, "table", f.rot),
+        ...Array.from({ length: rows }, (_, i) => f.D * 0.3 + i * 20).flatMap((r) => {
+          const sweep = Math.min(Math.PI * 0.55, (f.W * 0.8) / r);
+          const n = Math.max(3, Math.round((r * sweep) / 22));
+          return ring([0, 0], r, n, Math.PI / 2 - sweep / 2, sweep)
+            .filter(({ p }) => pointIn(poly, local(p[1], p[0])) && edgeDistance(poly, local(p[1], p[0])) > 8)
+            .map(({ p, a }) => box(local(p[1], p[0]), (r * sweep) / n - 2, 7, 0.2, "soft", f.rot + a + Math.PI / 2));
+        }),
+      ];
+    }
     case "hall": // round banquet tables
       return gridIn(poly, 64, 30, avoid).flatMap(([x, y]) => [disc([x, y], 22, 0.3, "table"), ...ring([x, y], 16, 6).map(({ p }) => disc(p, 6, 0.2, "chair"))]);
     case "theater": { // a gently curved wall of screens, with stools facing it
