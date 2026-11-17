@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LEVELS } from "@/data/hunt";
 import { LevelButton } from "./LevelRail";
+import type { Busy } from "@/lib/occupancy";
 
 // Schematic footprint per level as [length, depth]; not to scale.
 const FOOTPRINT: Record<number, [number, number]> = {
@@ -35,10 +36,11 @@ function slab(n: number) {
 type Props = {
   active: number | null;
   counts: Record<number, number>;
+  busy: Record<number, Busy | null>;
   onSelect: (level: number | null) => void;
 };
 
-export default function LevelStack({ active, counts, onSelect }: Props) {
+export default function LevelStack({ active, counts, busy, onSelect }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const toggle = (n: number) => onSelect(active === n ? null : n);
 
@@ -109,6 +111,7 @@ export default function LevelStack({ active, counts, onSelect }: Props) {
                 dim={(active !== null && active !== n) || count === 0}
                 onClick={() => toggle(n)}
                 onHover={setHover}
+                busy={busy[n]}
               />
             </li>
           );

@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { KINDS, LEVELS, type Kind, type Space } from "@/data/hunt";
+import { BUSY_LABEL, zoneFor } from "@/lib/occupancy";
+import { BusyDot, type Live } from "./Busy";
 
 // Numbered rooms of these kinds are near-identical, so they show as a grid of
 // door plaques instead of sixty rows that differ by one number.
@@ -7,24 +9,34 @@ const PLAQUE_KINDS: Kind[] = ["study", "grad", "faculty"];
 const isPlaque = (s: Space) => s.room !== null && PLAQUE_KINDS.includes(s.kind);
 const kindLabel = (k: Kind) => KINDS.find((x) => x.id === k)!.label;
 
-type Props = { spaces: Space[]; onOpen: (s: Space) => void };
+type Props = { spaces: Space[]; live: Live; onOpen: (s: Space) => void };
 
-export default function SpaceList({ spaces, onOpen }: Props) {
+export default function SpaceList({ spaces, live, onOpen }: Props) {
   const groups = [...LEVELS.map((l) => l.n), null]
     .map((n) => ({ n, items: spaces.filter((s) => s.level === n) }))
     .filter((g) => g.items.length > 0);
 
   return (
     <div className="flex flex-col gap-9">
-      {groups.map(({ n, items }) => (
+      {groups.map(({ n, items }) => {
+        const levelBusy = n !== null ? live.data?.levels[n]?.busy : null;
+        return (
         <section key={n ?? "around"} aria-labelledby={`level-${n}`}>
           <h2 id={`level-${n}`} className="flex items-baseline gap-2 border-b border-rule pb-2">
             <span className="text-[14px] font-semibold">{n === null ? "Around Hunt" : `Level ${n}`}</span>
+            {levelBusy && (
+              <span className="flex items-center gap-1.5 self-center text-[12px] text-graphite">
+                <BusyDot busy={levelBusy} />
+                {BUSY_LABEL[levelBusy]} now
+              </span>
+            )}
             <span className="ml-auto text-[12px] tabular-nums text-pencil">{items.length}</span>
           </h2>
 
           <ul>
-            {items.filter((s) => !isPlaque(s)).map((s) => (
+            {items.filter((s) => !isPlaque(s)).map((s) => {
+              const zone = zoneFor(live.data, s.room ?? s.title);
+              return (
               <li key={s.id} className="border-b border-rule-soft">
                 <button
                   type="button"
@@ -42,10 +54,17 @@ export default function SpaceList({ spaces, onOpen }: Props) {
                       {s.reservable && " · Reservable"}
                     </span>
                   </span>
+                  {zone?.busy && (
+                    <span className="flex shrink-0 items-center gap-1.5 text-[12px] text-graphite">
+                      <BusyDot busy={zone.busy} />
+                      {BUSY_LABEL[zone.busy]}
+                    </span>
+                  )}
                   <Chevron />
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ul>
 
           {PLAQUE_KINDS.map((k) => {
@@ -74,7 +93,8 @@ export default function SpaceList({ spaces, onOpen }: Props) {
             );
           })}
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 }

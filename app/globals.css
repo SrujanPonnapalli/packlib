@@ -17,6 +17,11 @@
   --color-accent: #1ec7b1;
   --color-accent-deep: #0e8f7f;
   --color-accent-wash: #d3eee7;
+  /* Busyness: one warm ramp, pale to strong, so it reads as "more people"
+     and never competes with the teal that marks a selection. */
+  --color-quiet: #f0c4a0;
+  --color-busy: #e8865a;
+  --color-packed: #c4452e;
   --color-slab: #e9e5dc;
   --color-slab-side: #d8d3c8;
   --color-slab-end: #cbc5b8;
