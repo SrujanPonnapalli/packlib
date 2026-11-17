@@ -7,6 +7,8 @@ import * as THREE from "three";
 import { FLOORS, type Floor, type Pt, type Shape } from "@/data/hunt-geometry";
 import { fitoutFor, spaceByRef, spaces } from "@/data/hunt";
 import { inset, fitFloor, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
+import { scatter, seeded } from "@/lib/crowd";
+import type { Busy, Occupancy, Zone } from "@/lib/occupancy";
 
 // map pixels -> scene units, centered on the building
 const U = 20;
@@ -55,6 +57,13 @@ const P = {
   edge: "#9d978a",
 };
 
+// busyness, pale to strong (same ramp as the page). dots use darker shades so the faintest one still shows
+const HEAT: Record<Busy, string> = { quiet: "#f0c4a0", busy: "#e8865a", packed: "#c4452e" };
+const DOT: Record<Busy, string> = { quiet: "#d9946a", busy: "#d0683c", packed: "#a8321f" };
+const CLOTHES = ["#45413b", "#5d5850", "#776d61", "#4c5864", "#8b5b4a", "#6a7461"];
+const PEOPLE_ZOOM = 14; // closer than this and dots turn into people
+const CROWD_CAP = 220; // per zone, keeps a packed commons readable and cheap to draw
+
 const FITS: Record<string, FloorFit> = Object.fromEntries(Object.entries(FLOORS).map(([n, f]) => [n, fitFloor(f, fitoutFor)]));
 
 // geometry and space data are both kept by hand, so warn when they don't match
@@ -93,6 +102,9 @@ const ease = (dt: number, seconds: number) => 1 - Math.exp(-Math.min(dt, 1 / 30)
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const DISC = new THREE.CylinderGeometry(0.5, 0.5, 1, 20);
 const UP = new THREE.Vector3(0, 1, 0);
+// a person: tapered body plus a head. both unit-sized and scaled per instance
+const BODY = new THREE.CylinderGeometry(0.72, 1, 1, 10).translate(0, 0.5, 0);
+const HEAD = new THREE.SphereGeometry(1, 12, 8);
 
 const placed = (x: number, y: number, z: number, sx: number, sy: number, sz: number, rot: number) =>
   new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(UP, rot), new THREE.Vector3(sx, sy, sz));
@@ -179,6 +191,7 @@ function useMaterials() {
       core: [lambert(P.coreTop), lambert(P.core)],
       counter: [lambert(P.counter), lambert(P.counterSide)],
       hit: lambert("#ffffff", 0), // invisible, but catches clicks
+      heat: { quiet: lambert(HEAT.quiet, 0.75, true), busy: lambert(HEAT.busy, 0.75, true), packed: lambert(HEAT.packed, 0.75, true) },
     };
   }, []);
 }
@@ -254,15 +267,131 @@ function Inside({ detail, mats }: { detail: Detail; mats: ReturnType<typeof useM
   );
 }
 
+/** People for one sensor zone, placed on its space. */
+type Crowd = {
+  zone: Zone;
+  room: boolean; // closed rooms show people as dots on the roof until opened
+  polys: Pt[][];
+  seated: { at: Pt; rot: number }[];
+  standing: Pt[];
+  walkTo: Pt[]; // spots the walking people move between
+};
+
+function crowdsFor(n: number, floor: Floor, fit: FloorFit, zones: Zone[]): Crowd[] {
+  return zones.flatMap((zone) => {
+    const shapes = zone.refs.map((ref) => floor.shapes.find((s) => s.ref === ref)).filter((s): s is Shape => s !== undefined);
+    if (!shapes.length || zone.count === null) return [];
+    const room = shapes[0].kind === "room";
+    const polys = shapes.map((s) => (room ? (fit.rooms.find((r) => r.ref === s.ref)?.poly ?? s.poly) : s.poly));
+    const avoid = floor.shapes.filter((s) => s.kind !== "zone" && !zone.refs.includes(s.ref ?? "")).map((s) => s.poly);
+    const pieces = zone.refs.flatMap((ref) => fit.detail[ref]?.pieces ?? []);
+    // most people in a study space are sitting, so fill chairs first (shuffled), then the floor
+    const rand = seeded(zone.id * 7 + n);
+    const chairs = pieces.filter((p) => p.tone === "chair").sort(() => rand() - 0.5);
+    const total = Math.min(zone.count, CROWD_CAP);
+    const seated = chairs.slice(0, Math.min(chairs.length, Math.round(total * 0.75))).map((c) => ({ at: [c.x, c.y] as Pt, rot: c.rot }));
+    return [
+      {
+        zone,
+        room,
+        polys,
+        seated,
+        standing: scatter(polys, total - seated.length, zone.id, avoid, pieces),
+        walkTo: scatter(polys, 24, zone.id + 1, avoid, pieces),
+      },
+    ];
+  });
+}
+
+const tint = (k: number) => CLOTHES[k % CLOTHES.length];
+// drawn a bit bigger than real life so people are still visible at room zoom
+const person = (x: number, z: number, base: number, sitting: boolean, color: string): Item[] => [
+  { m: placed(x, base + (sitting ? 0.18 : 0), z, 0.15, sitting ? 0.27 : 0.5, 0.15, 0), color },
+  { m: placed(x, base + (sitting ? 0.56 : 0.63), z, 0.11, 0.11, 0.11, 0), color },
+];
+
+const reduceMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** People walking between a few spots in their zone. Positions are made up, only the count is real. */
+function Walkers({ crowd, base, count, mats }: { crowd: Crowd; base: number; count: number; mats: ReturnType<typeof useMaterials> }) {
+  const body = useRef<THREE.InstancedMesh>(null);
+  const head = useRef<THREE.InstancedMesh>(null);
+  const walkers = useMemo(() => {
+    const rand = seeded(crowd.zone.id + 99);
+    return crowd.standing.slice(0, count).map((p, k) => ({ x: p[0], y: p[1], to: crowd.walkTo[k % crowd.walkTo.length], speed: 8 + rand() * 6, rand, k }));
+  }, [crowd, count]);
+  useLayoutEffect(() => {
+    const c = new THREE.Color();
+    walkers.forEach((w) => {
+      body.current?.setColorAt(w.k, c.set(tint(w.k + 3)));
+      head.current?.setColorAt(w.k, c.set(tint(w.k + 3)));
+    });
+  }, [walkers]);
+  useFrame((state, dt) => {
+    if (!body.current || !head.current) return;
+    const step = Math.min(dt, 1 / 20);
+    walkers.forEach((w) => {
+      const dx = w.to[0] - w.x;
+      const dy = w.to[1] - w.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 1) w.to = crowd.walkTo[Math.floor(w.rand() * crowd.walkTo.length)];
+      else {
+        const k = Math.min(1, (w.speed * step) / d);
+        w.x += dx * k;
+        w.y += dy * k;
+      }
+      const bob = Math.abs(Math.sin(state.clock.elapsedTime * 9 + w.k)) * 0.025; // a little step in the walk
+      const [b, h] = person(wx(w.x), wz(w.y), base + bob, false, "");
+      body.current!.setMatrixAt(w.k, b.m);
+      head.current!.setMatrixAt(w.k, h.m);
+    });
+    body.current.instanceMatrix.needsUpdate = true;
+    head.current.instanceMatrix.needsUpdate = true;
+    state.invalidate();
+  });
+  if (!walkers.length) return null;
+  return (
+    <>
+      <instancedMesh ref={body} args={[BODY, mats.piece, walkers.length]} castShadow frustumCulled={false} raycast={() => null} />
+      <instancedMesh ref={head} args={[HEAD, mats.piece, walkers.length]} castShadow frustumCulled={false} raycast={() => null} />
+    </>
+  );
+}
+
+/** A zone's people based on zoom: little people up close, dots for a whole level. */
+function People({ crowd, base, close, dot = 0.55, mats }: { crowd: Crowd; base: number; close: boolean; dot?: number; mats: ReturnType<typeof useMaterials> }) {
+  const moving = close && !reduceMotion() ? Math.round(crowd.standing.length * 0.35) : 0;
+  const items = useMemo(() => {
+    if (!close) {
+      const color = DOT[crowd.zone.busy ?? "quiet"];
+      return { dots: [...crowd.seated.map((s) => s.at), ...crowd.standing].map(([x, y]) => ({ m: placed(wx(x), base + 0.02, wz(y), dot, 0.03, dot, 0), color })), body: [], head: [] };
+    }
+    const still = [
+      ...crowd.seated.map((s, k) => person(wx(s.at[0]), wz(s.at[1]), base, true, tint(k))),
+      ...crowd.standing.slice(moving).map(([x, y], k) => person(wx(x), wz(y), base, false, tint(k + 1))),
+    ];
+    return { dots: [], body: still.map((p) => p[0]), head: still.map((p) => p[1]) };
+  }, [crowd, base, close, dot, moving]);
+  return (
+    <>
+      <Blocks geometry={DISC} material={mats.piece} items={items.dots} />
+      <Blocks geometry={BODY} material={mats.piece} items={items.body} />
+      <Blocks geometry={HEAD} material={mats.piece} items={items.head} />
+      {moving > 0 && <Walkers crowd={crowd} base={base} count={moving} mats={mats} />}
+    </>
+  );
+}
+
 type Common = {
   active: number | null;
   selectedRef: string | null;
   onSelectLevel: (n: number) => void;
   onOpenSpace: (id: string) => void;
   onClear: () => void;
+  occupancy?: Occupancy | null;
 };
 
-function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear }: Common & { n: number; floor: Floor }) {
+function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy }: Common & { n: number; floor: Floor }) {
   const group = useRef<THREE.Group>(null!);
   const [hover, setHover] = useState<string | null>(null);
   const mats = useMaterials();
@@ -298,8 +427,14 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const blocks = useRef<THREE.Group>(null!);
   const targetFlat = opened ? FLAT : 1;
 
+  const crowds = useMemo(() => crowdsFor(n, floor, fit, occupancy?.zones.filter((z) => z.level === n) ?? []), [n, floor, fit, occupancy]);
+  // dots turn into people once you're close enough, or right away when a space is opened
+  const [near, setNear] = useState(false);
+  const close = open && (selectedRef !== null || near);
+
   useFrame((state, dt) => {
     const s = now.current;
+    if (open && near !== state.camera.zoom > PEOPLE_ZOOM) setNear(!near);
     if (s.flat !== targetFlat) {
       s.flat += (targetFlat - s.flat) * ease(dt, 0.1);
       if (Math.abs(targetFlat - s.flat) < 0.002) s.flat = targetFlat;
@@ -432,6 +567,11 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
             />
           );
         })}
+        {/* closed rooms show their people as dots on the roof, and flatten with it */}
+        {open &&
+          crowds
+            .filter((c) => c.room && !c.zone.refs.includes(selectedRef ?? ""))
+            .map((c) => <People key={c.zone.id} crowd={c} base={ROOM_H} close={false} dot={close ? 0.22 : 0.55} mats={mats} />)}
       </group>
 
       <group ref={flights} scale-y={STAIR_FULL}>
@@ -442,6 +582,23 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
         <Blocks geometry={BOX} material={mats.piece} items={wells} />
       </group>
       {opened && <Inside key={selectedRef} detail={opened} mats={mats} />}
+
+      {/* whole building: each counted zone glows by how busy it is */}
+      {glassy &&
+        crowds.flatMap(({ zone, room, polys }) => {
+          const busy = zone.busy;
+          if (!busy) return [];
+          return polys.map((poly, i) => (
+            <group key={`${zone.id}-${i}`} position-y={room ? ROOM_H : 0.03}>
+              <Slab poly={poly} height={0.02} material={mats.heat[busy]} />
+            </group>
+          ));
+        })}
+      {/* open level: its people, on the floor of open spaces and the opened room */}
+      {open &&
+        crowds
+          .filter((c) => !c.room || c.zone.refs.includes(selectedRef ?? ""))
+          .map((c) => <People key={c.zone.id} crowd={c} base={c.room ? 0.04 : 0.03} close={close} mats={mats} />)}
     </group>
   );
 }

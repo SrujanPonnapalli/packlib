@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { KINDS, type Space } from "@/data/hunt";
+import { BUSY_LABEL, STALE_MS, ago, people, zoneFor } from "@/lib/occupancy";
+import { BusyDot, readingFor, type Live } from "./Busy";
 
 const EVERYONE = ["Faculty", "Graduate Students", "Staff", "Students"];
 
@@ -11,9 +13,9 @@ function audience(list: string[]) {
 // Some photo captions in the source are just file names.
 const isCaption = (alt: string) => alt.length > 0 && !/\.(jpe?g|png)$/i.test(alt);
 
-type Props = { space: Space; onBack: () => void };
+type Props = { space: Space; live: Live; onBack: () => void };
 
-export default function SpaceDetail({ space: s, onBack }: Props) {
+export default function SpaceDetail({ space: s, live, onBack }: Props) {
   const kind = KINDS.find((k) => k.id === s.kind)!.label;
   const facts: [string, string][] = [];
   if (s.level !== null) facts.push(["Level", String(s.level)]);
@@ -76,6 +78,7 @@ export default function SpaceDetail({ space: s, onBack }: Props) {
       )}
 
       <dl className="mt-6 border-t border-rule">
+        <NowRow space={s} live={live} />
         {facts.map(([label, value]) => (
           <div key={label} className="flex gap-4 border-b border-rule-soft py-3 text-[14px]">
             <dt className="w-32 shrink-0 text-pencil">{label}</dt>
@@ -112,6 +115,44 @@ export default function SpaceDetail({ space: s, onBack }: Props) {
         )}
       </div>
     </article>
+  );
+}
+
+/** How busy it is right now: its own sensor zone if it has one, otherwise the whole level. */
+function NowRow({ space, live }: { space: Space; live: Live }) {
+  const { data, now } = live;
+  if (data === undefined || space.level === null) return null;
+  const found = readingFor(live, space);
+  const r = found?.reading;
+  let value: React.ReactNode;
+  let note: string | null = null;
+  if (data === null) value = <span className="font-normal text-pencil">Live headcounts unavailable</span>;
+  else if (!r || r.busy === null) value = <span className="font-normal text-pencil">{found?.own ? "Its people sensor is off right now" : `No people sensor on Level ${space.level}`}</span>;
+  else {
+    value = (
+      <span className="flex items-center gap-1.5">
+        <BusyDot busy={r.busy} />
+        {found.own ? BUSY_LABEL[r.busy] : `Level ${space.level} is ${BUSY_LABEL[r.busy].toLowerCase()}`}
+        <span className="font-normal text-graphite">· {people(r.count)}</span>
+      </span>
+    );
+    const zone = found.own ? zoneFor(data, space.room ?? space.title) : null;
+    note = [
+      !found.own && "This room has no sensor of its own.",
+      zone && zone.refs.length > 1 && `Counted as one zone: ${zone.name}.`,
+      `Updated ${ago(data.at, now)}${now - Date.parse(data.at) > STALE_MS ? ", may be out of date" : ""}.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+  return (
+    <div className="flex gap-4 border-b border-rule-soft py-3 text-[14px]">
+      <dt className="w-32 shrink-0 text-pencil">Right now</dt>
+      <dd className="min-w-0 font-medium">
+        {value}
+        {note && <span className="mt-0.5 block text-[12px] font-normal text-pencil">{note}</span>}
+      </dd>
+    </div>
   );
 }
 

@@ -8,6 +8,8 @@ import LevelRail from "./LevelRail";
 import LevelStack from "./LevelStack";
 import SpaceList from "./SpaceList";
 import SpaceDetail from "./SpaceDetail";
+import { BusyKey, LiveNote } from "./Busy";
+import { useOccupancy } from "./useOccupancy";
 
 // only load three.js where the 3D model is actually shown
 const BuildingScene = dynamic(() => import("./BuildingScene"), { ssr: false });
@@ -30,6 +32,11 @@ export default function Explorer() {
 
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind | "all">("study"); // most visitors want a study room
+  const live = useOccupancy();
+  const busy = useMemo(
+    () => Object.fromEntries(LEVELS.map(({ n }) => [n, live.data?.levels[n]?.busy ?? null])),
+    [live.data],
+  );
 
   function go(patch: Record<string, string | number | null>, push = false) {
     const next = new URLSearchParams(params.toString());
@@ -83,6 +90,7 @@ export default function Explorer() {
               `Showing ${matching.length} of ${spaces.length} rooms and spaces.`
             )}
           </p>
+          <LiveNote live={live} level={level} space={selected} />
         </div>
 
         {wide ? (
@@ -94,28 +102,33 @@ export default function Explorer() {
               onSelectLevel={selectLevel}
               onOpenSpace={(id) => go({ space: id }, true)}
               onClear={() => go({ space: null }, true)}
+              occupancy={live.data}
             />
             <div className="absolute left-10 top-1/2 z-10 -translate-y-1/2">
-              <LevelRail active={stackLevel} counts={counts} onSelect={selectLevel} />
+              <LevelRail active={stackLevel} counts={counts} busy={busy} onSelect={selectLevel} />
             </div>
             <div className="min-h-[360px] flex-1" />
           </>
         ) : (
           <div className="flex flex-1 items-center py-2">
-            <LevelStack active={stackLevel} counts={counts} onSelect={selectLevel} />
+            <LevelStack active={stackLevel} counts={counts} busy={busy} onSelect={selectLevel} />
           </div>
         )}
 
-        <p className="pointer-events-none relative z-10 max-w-[60ch] text-[12px] leading-relaxed text-pencil">
-          Schematic, not to scale. {wide && "Traced by eye from the Libraries' floor maps. Drag to turn, scroll to zoom. "}
-          Space details from NC State Libraries, captured{" "}
-          {snapshotDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.
-        </p>
+        <div className="pointer-events-none relative z-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <p className="max-w-[60ch] text-[12px] leading-relaxed text-pencil">
+            Schematic, not to scale. {wide && "Traced by eye from the Libraries' floor maps. Drag to turn, scroll to zoom. "}
+            Space details from NC State Libraries, captured{" "}
+            {snapshotDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.
+            {live.data && ` Headcounts are live from the Libraries' sensors${wide ? "; where each person is drawn is made up" : ""}.`}
+          </p>
+          {wide && live.data && <BusyKey />}
+        </div>
       </section>
 
       <section aria-label="Spaces" className="min-h-0 min-w-0 border-t border-rule bg-sheet lg:overflow-y-auto lg:border-l lg:border-t-0">
         {selected ? (
-          <SpaceDetail space={selected} onBack={() => go({ space: null }, true)} />
+          <SpaceDetail space={selected} live={live} onBack={() => go({ space: null }, true)} />
         ) : (
           <>
             <div className="sticky top-0 z-10 border-b border-rule bg-sheet/95 px-5 pb-3 pt-5 backdrop-blur-sm sm:px-7">
@@ -155,7 +168,7 @@ export default function Explorer() {
 
             <div className="px-5 pb-12 pt-6 sm:px-7">
               {listed.length > 0 ? (
-                <SpaceList spaces={listed} onOpen={(s) => go({ space: s.id }, true)} />
+                <SpaceList spaces={listed} live={live} onOpen={(s) => go({ space: s.id }, true)} />
               ) : (
                 <div className="py-16 text-center">
                   <p className="text-[16px] font-semibold">Nothing matches that.</p>

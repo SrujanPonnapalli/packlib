@@ -16,6 +16,10 @@ the darker teal is for thin lines and text where the bright one is too faint. */
   --color-accent: #1ec7b1;
   --color-accent-deep: #0e8f7f;
   --color-accent-wash: #d3eee7;
+  /* busyness: one warm ramp from pale to strong so it doesn't clash with the teal used for selection */
+  --color-quiet: #f0c4a0;
+  --color-busy: #e8865a;
+  --color-packed: #c4452e;
   --color-slab: #e9e5dc;
   --color-slab-side: #d8d3c8;
   --color-slab-end: #cbc5b8;
