@@ -95,17 +95,24 @@ export function Ticker({ value, format: fmt, comma, suffix = "", from, className
   );
 }
 
-/** Counts a number up from 0 once on mount. Returns null when done (or with reduced motion) so later changes tick instead. */
-function useCountUp(target: number, ms = 1400) {
-  const [shown, setShown] = useState<number | null>(0);
+// once per page load, so going back to the overview after opening a level shows the number right away
+let counted = false;
+
+/** Counts a number up from 0 the first time it mounts in a page load. Returns null when done so later changes tick instead. */
+function useCountUp(target: number, ms = 800) {
+  const [shown, setShown] = useState<number | null>(() => (counted ? null : 0));
   useEffect(() => {
+    if (counted) return;
     const dur = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms;
     const t0 = performance.now();
     let id = 0;
     const step = (t: number) => {
       const k = dur ? Math.min(1, (t - t0) / dur) : 1;
-      if (k === 1) return setShown(null);
-      setShown(Math.round(target * (1 - Math.pow(1 - k, 5)))); // ease-out quint: fast, then settles on the number
+      if (k === 1) {
+        counted = true; // set when it finishes, so the double effect in dev mode still only runs it once
+        return setShown(null);
+      }
+      setShown(Math.round(target * (1 - Math.pow(2, -10 * k)))); // ease-out expo: most of the climb happens early, then it slowly settles
       id = requestAnimationFrame(step);
     };
     id = requestAnimationFrame(step);

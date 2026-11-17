@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Image from "next/image";
 import { KINDS, LEVELS, type Kind, type Space } from "@/data/hunt";
 import { BUSY_LABEL, zoneFor } from "@/lib/occupancy";
@@ -15,6 +16,9 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
   const groups = [...LEVELS.map((l) => l.n), null]
     .map((n) => ({ n, items: spaces.filter((s) => s.level === n) }))
     .filter((g) => g.items.length > 0);
+  // levels you've collapsed, all start open
+  const [folded, setFolded] = useState<Set<number | null>>(new Set());
+  const toggle = (n: number | null) => setFolded((f) => (f.has(n) ? new Set([...f].filter((x) => x !== n)) : new Set([...f, n])));
 
   return (
     <div className="flex flex-col gap-9">
@@ -23,7 +27,17 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
         return (
         // a new filter or floor remounts the list (keyed by the caller), each level fades in after the one above
         <section key={n ?? "around"} aria-labelledby={`level-${n}`} className="animate-enter" style={{ animationDelay: `${Math.min(gi, 4) * 50}ms` }}>
-          <h2 id={`level-${n}`} className="flex items-baseline gap-2 border-b border-rule pb-2">
+          <h2 id={`level-${n}`} className="border-b border-rule">
+            <button
+              type="button"
+              aria-expanded={!folded.has(n)}
+              aria-controls={`level-${n}-body`}
+              onClick={() => toggle(n)}
+              className="group -mx-2 flex w-[calc(100%+1rem)] items-baseline gap-2 rounded-md px-2 pb-2 pt-1 text-left transition-colors duration-150 hover:bg-vellum/60"
+            >
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className={`shrink-0 self-center text-pencil transition-transform duration-200 ease-out-quint group-hover:text-ink ${folded.has(n) ? "-rotate-90" : ""}`}>
+              <path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <span className="text-[14px] font-semibold">{n === null ? "Around Hunt" : `Level ${n}`}</span>
             {levelBusy && (
               <span className="flex items-center gap-1.5 self-center text-[12px] text-graphite">
@@ -32,8 +46,15 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
               </span>
             )}
             <span className="ml-auto text-[12px] tabular-nums text-pencil">{items.length}</span>
+            </button>
           </h2>
 
+          <div
+            id={`level-${n}-body`}
+            inert={folded.has(n)}
+            className={`grid transition-[grid-template-rows,opacity] duration-[240ms] ease-out-quint ${folded.has(n) ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}
+          >
+          <div className="min-h-0 overflow-hidden">
           <ul>
             {items.filter((s) => !isPlaque(s)).map((s) => {
               const zone = zoneFor(live.data, s.room ?? s.title);
@@ -87,7 +108,14 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
                       >
                         <span className="plaque text-[17px] font-semibold leading-none text-ink">{s.room}</span>
                         <span className="mt-1.5 flex h-3.5 items-center gap-1.5 text-[11px] leading-none text-pencil">
-                          {s.seats ? <span className="tabular-nums">{s.seats} seats</span> : <span className="text-faint">–</span>}
+                          {s.seats ? (
+                            <span className="flex items-center gap-0.5 whitespace-nowrap tabular-nums">
+                              <ChairIcon />
+                              {s.seats}
+                            </span>
+                          ) : (
+                            <span className="text-faint">–</span>
+                          )}
                           {s.fitout?.display && <DisplayIcon />}
                           {s.fitout?.whiteboard && <BoardIcon />}
                         </span>
@@ -98,10 +126,22 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
               </div>
             );
           })}
+          </div>
+          </div>
         </section>
         );
       })}
     </div>
+  );
+}
+
+// seats icon: a chair from the side
+function ChairIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className="text-graphite">
+      <title>Seats</title>
+      <path d="M3.5 1.5v5.5h5M3.5 7v3.5M8.5 7v3.5M3.5 7h5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
