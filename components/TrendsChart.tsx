@@ -129,7 +129,15 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
   });
   const peaks = innerW * (86_400_000 / span) >= 84 ? [...peakOf.values()] : [];
 
-  const show = (i: number) => {
+  // Scrubbing quickly swaps the number instantly; the tick only plays when the pointer moves at reading pace.
+  const lastStep = useRef(0);
+  const [fast, setFast] = useState(false);
+  // `stamp` is the pointer event's time; keyboard steps pass none and always tick.
+  const show = (i: number, stamp?: number) => {
+    if (i !== at) {
+      setFast(stamp !== undefined && stamp - lastStep.current < 140);
+      if (stamp !== undefined) lastStep.current = stamp;
+    }
     setAt(i);
     setLast(i);
   };
@@ -152,7 +160,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
     const i = indexAt(e);
     // A few pixels of travel turn a press into a comparison, so a tap still just shows the reading.
     if (press && (to !== null || Math.abs(e.clientX - press.x0) > 6)) setTo(i);
-    else show(i);
+    else show(i, e.timeStamp);
   };
   const up = () => {
     setPress(null);
@@ -395,7 +403,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
             ) : (
               <>
                 <p className="mt-1 flex items-baseline gap-1.5">
-                  <Ticker value={h.total[tip]!} format={(v) => v.toLocaleString("en-US")} ms={240} lift={40} stagger={0} className="plaque text-[24px] font-semibold leading-none" />
+                  <Ticker value={h.total[tip]!} format={(v) => v.toLocaleString("en-US")} ms={fast ? 0 : 240} lift={40} stagger={0} className="plaque text-[24px] font-semibold leading-none" />
                   <span className="text-[12px] text-sheet/75">people</span>
                   {h.share[tip] !== null && (
                     <span className="ml-auto flex items-center gap-1.5 text-[12px] tabular-nums text-sheet/85">
