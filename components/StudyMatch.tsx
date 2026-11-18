@@ -80,7 +80,7 @@ export function findMatches(spaces: Space[], ask: Ask, occupancy: Occupancy | nu
 type Option<T> = [T, string];
 const QUESTIONS: { key: keyof Ask; label: string; options: Option<Ask[keyof Ask]>[] }[] = [
   { key: "size", label: "How many of you?", options: [[1, "Just me"], [3, "2–3"], [6, "4–6"], [8, "7 or more"]] },
-  { key: "work", label: "To do what?", options: [["focus", "Focus"], ["group", "Work together"], ["present", "Practise a talk"], ["unwind", "Read, unwind"]] },
+  { key: "work", label: "To do what?", options: [["focus", "Focus"], ["group", "Work together"], ["present", "Practice a talk"], ["unwind", "Read, unwind"]] },
   { key: "when", label: "When?", options: [["now", "Right now"], ["later", "Later, booked ahead"]] },
   { key: "hours", label: "For how long?", options: [[2, "Up to 2 hours"], [4, "Half a day"], [8, "All day"]] },
   { key: "who", label: "You are", options: [["undergrad", "Undergrad"], ["grad", "Grad student"], ["faculty", "Faculty"], ["staff", "Staff"]] },
@@ -215,7 +215,7 @@ const TAG: Record<string, string | null> = {
   "A room you can talk in": "Talking OK",
   "An open area made for working together": "Group area",
   "A wall display to share a laptop": "Wall display",
-  "A wall display to practise on": "Wall display",
+  "A wall display to practice on": "Wall display",
   "Soft seating and a relaxed feel": "Relaxed",
   "Lively, with room to spread out": "Lively",
   "Calm and light-filled": "Calm and bright",
