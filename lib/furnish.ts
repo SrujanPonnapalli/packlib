@@ -259,6 +259,13 @@ export function well(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1],
   }));
 }
 
+/** A stair landing: one flat slab at height `h` (fraction of the rise), filling the outline with edge 0 along one side. */
+function landing(poly: Pt[], h: number): Piece[] {
+  const f = flight(poly, 0);
+  const W = f.W / 0.88, D = f.D / 0.92; // the whole outline, so the flights on either side meet it
+  return [{ ...f.place(D / 2 - f.D * 0.04), w: W, d: D, rot: f.rot, h: 0.14, base: h - 0.14, tone: "stair" }];
+}
+
 const box = (p: Pt, w: number, d: number, h: number, tone: Tone, rot = 0, base = 0): Piece => ({ ...at(p), w, d, rot, h, base, tone });
 const disc = (p: Pt, w: number, h: number, tone: Tone, base = 0): Piece => ({ ...at(p), w, d: w, rot: 0, h, base, tone, round: true });
 /** `n` points on a circle around `c`, starting at angle `a0` and covering `sweep` radians. */
@@ -359,7 +366,7 @@ export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null)
       const m = fit === "meeting" ? meetingRoom(room, front, f) : { pieces: special(fit, room, front, []), callouts: [] };
       out.detail[s.ref] = { walls: roomWalls(room, front, f.window !== null), ...m };
     } else if (s.kind === "zone" && s.fit && s.ref) out.detail[s.ref] = { walls: [], pieces: special(s.fit, s.poly, 0, solids), callouts: [] };
-    else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.dir === "down" ? well : steps)(s.poly, s.front, s.span, s.tread));
+    else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.span && s.span[0] === s.span[1] ? landing(s.poly, s.span[0] - (s.dir === "down" ? 1 : 0)) : (s.dir === "down" ? well : steps)(s.poly, s.front, s.span, s.tread)));
   }
   return out;
 }
