@@ -230,8 +230,8 @@ function flight(poly: Pt[], entry: number, tread = 7) {
   if (dot(sub(centroid(poly), a), into) < 0) into = mul(into, -1);
   const us = poly.map((q) => dot(sub(q, a), ex));
   const mid = (Math.min(...us) + Math.max(...us)) / 2;
-  // slightly inside the outline so a slanted edge never pushes a tread off the floor
-  const W = (Math.max(...us) - Math.min(...us)) * 0.88;
+  // just inside the outline, so flights traced side by side (the Monumental Stair's steps and seating) meet
+  const W = (Math.max(...us) - Math.min(...us)) * 0.98;
   const D = Math.max(...poly.map((q) => dot(sub(q, a), into))) * 0.92;
   const n = Math.max(tread > 7 ? 2 : 5, Math.round(D / tread));
   return { W, D, n, pitch: D / n, rot: Math.atan2(ex[1], ex[0]), place: (v: number, u = 0) => at(add(a, add(mul(ex, mid + u), mul(into, v + D * 0.04)))) };
@@ -243,10 +243,10 @@ function flight(poly: Pt[], entry: number, tread = 7) {
  */
 export function steps(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1], tread?: number): Piece[] {
   const f = flight(poly, entry, tread);
-  const T = 0.14; // tread thickness
+  // each step is solid down to the floor, these are solid stairs and not open treads
   return Array.from({ length: f.n }, (_, i) => {
     const top = lo + ((hi - lo) * (i + 1)) / f.n;
-    return { ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: Math.min(T, top), base: Math.max(0, top - T), tone: "stair" as const };
+    return { ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: top, base: 0, tone: "stair" as const };
   });
 }
 
@@ -259,11 +259,11 @@ export function well(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1],
   }));
 }
 
-/** A stair landing: one flat slab at height `h` (fraction of the rise), filling the outline with edge 0 along one side. */
+/** A stair landing at height `h` (fraction of the rise), filling the outline with edge 0 along one side. Solid from the floor like the steps, or just the top when seen from above (h < 0). */
 function landing(poly: Pt[], h: number): Piece[] {
   const f = flight(poly, 0);
-  const W = f.W / 0.88, D = f.D / 0.92; // the whole outline, so the flights on either side meet it
-  return [{ ...f.place(D / 2 - f.D * 0.04), w: W, d: D, rot: f.rot, h: 0.14, base: h - 0.14, tone: "stair" }];
+  const W = f.W / 0.98, D = f.D / 0.92; // the whole outline, so the flights on either side meet it
+  return [{ ...f.place(D / 2 - f.D * 0.04), w: W, d: D, rot: f.rot, h: h > 0 ? h : 0.14, base: h > 0 ? 0 : h - 0.14, tone: "stair" }];
 }
 
 const box = (p: Pt, w: number, d: number, h: number, tone: Tone, rot = 0, base = 0): Piece => ({ ...at(p), w, d, rot, h, base, tone });
