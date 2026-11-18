@@ -1109,8 +1109,9 @@ export default function BuildingScene(props: Common) {
               <span
                 className={`block rounded-[3px] px-1 ${
                   label.style === "name"
-                    ? "annot w-max max-w-[14ch] text-center text-[9.5px] leading-[1.25] text-graphite"
-                    : `plaque whitespace-nowrap text-[10px] font-medium leading-[1.5] ${label.picked ? "bg-accent font-semibold text-ink" : "text-pencil"}`
+                    ? // Sentence case with a paper halo: reads over grey blocks and the busyness wash alike, as on a printed map.
+                      `map-label w-max max-w-[16ch] text-center text-[11px] font-medium leading-[1.2] tracking-[-0.005em] ${label.core ? "text-pencil" : "text-ink"}`
+                    : `plaque whitespace-nowrap text-[10px] font-medium leading-[1.5] ${label.picked ? "bg-accent font-semibold text-ink" : "map-label text-graphite"}`
                 }`}
               >
                 {label.text}

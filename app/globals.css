@@ -196,6 +196,15 @@ body {
   text-transform: uppercase;
 }
 
+/* Labels over the 3D model: a soft paper halo keeps them legible on any surface. */
+.map-label {
+  text-shadow:
+    0 0 1px var(--color-paper),
+    0 0 2px var(--color-paper),
+    0 0 3px var(--color-paper),
+    0 0 4px var(--color-paper);
+}
+
 .dot-grid {
   background-image: radial-gradient(var(--color-rule) 1px, transparent 1px);
   background-size: 24px 24px;
