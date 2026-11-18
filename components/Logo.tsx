@@ -1,13 +1,27 @@
-/** PackLib's mark: a pack of library books on a shelf, the middle one picked out. Their uneven heights double as a small bar chart of how busy it is. */
-export default function Logo({ size = 18 }: { size?: number }) {
+// One isometric floor slab: the side (thickness 2.5) and the top face.
+const slab = (y: number) => ({
+  side: `M5 ${y}L16 ${y + 5.5}L27 ${y}v2.5L16 ${y + 8}L5 ${y + 2.5}Z`,
+  top: `M5 ${y}L16 ${y - 5.5}L27 ${y}L16 ${y + 5.5}Z`,
+});
+
+/** PackLib's mark: a building's floors, with one lifted off in Wolfpack Red, the way the explorer opens a floor. */
+export default function Logo({ size = 20 }: { size?: number }) {
+  const floors = [
+    { ...slab(24), top_: "var(--color-ink)", side_: "var(--color-graphite)" },
+    { ...slab(19), top_: "var(--color-ink)", side_: "var(--color-graphite)" },
+    { ...slab(10), top_: "var(--color-wolfpack)", side_: "var(--color-wolfpack-deep)" },
+  ];
   return (
-    <svg width={size} height={(size * 16) / 18} viewBox="0 0 18 16" aria-hidden="true">
-      <g stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round">
-        <rect x="1.25" y="5" width="3" height="9.5" rx="0.5" fill="none" />
-        <rect x="4.75" y="1.5" width="3.5" height="13" rx="0.5" fill="var(--color-wolfpack)" />
-        <rect x="12" y="4" width="3.25" height="10.5" rx="0.5" fill="none" transform="rotate(-16 12 14.5)" />
+    <svg width={size} height={size} viewBox="1 3 30 30" aria-hidden="true">
+      {/* Paper-coloured strokes cut a thin gap between the faces. */}
+      <g stroke="var(--color-paper)" strokeWidth="1.4" strokeLinejoin="round" paintOrder="stroke">
+        {floors.map((f) => (
+          <g key={f.top}>
+            <path d={f.side} fill={f.side_} />
+            <path d={f.top} fill={f.top_} />
+          </g>
+        ))}
       </g>
-      <path d="M0.75 14.75h16.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
     </svg>
   );
 }
