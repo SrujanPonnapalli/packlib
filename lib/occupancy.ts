@@ -96,6 +96,14 @@ export const HILL_SENSORS: Sensors = {
     287: ["3425"], // Data Experience Lab
     288: ["South Study Lounge (Floor 3)"],
     289: ["North Forum"],
+    // floors with no named areas: the floor sensor covers the open seating and stacks (never a bookable room, that would show the whole floor's count)
+    280: ["Seating Floor 0"],
+    290: ["Seating Floor 4", "Bookstacks Floor 4"],
+    291: ["Seating Floor 5", "Bookstacks Floor 5"],
+    292: ["Seating Floor 6", "Bookstacks Floor 6"],
+    293: ["Seating Floor 7", "Bookstacks Floor 7"],
+    294: ["Seating Floor 8", "Bookstacks Floor 8"],
+    295: ["Seating Floor 9", "Bookstacks Floor 9"],
   },
 };
 
@@ -181,6 +189,7 @@ export function combineLibrary(s: Sensors, building: unknown, sensors: Record<nu
     const parts = ids.map((id) => {
       try {
         const r = parse(sensors[id]);
+        if (s.zones[id]) out.zones.push({ ...r.self, level: Number(n), refs: s.zones[id] });
         for (const z of r.children) if (s.zones[z.id]) out.zones.push({ ...z, level: Number(n), refs: s.zones[z.id] });
         return r.self;
       } catch {
