@@ -9,10 +9,17 @@ const archivo = Archivo({
   axes: ["wdth"],
 });
 
+const title = "PackLib — find a place to study at NC State";
+const description =
+  "An independent NC State study-space explorer: every room and reading space in Hunt and Hill libraries, with live headcounts.";
+
 export const metadata: Metadata = {
-  title: "PackLib — find a place to study at NC State",
-  description:
-    "An independent NC State study-space explorer: every room and reading space in Hunt and Hill libraries, with live headcounts.",
+  // share links need absolute image URLs
+  metadataBase: new URL("https://packlib.srujanponnapalli.com"),
+  title,
+  description,
+  openGraph: { title, description, siteName: "PackLib" },
+  twitter: { card: "summary_large_image" },
   // name shown under the icon when saved to an iPhone home screen (instead of the full title)
   appleWebApp: { title: "PackLib" },
 };
