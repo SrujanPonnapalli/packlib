@@ -68,7 +68,7 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
                   onClick={() => onOpen(s)}
                   className="group -mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors duration-150 hover:bg-vellum/60"
                 >
-                  <span className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md bg-vellum outline outline-1 -outline-offset-1 outline-black/10">
+                  <span className="relative h-10 w-14 shrink-0 overflow-hidden rounded-md bg-vellum outline outline-1 -outline-offset-1 outline-rule">
                     {s.photo && <Image src={s.photo.thumb} alt="" fill sizes="56px" className="object-cover" />}
                   </span>
                   <span className="min-w-0 flex-1">

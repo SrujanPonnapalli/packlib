@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: utilities follow <html data-theme>, which the layout sets before first paint */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* light background and neutral text, with teal only for the selected item.
 the darker teal is for thin lines and text where the bright one is too faint. */
 @theme {
@@ -16,6 +19,8 @@ the darker teal is for thin lines and text where the bright one is too faint. */
   --color-accent: #1ec7b1;
   --color-accent-deep: #0e8f7f;
   --color-accent-wash: #d3eee7;
+  /* text on bright teal stays dark in both themes */
+  --color-on-accent: #171717;
   /* Wolfpack Red, only for the logo so it doesn't get mixed up with the "packed" red */
   --color-wolfpack: #cc0000;
   --color-wolfpack-deep: #8a0000;
@@ -74,6 +79,56 @@ the darker teal is for thin lines and text where the bright one is too faint. */
     to {
       background-position: -200% 0;
     }
+  }
+}
+
+/* dark theme: same neutral greys, flipped. the head script in the layout sets
+data-theme before first paint (system setting unless the toggle picked one)
+so there's no flash of the wrong theme. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: #111111;
+  --color-sheet: #1a1a1a;
+  --color-vellum: #262626;
+  --color-ink: #ededed;
+  --color-graphite: #b4b4b4;
+  --color-pencil: #8f8f8f;
+  --color-faint: #5e5e5e;
+  --color-rule: rgb(255 255 255 / 0.1);
+  --color-rule-soft: rgb(255 255 255 / 0.06);
+  --color-rule-strong: rgb(255 255 255 / 0.22);
+  --color-accent-deep: #3cd3bf;
+  --color-accent-wash: #143b35;
+  --color-quiet: #82bb6f;
+  --color-busy: #e3aa43;
+  --color-packed: #d45a40;
+  --color-quiet-ink: #92d47e;
+  --color-busy-ink: #efbd5c;
+  --color-packed-ink: #f28d75;
+  --color-slab: #2b2b2b;
+  --color-slab-side: #222222;
+  --color-slab-end: #1b1b1b;
+  --shadow-lift:
+    0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.5),
+    0 3px 8px rgb(0 0 0 / 0.4);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* theme switch animation: the new theme grows out from the toggle as a circle */
+.theme-switching::view-transition-old(root) {
+  animation: none;
+}
+.theme-switching::view-transition-new(root) {
+  animation: theme-reveal 560ms var(--ease-out-quint);
+}
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--tx) var(--ty));
+  }
+  to {
+    clip-path: circle(var(--tr) at var(--tx) var(--ty));
   }
 }
 
@@ -147,7 +202,7 @@ html[data-arrived] .arrive.restagger {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--color-vellum) 25%, #f6f6f6 50%, var(--color-vellum) 75%) 0 0 / 200% 100%;
+  background: linear-gradient(90deg, var(--color-vellum) 25%, var(--color-paper) 50%, var(--color-vellum) 75%) 0 0 / 200% 100%;
   animation: var(--animate-shimmer);
 }
 
@@ -177,6 +232,7 @@ html {
 
 body {
   background: var(--color-paper);
+  transition: background-color 250ms var(--ease-out-quint);
   color: var(--color-ink);
   font-family: var(--font-sans);
 }

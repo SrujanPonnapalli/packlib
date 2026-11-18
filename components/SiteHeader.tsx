@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { LIBRARIES, type LibrarySlug } from "@/data/libraries";
 import Logo from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 
 const PAGES = [
   { id: "find", path: "", label: "Find a place" },
@@ -30,7 +31,7 @@ export default function SiteHeader({ library, current }: { library?: LibrarySlug
                 href={`/${slug}${path}`}
                 aria-current={slug === library ? "page" : undefined}
                 className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-[background-color,color,box-shadow] duration-150 ${
-                  slug === library ? "bg-sheet text-ink shadow-[0_0_0_1px_var(--color-rule),0_1px_2px_rgb(23_23_23/0.06)]" : "text-pencil hover:text-ink"
+                  slug === library ? "bg-sheet text-ink shadow-[0_0_0_1px_var(--color-rule),0_1px_2px_var(--color-rule-soft)]" : "text-pencil hover:text-ink"
                 }`}
               >
                 {LIBRARIES[slug].name}
@@ -55,6 +56,7 @@ export default function SiteHeader({ library, current }: { library?: LibrarySlug
         </>
       )}
       <p className="ml-auto hidden text-[12px] text-pencil lg:block">An independent NC State study-space explorer</p>
+      <ThemeToggle className="-mr-1.5 ml-auto lg:ml-0" />
     </header>
   );
 }
