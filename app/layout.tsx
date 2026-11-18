@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   title: "PackLib — find a place to study at NC State",
   description:
     "An independent NC State study-space explorer: every room and reading space in Hunt and Hill libraries, with live headcounts.",
+  // The name under the icon when it's saved to an iPhone home screen, instead of the long page title.
+  appleWebApp: { title: "PackLib" },
 };
 
 const ARRIVED =
