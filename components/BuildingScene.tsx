@@ -715,6 +715,10 @@ type Label = {
   /** A match pin raised above the stack: where its stem lands on its own floor, plus that floor's tag. */
   foot?: THREE.Vector3;
   tag?: string;
+  /** A space's name, in its outline in the scene. Only shown once it fits, so small spaces get named as you zoom in. */
+  within?: THREE.Vector3[];
+  /** Restrooms, elevators etc. Named last so they give way to the actual study spaces. */
+  core?: boolean;
 };
 
 // in the whole-building view match pins float above the top floor (Model.pinTop) on a stem down to their own floor,
@@ -759,6 +763,8 @@ function labelsFor({ floors: FLOORS, fits: FITS, y: yOf, pinTop, lib }: Model, a
       style: /^\d/.test(s.label) ? "room" : "name",
       dim: focus !== undefined && !mine,
       picked: mine,
+      within: s.poly.map(([x, z]) => new THREE.Vector3(wx(x), y, wz(z))),
+      core: s.kind === "core",
     });
   }
   callouts.forEach((c) =>
@@ -775,6 +781,18 @@ function labelsFor({ floors: FLOORS, fits: FITS, y: yOf, pinTop, lib }: Model, a
 }
 
 const scratch = new THREE.Vector3();
+
+/** Whether a label box (px) fits inside a space's on-screen bounds, with a little overhang allowed. */
+function fits(poly: THREE.Vector3[], box: { w: number; h: number }, camera: THREE.Camera, size: { width: number; height: number }) {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const p of poly) {
+    scratch.copy(p).project(camera);
+    const x = scratch.x * size.width / 2;
+    const y = scratch.y * size.height / 2;
+    x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  }
+  return box.w <= (x1 - x0) * 1.15 && box.h <= (y1 - y0) * 1.3;
+}
 const RANK = { match: -1, name: 0, room: 1, callout: 2 };
 
 // callout label: offset from its dot, plus its box (px) that other labels have to avoid
@@ -790,7 +808,7 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
     const taken: { x: number; y: number; w: number; h: number }[] = []; // labels already placed, later ones can't overlap them
     const pins: { l: number; r: number; t: number; b: number }[] = []; // match pins (with their tags) placed so far
     // names get placed before room numbers, so on a crowded floor the numbers are what get dropped
-    const order = labels.map((_, i) => i).sort((a, b) => RANK[labels[a].style] - RANK[labels[b].style]);
+    const order = labels.map((_, i) => i).sort((a, b) => RANK[labels[a].style] - RANK[labels[b].style] || Number(!!labels[a].core) - Number(!!labels[b].core));
     order.forEach((i) => {
       const label = labels[i];
       const el = els.current[i];
@@ -825,7 +843,8 @@ function LabelSync({ labels, els }: { labels: Label[]; els: RefObject<(HTMLEleme
         // room numbers scale with the model so small rooms stay readable on a big floor
         if (label.style === "room") (el.firstElementChild as HTMLElement).style.fontSize = `${Math.min(10, Math.max(6.5, camera.zoom * 0.9)).toFixed(1)}px`;
         const box = { x, y, w: el.offsetWidth, h: el.offsetHeight };
-        if (taken.some((o) => Math.abs(o.x - x) < (o.w + box.w) / 2 && Math.abs(o.y - y) < (o.h + box.h) / 2)) el.style.opacity = "0";
+        if (label.within && !fits(label.within, box, camera, size)) el.style.opacity = "0";
+        else if (taken.some((o) => Math.abs(o.x - x) < (o.w + box.w) / 2 && Math.abs(o.y - y) < (o.h + box.h) / 2)) el.style.opacity = "0";
         else taken.push(box);
         return;
       }
