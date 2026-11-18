@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Archivo } from "next/font/google";
 import "./globals.css";
 
@@ -40,6 +41,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col lg:h-dvh lg:overflow-hidden">
         {children}
+        {/* cookieless page views (Vercel Web Analytics), nothing is sent from localhost */}
+        <Analytics />
       </body>
     </html>
   );
