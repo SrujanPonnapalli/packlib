@@ -3,7 +3,21 @@ import type { Fitout } from "@/lib/furnish";
 
 export type Kind = "study" | "open" | "grad" | "faculty" | "studio" | "service";
 
-export type Space = (typeof snapshot.spaces)[number] & {
+/** One space as scripts/snapshot-spaces.mjs writes it, for either library. */
+type Snapshotted = {
+  id: string;
+  title: string;
+  room: string | null;
+  description: string | null;
+  url: string;
+  photo: { src: string; thumb: string; alt: string } | null;
+  reservableBy: string[];
+  bookAhead: string | null;
+  maxBooking: string | null;
+  requestUrl: string | null;
+};
+
+export type Space = Snapshotted & {
   level: number | null;
   kind: Kind;
   /** True when the Libraries list booking rules for it. */
@@ -114,7 +128,7 @@ export function readCaption(alt: string): Fitout {
   };
 }
 
-function featuresOf(f: Fitout): string[] {
+export function featuresOf(f: Fitout): string[] {
   return [
     f.display && "Wall display",
     f.whiteboard && "Whiteboard walls",
