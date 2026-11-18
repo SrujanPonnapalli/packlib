@@ -537,28 +537,41 @@ const level4 = aligned(
       ],
     },
     { kind: "core", poly: rect(1205, 390, 1353, 525) },
+    // Up to the Skyline Reading Room by the Cornelson Room: west from the east end, a landing, then south-south-west,
+    // arriving on Level 5 by the terrace. The rise is shared by length, so every step is the same height.
     {
-      kind: "stair", // up to the Skyline Reading Room: from the east end west to a landing...
+      kind: "stair",
       dir: "up",
-      front: E,
-      span: [0, 0.5],
+      front: 1,
+      span: [0, 0.68],
       poly: [
-        [318, 440],
+        [336, 435],
         [440, 405],
         [450, 435],
-        [330, 470],
+        [329, 466],
       ],
     },
     {
-      kind: "stair", // ...then south-west, arriving on Level 5 by the terrace
+      kind: "stair", // the landing
       dir: "up",
-      front: N,
-      span: [0.5, 1],
+      span: [0.68, 0.68],
       poly: [
-        [305, 450],
-        [334, 461],
-        [321, 516],
-        [291, 503],
+        [306, 429],
+        [336, 435],
+        [329, 466],
+        [300, 460],
+      ],
+    },
+    {
+      kind: "stair",
+      dir: "up",
+      front: 0,
+      span: [0.68, 1],
+      poly: [
+        [300, 460],
+        [329, 466],
+        [319, 515],
+        [290, 509],
       ],
     },
   ],
@@ -748,8 +761,8 @@ function link(floors: Record<number, Floor>) {
 
 // Shared shafts, in Level 3's coordinates so they line up exactly from floor to floor (checked on every map).
 // The enclosed stair tower beside the Monumental Stair (Levels 2–5): every map draws the same flight on each floor,
-// heading east along the south half, with the shaft's core in the north-east corner. Enclosed, so no opening in the floor above (twin).
-for (const f of [level2, level3, level4]) f.shapes.push({ kind: "stair", dir: "up", twin: true, front: W, poly: rect(545, 498, 612, 528) });
+// heading east along the south half, with the shaft's core in the north-east corner. Level 4 has no public flight up. Enclosed, so no opening in the floor above (twin).
+for (const f of [level2, level3]) f.shapes.push({ kind: "stair", dir: "up", twin: true, front: W, poly: rect(545, 498, 612, 528) });
 for (const f of [level2, level3, level4]) f.shapes.push({ kind: "core", poly: rect(573, 450, 627, 497) });
 level5.shapes.push({ kind: "core", poly: rect(523, 498, 627, 550) }); // the top of the tower, where it arrives
 // Elevators: the west bank by the Monumental Stair (Levels 2–5) and the east bank by the lobby (1–4; on 5 it opens into the University Centers suite).
