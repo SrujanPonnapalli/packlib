@@ -85,8 +85,6 @@ type Model = {
   home: [number, number, number];
   /** Height the match pins float at in the whole-building view (above the top floor). */
   pinTop: number;
-  /** Scene units the whole building takes up across and down the screen, for the overview zoom. */
-  span: [number, number];
   /** Floors sorted by height, for staggering the intro. */
   order: number[];
   byRef: (ref: string) => Space | undefined;
@@ -107,8 +105,6 @@ function useModel(): Model {
       y,
       home: [0, top / 2, 0],
       pinTop: top + ROOM_H + 4,
-      // Hunt's five wide floors are roughly as tall as they are wide on screen, Hill's tower is taller
-      span: [104, Math.max(104, 74 + top)],
       order,
       byRef,
     };
@@ -901,13 +897,50 @@ function Sun() {
   );
 }
 
-const FRAME = { left: 110, top: 190, bottom: 90 }; // px covered by the level rail, heading and caption
+/** Px of the panel edges covered by the heading, level rail and caption, measured from the page. */
+type Cover = { left: number; top: number; bottom: number };
+const GUTTER = 24; // padding between the model and anything covering it
 const FILL = 0.62; // how much of the free area an opened space fills, the rest is floor you can click to close it
 const LEVEL_FILL = 0.94; // an open level nearly fills it
 const MAX_FOCUS_ZOOM = 95; // so the smallest rooms don't fill the panel
 
+/**
+ * Measures what floats over the model: elements in the same panel with
+ * `data-cover="top|left|bottom"`. Re-measures when they or the panel resize,
+ * e.g. the heading wrapping to two lines or the live count loading in.
+ */
+function useCover(root: RefObject<HTMLDivElement | null>): Cover {
+  const [cover, setCover] = useState<Cover>({ left: 110, top: 190, bottom: 90 });
+  useEffect(() => {
+    const el = root.current;
+    const panel = el?.parentElement;
+    if (!el || !panel) return;
+    const covers = () => [...panel.querySelectorAll<HTMLElement>("[data-cover]")];
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const next: Cover = { left: 0, top: 0, bottom: 0 };
+      for (const c of covers()) {
+        const b = c.getBoundingClientRect();
+        if (!b.width || !b.height) continue;
+        const side = c.dataset.cover as keyof Cover;
+        const px = side === "top" ? b.bottom - r.top : side === "left" ? b.right - r.left : r.bottom - b.top;
+        next[side] = Math.max(next[side], Math.round(px));
+      }
+      setCover((c) => (c.left === next.left && c.top === next.top && c.bottom === next.bottom ? c : next));
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    covers().forEach((c) => ro.observe(c));
+    measure();
+    return () => ro.disconnect();
+  }, [root]);
+  return cover;
+}
+
+const footprint = (f: Floor) => [f.plate, ...(f.extra ?? [])].flat();
+
 /** Frames the whole building, the open level, or the open room when the selection changes. */
-function Rig({ m, active, focus }: { m: Model; active: number | null; focus: Shape | null }) {
+function Rig({ m, active, focus, cover, pins }: { m: Model; active: number | null; focus: Shape | null; cover: Cover; pins: boolean }) {
   const size = useThree((s) => s.size);
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls);
@@ -915,38 +948,39 @@ function Rig({ m, active, focus }: { m: Model; active: number | null; focus: Sha
   const moving = useRef(true);
 
   const goal = useMemo(() => {
-    if (active === null)
-      return {
-        at: new THREE.Vector3(...m.home),
-        zoom: Math.min((size.width - 110) / m.span[0], size.height / m.span[1]),
-      };
-    const floor = m.floors[active];
-    const poly = focus?.poly ?? [floor.plate, ...(floor.extra ?? [])].flat();
-    const xs = poly.map((p) => wx(p[0]));
-    const zs = poly.map((p) => wz(p[1]));
-    const y = m.y(active);
-    const at = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, y, (Math.min(...zs) + Math.max(...zs)) / 2);
-    // measure the level or space as it'll look on screen from the current angle, then fit it
-    // into a fixed share of the area not covered by the heading, rail and caption
+    // every point that has to be on screen, at the height it'll end up at
+    const at3 = (poly: Pt[], ys: number[]) => poly.flatMap(([x, z]) => ys.map((y) => new THREE.Vector3(wx(x), y, wz(z))));
+    const pts =
+      active === null
+        ? m.order.flatMap((n) => {
+            const y = m.y(n, SPREAD);
+            // Study Match pins float above the stack, over any floor's spaces
+            return at3(footprint(m.floors[n]), pins ? [y, y + ROOM_H, m.pinTop] : [y, y + ROOM_H]);
+          })
+        : at3(focus?.poly ?? footprint(m.floors[active]), [m.y(active), m.y(active) + WALL_H]);
+    const at = new THREE.Box3().setFromPoints(pts).getCenter(new THREE.Vector3());
+    // measure it as it'll look on screen from the current angle, then fit it
+    // into a share of the area the heading, rail and caption leave free
     const right = new THREE.Vector3();
     const up = new THREE.Vector3();
     camera.updateMatrixWorld(); // not yet current on a page that opens straight onto a space
     camera.matrixWorld.extractBasis(right, up, new THREE.Vector3());
     const extent = (axis: THREE.Vector3) => {
-      const ds = poly.flatMap((p) => [0, WALL_H].map((h) => axis.dot(scratch.set(wx(p[0]), y + h, wz(p[1])))));
+      const ds = pts.map((p) => axis.dot(p));
       const lo = Math.min(...ds);
       const hi = Math.max(...ds);
       return { size: hi - lo, off: (lo + hi) / 2 - axis.dot(at) }; // `off`: how far its on-screen middle is from `at`
     };
     const across = extent(right);
     const tall = extent(up);
-    const free = { w: size.width - FRAME.left, h: size.height - FRAME.top - FRAME.bottom };
+    const edge = { left: cover.left + GUTTER, right: GUTTER, top: cover.top + GUTTER, bottom: cover.bottom + GUTTER };
+    const free = { w: Math.max(120, size.width - edge.left - edge.right), h: Math.max(120, size.height - edge.top - edge.bottom) };
     const fit = Math.min(free.w / across.size, free.h / tall.size);
     const zoom = focus ? Math.min(MAX_FOCUS_ZOOM, FILL * fit) : LEVEL_FILL * fit;
     // center its on-screen outline in that free area, not the whole panel
-    at.addScaledVector(right, across.off - FRAME.left / 2 / zoom).addScaledVector(up, tall.off + (FRAME.top - FRAME.bottom) / 2 / zoom);
+    at.addScaledVector(right, across.off - (edge.left - edge.right) / 2 / zoom).addScaledVector(up, tall.off + (edge.top - edge.bottom) / 2 / zoom);
     return { at, zoom };
-  }, [m, active, focus, size, camera]);
+  }, [m, active, focus, size, camera, cover, pins]);
 
   useEffect(() => {
     moving.current = true;
@@ -1003,9 +1037,12 @@ export default function BuildingScene(props: Common) {
   const tipEl = useRef<HTMLDivElement>(null);
   const tipSpace = tipRef && tipRef !== selectedRef ? m.byRef(tipRef) : undefined;
   const tipZone = tipRef ? zoneFor(props.occupancy, tipRef) : null;
+  const root = useRef<HTMLDivElement>(null);
+  const cover = useCover(root);
 
   return (
     <div
+      ref={root}
       className="absolute inset-0"
       onPointerMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
@@ -1026,7 +1063,7 @@ export default function BuildingScene(props: Common) {
         <ambientLight intensity={2} />
         <Sun />
         <OrbitControls makeDefault enablePan={false} minPolarAngle={0.35} maxPolarAngle={1.3} minZoom={3} maxZoom={170} target={m.home} />
-        <Rig m={m} active={active} focus={focus} />
+        <Rig m={m} active={active} focus={focus} cover={cover} pins={active === null && (props.matches ?? []).length > 0} />
         <LabelSync labels={labels} els={els} />
         {Object.entries(m.floors).map(([n, floor]) => (
           <FloorModel key={n} m={m} n={Number(n)} floor={floor} {...props} onTip={setTipRef} />

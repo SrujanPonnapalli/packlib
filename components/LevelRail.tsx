@@ -62,9 +62,9 @@ type Props = {
 
 export default function LevelRail({ active, counts, busy, onSelect }: Props) {
   const lib = useLibrary();
-  // Hill's eleven floors need a tighter rail than Hunt's five
+  // Hill's eleven floors need a tighter rail than Hunt's five, even tighter on short windows
   return (
-    <ul className={`flex flex-col ${lib.levels.length > 6 ? "gap-0" : "gap-1.5"}`} aria-label={`${lib.floorWord}s`}>
+    <ul className={`flex flex-col ${lib.levels.length > 6 ? "gap-0 [@media(max-height:780px)]:[&_button]:py-0" : "gap-1.5"}`} aria-label={`${lib.floorWord}s`}>
       {lib.levels.map(({ n, label, landmark }) => {
         const count = counts[n] ?? 0;
         return (

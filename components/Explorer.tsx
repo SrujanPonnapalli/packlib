@@ -99,7 +99,8 @@ function Inner({ lib }: { lib: LibraryView }) {
   return (
     <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]">
       <section aria-label="Building" className="dot-grid relative flex min-w-0 flex-col px-5 pb-5 pt-6 sm:px-10 lg:pb-8 lg:pt-9">
-        <div className="pointer-events-none relative z-10 [&_button]:pointer-events-auto">
+        {/* data-cover: the model frames itself in the space these leave free */}
+        <div data-cover="top" className="pointer-events-none relative z-10 [&_button]:pointer-events-auto">
           <p className="annot arrive text-pencil">{lib.full}</p>
           {/* with nothing selected the live headcount is the hero: under the label on phones, across from the heading on wide screens */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between lg:gap-8">
@@ -159,10 +160,12 @@ function Inner({ lib }: { lib: LibraryView }) {
               matches={matchRefs}
               highlight={highlight}
             />
-            <div className="absolute left-10 top-1/2 z-10 -translate-y-1/2">
-              <LevelRail active={stackLevel} counts={counts} busy={busy} onSelect={selectLevel} />
+            {/* the rail sits between the heading and the caption so it doesn't overlap either */}
+            <div className="flex min-h-[360px] flex-1 items-center">
+              <div data-cover="left" className="relative z-10">
+                <LevelRail active={stackLevel} counts={counts} busy={busy} onSelect={selectLevel} />
+              </div>
             </div>
-            <div className="min-h-[360px] flex-1" />
           </>
         ) : (
           <div className="flex flex-1 items-center py-2">
@@ -170,7 +173,7 @@ function Inner({ lib }: { lib: LibraryView }) {
           </div>
         )}
 
-        <div className="pointer-events-none relative z-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+        <div data-cover="bottom" className="pointer-events-none relative z-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
           <p className="max-w-[60ch] text-[12px] leading-relaxed text-pencil">
             Not to scale.{wide && " Drag to turn, scroll to zoom."}
           </p>
