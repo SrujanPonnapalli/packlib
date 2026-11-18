@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Space } from "@/data/hunt";
+import type { Space } from "@/data/kinds";
+import { useLibrary } from "./LibraryContext";
 
 // NC State's booking app (Mazévo, behind campus sign-in) ignores its address,
 // so no link can open a particular room. The handoff gets people as close as
@@ -21,6 +22,7 @@ function spaceType(s: Space) {
 }
 
 export default function BookingHandoff({ space: s }: { space: Space }) {
+  const lib = useLibrary();
   const [copied, setCopied] = useState(false);
   const type = spaceType(s);
   const name = s.room ?? s.title;
@@ -48,7 +50,7 @@ export default function BookingHandoff({ space: s }: { space: Space }) {
       <ol className="mt-3 flex flex-col gap-2 text-[13px] leading-snug text-graphite">
         {[
           "Sign in with your Unity ID.",
-          `Choose Hunt Library, then ${type ? `“${type}”` : "the kind of space it is"}.`,
+          `Choose ${lib.name} Library, then ${type ? `“${type}”` : "the kind of space it is"}.`,
           `Find ${s.title} in the day's list${copied ? ": press ⌘F or Ctrl+F and paste to jump to it" : ""}. Grey blocks are taken; click a free time.`,
           "Arrive within 15 minutes of your start, or the room goes to someone else.",
         ].map((step, i) => (

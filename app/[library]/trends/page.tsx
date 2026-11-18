@@ -2,18 +2,23 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { isLibrary, libraryParams } from "@/data/libraries";
+import { isLibrary, levelName, libraryParams, LIBRARIES, type LibrarySlug } from "@/data/libraries";
+import { libraryView } from "@/data/library-view";
 import SiteHeader from "@/components/SiteHeader";
 import TrendsChart from "@/components/TrendsChart";
 import { BusyDot, Ticker } from "@/components/Busy";
-import { summary, instant, slot } from "@/lib/history";
+import { summary, instant as instantOf, slot } from "@/lib/history";
 import { recentHistory } from "@/lib/history-store";
-import { BUILDING_ID, BUSY_LABEL, busyness } from "@/lib/occupancy";
+import { BUSY_LABEL, busyness, SENSORS } from "@/lib/occupancy";
 
-export const metadata: Metadata = {
-  title: "Trends — StudyScape",
-  description: "How busy Hunt Library has been over the last week, from NC State's own sensors.",
-};
+export async function generateMetadata({ params }: PageProps<"/[library]/trends">): Promise<Metadata> {
+  const { library } = await params;
+  const name = isLibrary(library) ? LIBRARIES[library].name : "the library";
+  return {
+    title: `${name} trends — StudyScape`,
+    description: `How busy ${name} Library has been over the last week, from NC State's own sensors.`,
+  };
+}
 
 const FORECAST_AFTER_DAYS = 14;
 const tz = { timeZone: "America/New_York" } as const;
@@ -21,6 +26,9 @@ const when = new Intl.DateTimeFormat("en-US", { ...tz, weekday: "short", hour: "
 const date = new Intl.DateTimeFormat("en-US", { ...tz, day: "numeric", month: "short", year: "numeric" });
 
 export const generateStaticParams = libraryParams;
+
+// Reading params up front blocks navigation in theory; both libraries are prerendered, so not in practice.
+export const instant = false;
 
 export default async function TrendsPage({ params }: PageProps<"/[library]/trends">) {
   const { library } = await params;
@@ -30,13 +38,13 @@ export default async function TrendsPage({ params }: PageProps<"/[library]/trend
       <SiteHeader library={library} current="trends" />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl px-5 pb-16 pt-8 sm:px-10">
-          <p className="annot text-pencil">James B. Hunt Jr. Library</p>
-          <h1 className="mt-2 text-[30px] [text-wrap:balance] font-semibold leading-tight tracking-[-0.02em]">How busy Hunt gets</h1>
+          <p className="annot text-pencil">{LIBRARIES[library].full}</p>
+          <h1 className="mt-2 text-[30px] [text-wrap:balance] font-semibold leading-tight tracking-[-0.02em]">How busy {LIBRARIES[library].name} gets</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-graphite [text-wrap:pretty]">
-            StudyScape saves NC State&apos;s sensor headcounts every 5 minutes. Here is the last week, for the whole building and each level.
+            StudyScape saves NC State&apos;s sensor headcounts every 5 minutes. Here is the last week, for the whole building and each {library === "hunt" ? "level" : "floor"}.
           </p>
           <Suspense fallback={<TrendsSkeleton />}>
-            <Trends />
+            <Trends library={library} />
           </Suspense>
         </div>
       </main>
@@ -44,21 +52,21 @@ export default async function TrendsPage({ params }: PageProps<"/[library]/trend
   );
 }
 
-async function Trends() {
+async function Trends({ library }: { library: LibrarySlug }) {
   await connection(); // read at request time, never baked into the build
   let h;
   try {
-    h = await recentHistory();
+    h = await recentHistory(library);
   } catch (err) {
     console.error(err);
     return <p className="mt-8 rounded-xl bg-sheet p-5 text-[14px] text-graphite shadow-[inset_0_0_0_1px_var(--color-rule)]">The saved history can&apos;t be read right now. Live numbers are still on the map.</p>;
   }
   const now = h.readAt;
   const s = summary(h, now);
-  const since = h.since ? instant(h.since, 0) : null;
+  const since = h.since ? instantOf(h.since, 0) : null;
   const days = since ? Math.floor((now - since) / 86_400_000) : 0;
   const forecastFrom = since ? since + FORECAST_AFTER_DAYS * 86_400_000 : null;
-  const busy = s.latest?.share != null ? busyness(BUILDING_ID, s.latest.share) : null;
+  const busy = s.latest?.share != null ? busyness(SENSORS[library].building, s.latest.share) : null;
 
   const isPeak = !!(s.latest && s.peak && s.latest.count >= s.peak.count);
   // Today since midnight in Raleigh, for the little line beside the headcount.
@@ -113,7 +121,7 @@ async function Trends() {
         ))}
       </dl>
 
-      <TrendsChart h={h} now={now} />
+      <TrendsChart h={h} now={now} place={chartPlace(library)} />
 
       {s.change === null && <Collecting days={days} />}
       <p className="mt-3 max-w-2xl animate-enter text-[12px] [animation-delay:240ms] leading-relaxed text-pencil [text-wrap:pretty]">
@@ -224,3 +232,14 @@ function TrendsSkeleton() {
 }
 
 const Small =({ children }: { children: React.ReactNode }) => <span className="mt-1.5 flex items-center gap-1.5 text-[12px] text-pencil">{children}</span>;
+
+function chartPlace(library: LibrarySlug) {
+  const lib = libraryView(library);
+  const sensed = SENSORS[library].levels;
+  const unsensed = lib.levels.find((l) => !(l.n in sensed));
+  return {
+    name: lib.name,
+    levelNames: Object.fromEntries(lib.levels.map((l) => [l.n, levelName(lib, l.n)])),
+    noSensor: unsensed ? levelName(lib, unsensed.n) : null,
+  };
+}

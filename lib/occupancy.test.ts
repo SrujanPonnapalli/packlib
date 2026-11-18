@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ago, busyness, combine, parse, people, sumLevel } from "./occupancy.ts";
+import { HILL_SENSORS, ago, busyness, combine, combineLibrary, parse, people, sumLevel } from "./occupancy.ts";
 
 const at = "2026-11-17T05:14:46.292Z";
 const building = {
@@ -73,4 +73,23 @@ test("counts never claim a space is empty", () => {
   assert.equal(people(35), "about 35 people");
   assert.equal(people(null), null);
   assert.equal(ago(at, Date.parse(at) + 7 * 60000), "7 min ago");
+});
+
+test("Hill: a floor of three sensors is added up, its areas link to drawn spaces, a missing part blanks the floor", () => {
+  const hill = { id: 264, name: "Hill Library", count: 974, percentage: 0.42, timestamp: at, isActive: true, childCounts: [] };
+  const part = (id: number, count: number, childCounts: unknown[] = []) => ({ id, name: "", count, percentage: 0.3, timestamp: at, isActive: true, childCounts });
+  const o = combineLibrary(HILL_SENSORS, hill, {
+    266: part(266, 53, [{ id: 268, name: "Fishbowl Forum", count: 11, percentage: 0.2, isActive: true }]),
+    4478: part(4478, 19),
+    273: part(273, 288, [{ id: 274, name: "Learning Commons", count: 194, percentage: 0.6, isActive: true }]),
+    269: part(269, 22),
+    282: null,
+    278: part(278, 10),
+    290: part(290, 63),
+  });
+  assert.equal(o.levels[1].count, 360);
+  assert.equal(o.levels[1].share, 360 / (191 + 76 + 493));
+  assert.equal(o.levels[2].count, null); // the tower part failed and the building lists only wings
+  assert.equal(o.levels[4].count, 63);
+  assert.deepEqual(o.zones.map((z) => [z.level, z.refs[0], z.busy]), [[1, "1328", "quiet"], [1, "Learning Commons", "packed"]]);
 });

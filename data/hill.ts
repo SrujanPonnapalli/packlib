@@ -1,5 +1,6 @@
 import snapshot from "./hill-spaces.json";
-import { featuresOf, readCaption, type Kind, type Space } from "./hunt";
+import { featuresOf, readCaption } from "./hunt";
+import type { Kind, Space } from "./kinds";
 
 // Hill's floors: B is −1 and G is 0, so room B404 is on −1 and 5424 on 5.
 // `landmark` is the best-known real space on each floor, a wayfinding hint.

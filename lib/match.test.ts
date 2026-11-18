@@ -77,3 +77,18 @@ test("booking limits read from NC State's text", () => {
   assert.equal(hoursOf("24 hours"), 24);
   assert.equal(hoursOf(null), null);
 });
+
+test("Hill: grad and faculty rooms stay with their people, and a house rule comes first", () => {
+  const hill = [
+    room("1132A", 6, { title: "Graduate Study Room 1132A", eligible: ["Graduate Students"], maxHours: 4 }),
+    room("2312K", 1, { title: "Faculty Focus 2312K", eligible: ["Faculty"], solo: true, maxHours: 24 }),
+    room("5424", 6),
+    open("Special Collections Reading Room", "quiet", { level: 1, note: "Shared with Special Collections researchers" }),
+  ];
+  const ids = (a: Ask) => match(hill, a).matches.map((m) => m.id);
+  assert.ok(!ids(ask()).includes("1132A") && !ids(ask()).includes("2312K"));
+  assert.ok(ids(ask({ who: "grad", when: "later" })).includes("1132A"));
+  assert.ok(ids(ask({ who: "faculty", when: "later" })).includes("2312K"));
+  const sc = match(hill, ask()).matches.find((m) => m.id === "Special Collections Reading Room")!;
+  assert.equal(sc.cautions[0], "Shared with Special Collections researchers");
+});

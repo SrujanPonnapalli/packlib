@@ -30,6 +30,8 @@ export type Candidate = {
   outsideWindow: boolean;
   maxHours: number | null;
   vibe?: Vibe;
+  /** A house rule worth knowing before you go, shown as a caution. */
+  note?: string;
   /** Live busyness of the space itself, when it has a sensor. */
   busy?: Busy | null;
   count?: number | null;
@@ -113,6 +115,7 @@ export function score(c: Candidate, a: Ask): Omit<Match, "similar"> {
   else if (!c.bookable && a.hours >= 4) add(0.5, "Stay as long as you like");
 
   if (c.outsideWindow) add(0.3, "Outside windows");
+  if (c.note) cautions.unshift(c.note); // first, so the result shows it
   return { id: c.id, score: Math.round(s * 100) / 100, reasons, cautions };
 }
 

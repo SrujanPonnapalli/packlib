@@ -1,5 +1,7 @@
 import Image from "next/image";
-import { KINDS, type Space } from "@/data/hunt";
+import { KINDS, type Space } from "@/data/kinds";
+import { levelName } from "@/data/libraries";
+import { useLibrary } from "./LibraryContext";
 import { BUSY_LABEL, STALE_MS, ago, people, zoneFor } from "@/lib/occupancy";
 import { BusyDot, readingFor, type Live } from "./Busy";
 import BookingHandoff from "./BookingHandoff";
@@ -17,9 +19,10 @@ const isCaption = (alt: string) => alt.length > 0 && !/\.(jpe?g|png)$/i.test(alt
 type Props = { space: Space; live: Live; onBack: () => void };
 
 export default function SpaceDetail({ space: s, live, onBack }: Props) {
+  const lib = useLibrary();
   const kind = KINDS.find((k) => k.id === s.kind)!.label;
   const facts: [string, string][] = [];
-  if (s.level !== null) facts.push(["Level", String(s.level)]);
+  if (s.level !== null) facts.push([lib.floorWord, levelName(lib, s.level).split(" ")[1]]);
   if (s.reservableBy.length) facts.push([s.reservable ? "Who can reserve" : "Open to", audience(s.reservableBy)]);
   const seats = s.reservable ? s.seats : null;
   if (seats) facts.push(["Seats", s.title === "Audio Rooms" ? `${seats} in each room` : String(seats)]);
@@ -63,7 +66,7 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
           </span>
         )}
         <div className="min-w-0">
-          <p className="annot text-pencil">{s.room ? "Hunt Library" : kind}</p>
+          <p className="annot text-pencil">{s.room ? `${lib.name} Library` : kind}</p>
           <h2 className="mt-1 text-[22px] font-semibold leading-tight tracking-[-0.01em] [text-wrap:balance]">
             {s.room ? s.title.replace(` ${s.room}`, "") : s.title}
           </h2>
@@ -124,18 +127,20 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
 /** How busy it is right now: its own sensor zone if it has one, else its level as a whole. */
 function NowRow({ space, live }: { space: Space; live: Live }) {
   const { data, now } = live;
+  const lib = useLibrary();
   if (data === undefined || space.level === null) return null;
+  const lv = levelName(lib, space.level);
   const found = readingFor(live, space);
   const r = found?.reading;
   let value: React.ReactNode;
   let note: string | null = null;
   if (data === null) value = <span className="font-normal text-pencil">Live headcounts unavailable</span>;
-  else if (!r || r.busy === null) value = <span className="font-normal text-pencil">{found?.own ? "Its people sensor is off right now" : `No people sensor on Level ${space.level}`}</span>;
+  else if (!r || r.busy === null) value = <span className="font-normal text-pencil">{found?.own ? "Its people sensor is off right now" : `No people sensor on ${lv}`}</span>;
   else {
     value = (
       <span className="flex items-center gap-1.5">
         <BusyDot busy={r.busy} />
-        {found.own ? BUSY_LABEL[r.busy] : `Level ${space.level} is ${BUSY_LABEL[r.busy].toLowerCase()}`}
+        {found.own ? BUSY_LABEL[r.busy] : `${lv} is ${BUSY_LABEL[r.busy].toLowerCase()}`}
         <span className="font-normal text-graphite">· {people(r.count)}</span>
       </span>
     );

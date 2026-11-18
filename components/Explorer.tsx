@@ -1,9 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { KINDS, LEVELS, landmark, spaces, type Kind } from "@/data/hunt";
+import { KINDS, type Kind } from "@/data/kinds";
+import { levelName, type LibraryView } from "@/data/libraries";
+import { LibraryProvider } from "./LibraryContext";
+import { rememberLibrary } from "./LibraryPicker";
 import LevelRail from "./LevelRail";
 import LevelStack from "./LevelStack";
 import SpaceList from "./SpaceList";
@@ -25,26 +28,40 @@ const subscribeWide = (fn: () => void) => {
   return () => mq.removeEventListener("change", fn);
 };
 
-export default function Explorer() {
+export default function Explorer({ lib }: { lib: LibraryView }) {
+  return (
+    <LibraryProvider value={lib}>
+      <Inner lib={lib} />
+    </LibraryProvider>
+  );
+}
+
+const WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven"];
+
+function Inner({ lib }: { lib: LibraryView }) {
+  const { spaces, levels } = lib;
+  // The last library looked at is where `/` sends you next time.
+  useEffect(() => rememberLibrary(lib.slug), [lib.slug]);
   const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
   // Level and open space live in the URL so a view can be shared and Back works.
   const params = useSearchParams();
   const selected = spaces.find((s) => s.id === params.get("space")) ?? null;
-  const levelParam = Number(params.get("level"));
-  const level = LEVELS.some((l) => l.n === levelParam) ? levelParam : null;
+  // Not Number(null): that is 0, Hill's Ground floor.
+  const levelParam = params.has("level") ? Number(params.get("level")) : NaN;
+  const level = levels.some((l) => l.n === levelParam) ? levelParam : null;
 
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind | "all">("study"); // most visitors want a study room
-  const live = useOccupancy();
+  const live = useOccupancy(lib.slug);
   // The panel opens on Study Match: most visitors come with a task, not to browse.
   const [mode, setMode] = useState<"match" | "browse">("match");
   const [ask, setAsk] = useState<Ask>(DEFAULT_ASK);
   const [highlight, setHighlight] = useState<string | null>(null);
-  const result = useMemo(() => findMatches(ask, live.data), [ask, live.data]);
+  const result = useMemo(() => findMatches(spaces, ask, live.data), [spaces, ask, live.data]);
   const matchRefs = mode === "match" ? result.matches.map((m) => { const s = spaces.find((x) => x.id === m.id)!; return s.room ?? s.title; }) : [];
   const busy = useMemo(
-    () => Object.fromEntries(LEVELS.map(({ n }) => [n, live.data?.levels[n]?.busy ?? null])),
-    [live.data],
+    () => Object.fromEntries(levels.map(({ n }) => [n, live.data?.levels[n]?.busy ?? null])),
+    [levels, live.data],
   );
 
   function go(patch: Record<string, string | number | null>, push = false) {
@@ -62,7 +79,7 @@ export default function Explorer() {
     return spaces.filter(
       (s) => (kind === "all" || s.kind === kind) && (!q || s.title.toLowerCase().includes(q)),
     );
-  }, [query, kind]);
+  }, [spaces, query, kind]);
 
   const counts = useMemo(() => {
     const out: Record<number, number> = {};
@@ -86,13 +103,13 @@ export default function Explorer() {
     <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]">
       <section aria-label="Building" className="dot-grid relative flex min-w-0 flex-col px-5 pb-5 pt-6 sm:px-10 lg:pb-8 lg:pt-9">
         <div className="pointer-events-none relative z-10 [&_button]:pointer-events-auto">
-          <p className="annot arrive text-pencil">James B. Hunt Jr. Library</p>
+          <p className="annot arrive text-pencil">{lib.full}</p>
           {/* With nothing picked, the live headcount is the hero: below the label on phones, opposite the heading on wide screens. */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between lg:gap-8">
           {(hero || heroPending) && (
             <div className="mt-2 lg:order-last lg:-mt-5">
               {hero ? (
-                <HeroCount live={live} where="Hunt" />
+                <HeroCount live={live} where={lib.name} />
               ) : (
                 <div aria-hidden="true" className="flex flex-col gap-1 lg:items-end">
                   <div className="skeleton h-[88px] w-[160px] rounded-lg sm:h-[112px] sm:w-[200px] lg:h-[136px] lg:w-[230px]" />
@@ -103,26 +120,26 @@ export default function Explorer() {
           )}
           <div className="min-w-0">
           <h1 className="arrive mt-1.5 text-[28px] [--d:80ms] [text-wrap:balance] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[36px]">
-            {selected ? selected.title : level !== null ? `Level ${level}` : said ? `Hunt is ${BUSY_LABEL[overall!].toLowerCase()} right now.` : "Find a place to study in Hunt."}
+            {selected ? selected.title : level !== null ? levelName(lib, level) : said ? `${lib.name} is ${BUSY_LABEL[overall!].toLowerCase()} right now.` : `Find a place to study in ${lib.name}.`}
           </h1>
           <p className="arrive mt-2 text-[14px] text-graphite [--d:160ms]">
             {selected ? (
-              selected.level !== null ? `Level ${selected.level}` : "Not tied to a single level"
+              selected.level !== null ? levelName(lib, selected.level) : `Not tied to a single ${lib.floorWord.toLowerCase()}`
             ) : level !== null ? (
               <>
-                Home of the {landmark(level)}.{" "}
+                Home of the {levels.find((l) => l.n === level)!.landmark}.{" "}
                 <button type="button" onClick={() => go({ level: null })} className="underline decoration-rule-strong underline-offset-4 transition-colors duration-150 hover:decoration-ink">
-                  Show all five levels
+                  Show all {WORDS[levels.length]} {lib.floorWord.toLowerCase()}s
                 </button>
               </>
             ) : mode === "match" ? (
               result.matches.length ? (
-                `Your best match is on Level ${spaces.find((x) => x.id === result.matches[0].id)!.level}${wide ? ", numbered on the model" : ""}.`
+                `Your best match is on ${levelName(lib, spaces.find((x) => x.id === result.matches[0].id)!.level!)}${wide ? ", numbered on the model" : ""}.`
               ) : (
                 "Nothing fits those answers yet."
               )
             ) : kind === "all" && !query.trim() ? (
-              `${spaces.length} rooms and spaces across five levels.`
+              `${spaces.length} rooms and spaces across ${WORDS[levels.length]} ${lib.floorWord.toLowerCase()}s.`
             ) : (
               `Showing ${matching.length} of ${spaces.length} rooms and spaces.`
             )}
@@ -214,7 +231,7 @@ export default function Explorer() {
                 <div className="py-16 text-center">
                   <p className="text-[16px] font-semibold">Nothing matches that.</p>
                   <p className="mt-1 text-[14px] text-graphite">
-                    {level !== null ? `Nothing on level ${level} fits these filters.` : "Try a room number like 3212, or a different type."}
+                    {level !== null ? `Nothing on ${levelName(lib, level)} fits these filters.` : `Try a room number like ${lib.slug === "hunt" ? "3212" : "5424"}, or a different type.`}
                   </p>
                   <button
                     type="button"

@@ -10,7 +10,7 @@ const EVERY = 5 * 60 * 1000; // the server refreshes on the same beat
  * not be read; a failed refresh keeps the last good reading, whose age the page shows.
  * `now` ticks each minute for the "updated N min ago" label.
  */
-export function useOccupancy() {
+export function useOccupancy(library: string) {
   const [data, setData] = useState<Occupancy | null>();
   const [now, setNow] = useState(0);
   useEffect(() => {
@@ -18,7 +18,7 @@ export function useOccupancy() {
     let gone = false;
     const load = () => {
       last = Date.now();
-      fetch("/api/occupancy")
+      fetch(`/api/occupancy?library=${library}`)
         .then((r) => (r.ok ? (r.json() as Promise<Occupancy>) : null))
         .catch(() => null)
         .then((fresh) => !gone && setData((old) => fresh ?? old ?? null));
@@ -37,6 +37,6 @@ export function useOccupancy() {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, []);
+  }, [library]);
   return { data, now };
 }

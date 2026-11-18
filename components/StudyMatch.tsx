@@ -1,12 +1,15 @@
 import { useState } from "react";
 import Image from "next/image";
-import { KINDS, spaces, type Space } from "@/data/hunt";
+import { KINDS, type Space } from "@/data/kinds";
+import { levelName } from "@/data/libraries";
+import { useLibrary } from "./LibraryContext";
 import { hoursOf, match, type Ask, type Candidate, type Match, type Vibe } from "@/lib/match";
 import { BUSY_LABEL, zoneFor, type Busy, type Occupancy } from "@/lib/occupancy";
 import { BusyDot, readingFor, type Live } from "./Busy";
 
 // How each open space feels, from the Libraries' own descriptions
 // ("a tranquil, light-filled space", "colorful soft seating", "promotes group collaboration").
+// Both libraries; the titles they share (Learning Commons, Quiet Reading Room) feel the same in each.
 const VIBE: Record<string, Vibe> = {
   "Quiet Reading Room": "quiet",
   "Skyline Reading Room": "quiet",
@@ -20,12 +23,28 @@ const VIBE: Record<string, Vibe> = {
   "Idea Alcove": "social",
   "Graduate Student Commons": "social",
   "Faculty Research Commons": "social",
+  // Hill
+  "Ground Floor Reading Room": "quiet",
+  "Special Collections Reading Room": "quiet",
+  "Armstrong Memorial Popular Reading Lounge": "lounge",
+  "South Study Lounge (Floor 2)": "lounge",
+  "South Study Lounge (Floor 3)": "lounge",
+  "Study Lounge 2142": "lounge",
+  "Study Lounge 2301": "lounge",
+  "Study Lounge 2424": "lounge",
+  "Fishbowl Forum": "social",
+  "North Forum": "social",
+};
+
+// Places that come with a rule of their own, shown with the match.
+const NOTE: Record<string, string> = {
+  "Special Collections Reading Room": "Shared with Special Collections researchers; rare materials are requested ahead at the desk",
 };
 
 const ROOM_KINDS = new Set(["study", "grad", "faculty"]);
 
 /** Everything Study Match may suggest: open seating with a known feel, and bookable study, graduate and faculty rooms. */
-export function candidates(occupancy: Occupancy | null | undefined): Candidate[] {
+export function candidates(spaces: Space[], occupancy: Occupancy | null | undefined): Candidate[] {
   return spaces
     .filter((s) => s.level !== null && (VIBE[s.title] || (s.reservable && s.room && (ROOM_KINDS.has(s.kind) || s.title === "Cornelson Meeting Room"))))
     .map((s) => {
@@ -45,6 +64,7 @@ export function candidates(occupancy: Occupancy | null | undefined): Candidate[]
         outsideWindow: s.fitout?.window === "exterior",
         maxHours: hoursOf(s.maxBooking),
         vibe: VIBE[s.title],
+        note: NOTE[s.title],
         busy: zone?.busy ?? null,
         count: zone?.count ?? null,
       };
@@ -53,8 +73,8 @@ export function candidates(occupancy: Occupancy | null | undefined): Candidate[]
 
 export const DEFAULT_ASK: Ask = { size: 1, work: "focus", when: "now", hours: 2, who: "undergrad" };
 
-export function findMatches(ask: Ask, occupancy: Occupancy | null | undefined) {
-  return match(candidates(occupancy), ask);
+export function findMatches(spaces: Space[], ask: Ask, occupancy: Occupancy | null | undefined) {
+  return match(candidates(spaces, occupancy), ask);
 }
 
 type Option<T> = [T, string];
@@ -206,7 +226,8 @@ const TAG: Record<string, string | null> = {
 const tag = (r: string) => (r in TAG ? TAG[r] : r.startsWith("Seats ") ? r.split(",")[0] : r);
 
 function Result({ rank, m, live, onOpen, onHover }: { rank: number; m: Match; live: Live; onOpen: (s: Space) => void; onHover?: (ref: string | null) => void }) {
-  const s = spaces.find((x) => x.id === m.id)!;
+  const lib = useLibrary();
+  const s = lib.spaces.find((x) => x.id === m.id)!;
   const ref = s.room ?? s.title;
   const busy = LIVE[[...m.reasons, ...m.cautions].find((r) => LIVE[r]) ?? ""];
   const found = readingFor(live, s);
@@ -240,7 +261,7 @@ function Result({ rank, m, live, onOpen, onHover }: { rank: number; m: Match; li
           <span className="min-w-0 flex-1">
             <span className={`block font-semibold leading-snug [text-wrap:balance] ${first ? "text-[17px]" : "text-[15px]"}`}>{s.title}</span>
             <span className="block text-[12px] text-pencil">
-              Level {s.level} · {s.reservable ? kindLabel(s) : "Open seating"}
+              {levelName(lib, s.level!)} · {s.reservable ? kindLabel(s) : "Open seating"}
               {s.reservable && " · Book on NC State"}
             </span>
             {busy && (
@@ -249,7 +270,7 @@ function Result({ rank, m, live, onOpen, onHover }: { rank: number; m: Match; li
                 <span className="font-medium text-ink">{BUSY_LABEL[busy]}</span>
                 {count != null && (
                   <span className="tabular-nums text-graphite">
-                    · {count.toLocaleString("en-US")} {count === 1 ? "person" : "people"} {found!.own ? "here" : `on Level ${s.level}`}
+                    · {count.toLocaleString("en-US")} {count === 1 ? "person" : "people"} {found!.own ? "here" : `on ${levelName(lib, s.level!)}`}
                   </span>
                 )}
               </span>
