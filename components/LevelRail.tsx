@@ -1,9 +1,13 @@
-import { LEVELS } from "@/data/hunt";
+import { useLibrary } from "./LibraryContext";
 import { BUSY_LABEL, type Busy } from "@/lib/occupancy";
 import { BusyDot } from "./Busy";
 
 type ButtonProps = {
   n: number;
+  /** What the building calls the floor, e.g. "3", "G". */
+  label: string;
+  /** "Level" or "Floor". */
+  word: string;
   landmark: string;
   count: number;
   on: boolean;
@@ -16,7 +20,7 @@ type ButtonProps = {
   busy?: Busy | null;
 };
 
-export function LevelButton({ n, landmark, count, on, dim, onClick, onHover, compact, busy }: ButtonProps) {
+export function LevelButton({ n, label, word, landmark, count, on, dim, onClick, onHover, compact, busy }: ButtonProps) {
   const spacesText = `${count} ${count === 1 ? "space" : "spaces"}`;
   const now = busy ? ` · ${BUSY_LABEL[busy]} now` : "";
   return (
@@ -24,7 +28,7 @@ export function LevelButton({ n, landmark, count, on, dim, onClick, onHover, com
       type="button"
       aria-pressed={on}
       title={compact ? `${landmark} · ${spacesText}${now}` : undefined}
-      aria-label={`Level ${n}, ${landmark}, ${spacesText}${now.replace(" ·", ",")}`}
+      aria-label={`${word} ${label}, ${landmark}, ${spacesText}${now.replace(" ·", ",")}`}
       onClick={onClick}
       onPointerEnter={() => onHover?.(n)}
       onPointerLeave={() => onHover?.(null)}
@@ -35,7 +39,7 @@ export function LevelButton({ n, landmark, count, on, dim, onClick, onHover, com
           on ? "bg-accent text-ink" : "text-ink group-hover:bg-vellum"
         }`}
       >
-        {n}
+        {label}
         {busy && <BusyDot busy={busy} className="absolute -right-0.5 -top-0.5 ring-2 ring-paper" />}
       </span>
       <span className={compact ? "hidden" : "hidden min-w-0 sm:block"}>
@@ -57,14 +61,18 @@ type Props = {
 };
 
 export default function LevelRail({ active, counts, busy, onSelect }: Props) {
+  const lib = useLibrary();
+  // Hill's eleven floors need a tighter rail than Hunt's five
   return (
-    <ul className="flex flex-col gap-1.5" aria-label="Levels">
-      {LEVELS.map(({ n, landmark }) => {
+    <ul className={`flex flex-col ${lib.levels.length > 6 ? "gap-0" : "gap-1.5"}`} aria-label={`${lib.floorWord}s`}>
+      {lib.levels.map(({ n, label, landmark }) => {
         const count = counts[n] ?? 0;
         return (
           <li key={n}>
             <LevelButton
               n={n}
+              label={label}
+              word={lib.floorWord}
               landmark={landmark}
               count={count}
               on={active === n}

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Image from "next/image";
-import { KINDS, LEVELS, type Kind, type Space } from "@/data/hunt";
+import { KINDS, type Kind, type Space } from "@/data/kinds";
+import { levelName } from "@/data/libraries";
+import { useLibrary } from "./LibraryContext";
 import { BUSY_LABEL, zoneFor } from "@/lib/occupancy";
 import { BusyDot, type Live } from "./Busy";
 
@@ -13,7 +15,8 @@ const kindLabel = (k: Kind) => KINDS.find((x) => x.id === k)!.label;
 type Props = { spaces: Space[]; live: Live; onOpen: (s: Space) => void };
 
 export default function SpaceList({ spaces, live, onOpen }: Props) {
-  const groups = [...LEVELS.map((l) => l.n), null]
+  const lib = useLibrary();
+  const groups = [...lib.levels.map((l) => l.n), null]
     .map((n) => ({ n, items: spaces.filter((s) => s.level === n) }))
     .filter((g) => g.items.length > 0);
   // levels you've collapsed, all start open
@@ -38,7 +41,7 @@ export default function SpaceList({ spaces, live, onOpen }: Props) {
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" className={`shrink-0 self-center text-pencil transition-transform duration-200 ease-out-quint group-hover:text-ink ${folded.has(n) ? "-rotate-90" : ""}`}>
               <path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span className="text-[14px] font-semibold">{n === null ? "Around Hunt" : `Level ${n}`}</span>
+            <span className="text-[14px] font-semibold">{n === null ? `Around ${lib.name}` : levelName(lib, n)}</span>
             {levelBusy && (
               <span className="flex items-center gap-1.5 self-center text-[12px] text-graphite">
                 <BusyDot busy={levelBusy} />

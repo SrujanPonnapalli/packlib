@@ -2,7 +2,7 @@
 // every sensor NC State reports (building, levels, zones), even ones that are
 // switched off, so gaps and outages show up later.
 
-import { LEVEL_IDS, parse, sumLevel, type Reading, type Sensors } from "./occupancy.ts";
+import { parse, sumLevel, type Reading, type Sensors } from "./occupancy.ts";
 
 /** "building", "level#3", "zone#1342". */
 export type Series = string;
@@ -58,8 +58,9 @@ export function lineUp(days: Record<Series, { day: string; r: Entry[] }[]>, sinc
   const building = byTime("building");
   const t = [...building.keys()].sort((a, b) => a - b);
   const levels: History["levels"] = {};
-  for (const n of Object.keys(LEVEL_IDS).map(Number)) {
-    const l = byTime(`level#${n}`);
+  for (const s of Object.keys(days).filter((k) => k.startsWith("level#"))) {
+    const n = Number(s.slice("level#".length));
+    const l = byTime(s);
     levels[n] = t.map((x) => l.get(x)?.[1] ?? null);
   }
   return { t, total: t.map((x) => building.get(x)![1]), share: t.map((x) => building.get(x)![2]), levels, since, readAt };

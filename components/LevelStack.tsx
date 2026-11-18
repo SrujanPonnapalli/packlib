@@ -1,38 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { LEVELS } from "@/data/hunt";
+import type { LevelInfo } from "@/data/libraries";
+import { useLibrary } from "./LibraryContext";
 import { LevelButton } from "./LevelRail";
 import type { Busy } from "@/lib/occupancy";
 
-// rough footprint per level as [length, depth], not to scale
-const FOOTPRINT: Record<number, [number, number]> = {
-  1: [230, 100],
-  2: [250, 100],
-  3: [250, 100],
-  4: [250, 100],
-  5: [150, 100],
-};
 // live busyness on top of each slab like the 3D model: ramp color plus hatching
 const HEAT_FILL: Record<Busy, string> = { quiet: "var(--color-quiet)", busy: "var(--color-busy)", packed: "var(--color-packed)" };
 const PITCH: Record<Busy, number> = { quiet: 7, busy: 4, packed: 4.5 };
-const GAP = 40;
 const THICK = 9;
-const VB = { x: -290, y: -181, w: 517, h: 366 };
+// Hunt's five levels are 40 apart. taller buildings get more room per floor so the
+// floor buttons (40px on phones) don't overlap, the stack just gets taller
+const gapFor = (count: number) => (count > 6 ? 64 : 40);
+const viewBox = (count: number) => {
+  const top = (count - 1) * gapFor(count) + THICK + 12;
+  return { x: -290, y: -top, w: 517, h: top + 185 };
+};
 
 const iso = (x: number, y: number, z: number) =>
   `${((x - y) * 0.866).toFixed(1)},${((x + y) * 0.5 - z).toFixed(1)}`;
 
-function slab(n: number) {
-  const [l, d] = FOOTPRINT[n];
-  const z = (n - 1) * GAP;
+/** `i` counts floors from the bottom. */
+function slab({ footprint: [l, d] }: LevelInfo, i: number, gap: number) {
+  const z = i * gap;
   const t = z + THICK;
   return {
     top: [iso(0, 0, t), iso(l, 0, t), iso(l, d, t), iso(0, d, t)].join(" "),
     side: [iso(0, d, z), iso(l, d, z), iso(l, d, t), iso(0, d, t)].join(" "),
     end: [iso(l, 0, z), iso(l, d, z), iso(l, d, t), iso(l, 0, t)].join(" "),
     // where the leader line meets the slab, in viewBox units
-    anchorY: 50 - z - THICK / 2,
+    anchorY: d / 2 - z - THICK / 2,
   };
 }
 
@@ -44,7 +42,12 @@ type Props = {
 };
 
 export default function LevelStack({ active, counts, busy, onSelect }: Props) {
+  const { levels, floorWord } = useLibrary();
   const [hover, setHover] = useState<number | null>(null);
+  const VB = viewBox(levels.length);
+  const gap = gapFor(levels.length);
+  // bottom floor first so upper slabs draw over lower ones
+  const slabs = [...levels].reverse().map((l, i) => ({ l, i, s: slab(l, i, gap) }));
   const toggle = (n: number) => onSelect(active === n ? null : n);
 
   return (
@@ -71,14 +74,13 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
           fill="rgb(23 23 23 / 0.07)"
           style={{ filter: "blur(7px)" }}
         />
-        {[...LEVELS].reverse().map(({ n }) => {
-          const s = slab(n);
+        {slabs.map(({ l: { n }, i, s }) => {
           const on = active === n;
           const dim = active !== null && !on;
           const lift = on ? -6 : hover === n ? -3 : 0;
           const heat = busy[n];
           // intro: slabs draw in bottom to top, outline first then fill
-          const draft = { ["--d" as string]: `${120 + (n - 1) * 110}ms` };
+          const draft = { ["--d" as string]: `${120 + i * Math.min(110, 600 / levels.length)}ms` };
           return (
             <g key={n}>
               <line
@@ -111,16 +113,18 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
       </svg>
 
       <ul className="absolute inset-y-0 left-0 w-[31%]">
-        {LEVELS.map(({ n, landmark }) => {
+        {[...slabs].reverse().map(({ l: { n, label, landmark }, s }) => {
           const count = counts[n] ?? 0;
           return (
             <li
               key={n}
               className="absolute left-0 right-0 -translate-y-1/2"
-              style={{ top: `${((slab(n).anchorY - VB.y) / VB.h) * 100}%` }}
+              style={{ top: `${((s.anchorY - VB.y) / VB.h) * 100}%` }}
             >
               <LevelButton
                 n={n}
+                label={label}
+                word={floorWord}
                 landmark={landmark}
                 count={count}
                 on={active === n}

@@ -1,35 +1,8 @@
 import snapshot from "./hunt-spaces.json";
 import type { Fitout } from "@/lib/furnish";
+import { KINDS, type Kind, type Space } from "./kinds";
 
-export type Kind = "study" | "open" | "grad" | "faculty" | "studio" | "service";
-
-/** One space as scripts/snapshot-spaces.mjs writes it (either library). */
-type Snapshotted = {
-  id: string;
-  title: string;
-  room: string | null;
-  description: string | null;
-  url: string;
-  photo: { src: string; thumb: string; alt: string } | null;
-  reservableBy: string[];
-  bookAhead: string | null;
-  maxBooking: string | null;
-  requestUrl: string | null;
-};
-
-export type Space = Snapshotted & {
-  level: number | null;
-  kind: Kind;
-  /** True if the Libraries list booking rules for it. */
-  reservable: boolean;
-  /** Parsed from the photo caption, null if there's no photo. */
-  fitout: Fitout | null;
-  /** Official count from the booking site if it has one, otherwise from the photo caption. */
-  seats: number | null;
-  seatsFrom: "booking" | "caption" | null;
-  /** Readable fit-out text, only shown for bookable rooms. */
-  features: string[];
-};
+export { KINDS, type Kind, type Space };
 
 // NC State just numbers Hunt's floors, no names. `landmark` is the best-known
 // space on each floor, only used as a wayfinding hint.
@@ -41,14 +14,6 @@ export const LEVELS = [
   { n: 1, landmark: "Auditorium" },
 ] as const;
 
-export const KINDS: { id: Kind; label: string }[] = [
-  { id: "study", label: "Study rooms" },
-  { id: "open", label: "Open seating" },
-  { id: "grad", label: "Graduate" },
-  { id: "faculty", label: "Faculty" },
-  { id: "studio", label: "Labs & halls" },
-  { id: "service", label: "Services" },
-];
 
 // The Spaces API only gives the floor through the room number. For spaces
 // without one, the floor comes from the space's page on lib.ncsu.edu
@@ -175,9 +140,3 @@ export const spaces: Space[] = snapshot.spaces.map((s) => {
 export const snapshotDate = new Date(snapshot.fetchedAt);
 
 export const landmark = (n: number) => LEVELS.find((l) => l.n === n)?.landmark ?? "";
-
-/** Geometry links to a space by room number, or by title if it doesn't have one. */
-export const spaceByRef = (ref: string) =>
-  spaces.find((s) => s.room === ref) ?? spaces.find((s) => s.title === ref);
-
-export const fitoutFor = (ref: string) => spaceByRef(ref)?.fitout ?? null;

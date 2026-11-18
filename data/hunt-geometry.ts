@@ -26,7 +26,8 @@ export type Shape = {
   twin?: boolean;
 };
 
-export type Floor = { plate: Pt[]; shapes: Shape[]; traced: boolean };
+/** `extra`: wings that don't connect to the rest on that floor (Hill only). */
+export type Floor = { plate: Pt[]; shapes: Shape[]; traced: boolean; extra?: Pt[][] };
 
 const rect = (x0: number, y0: number, x1: number, y1: number): Pt[] => [
   [x0, y0],

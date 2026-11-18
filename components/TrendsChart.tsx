@@ -5,9 +5,15 @@ import { typical, type History } from "@/lib/history";
 import { BUSY_LABEL, type Busy } from "@/lib/occupancy";
 import { BusyDot, Ticker } from "./Busy";
 
-// levels use a blue ramp, darkest at the bottom. blue so it doesn't clash with the green/amber/red busyness colors
-const LEVEL_FILL: Record<number, string> = { 2: "#2f5f91", 3: "#4f86bd", 4: "#86b2dc", 5: "#c2d9ef" };
-// Hunt's building cut-offs as NC State draws them
+// levels use a blue ramp, darkest at the bottom. blue so it doesn't clash with the green/amber/red busyness colors.
+// Hunt's four sensor levels get exactly these four, Hill's ten are spread along the same ramp.
+const RAMP = [[0x2f, 0x5f, 0x91], [0x4f, 0x86, 0xbd], [0x86, 0xb2, 0xdc], [0xc2, 0xd9, 0xef]];
+function rampAt(t: number) {
+  const x = t * (RAMP.length - 1);
+  const i = Math.min(RAMP.length - 2, Math.floor(x));
+  return `rgb(${RAMP[i].map((c, k) => Math.round(c + (RAMP[i + 1][k] - c) * (x - i))).join(" ")})`;
+}
+// building cut-offs as NC State draws them (same for Hunt and Hill)
 const CUTS: [number, Busy][] = [[0.25, "quiet"], [0.45, "busy"], [1, "packed"]];
 const busyAt = (share: number): Busy => CUTS.find(([to]) => share < to)?.[1] ?? "packed";
 const GAP_MS = 20 * 60_000; // gap longer than this between readings breaks the line
@@ -55,7 +61,10 @@ function band(xs: number[], lo: number[], hi: (number | null)[], t: number[]) {
     .join("");
 }
 
-export default function TrendsChart({ h, now }: { h: History; now: number }) {
+/** Labels for the chart: "Hunt", each sensor level's name, and the level with no sensor. */
+export type ChartPlace = { name: string; levelNames: Record<number, string>; noSensor: string | null };
+
+export default function TrendsChart({ h, now, place }: { h: History; now: number; place: ChartPlace }) {
   const uid = useId().replace(/:/g, "");
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -90,8 +99,9 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
   const y = (v: number) => PAD.top + innerH - (v / yMax) * innerH;
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * yMax);
 
-  // stack levels 2 to 5. if one level is missing a reading its layer is left out at that time
-  const levels = Object.keys(h.levels).map(Number).sort();
+  // stack the levels bottom up. if one level is missing a reading, its layer is left out at that time
+  const levels = Object.keys(h.levels).map(Number).sort((a, b) => a - b);
+  const LEVEL_FILL = Object.fromEntries(levels.map((lv, i) => [lv, rampAt(levels.length > 1 ? i / (levels.length - 1) : 0)]));
   const layers = levels.reduce<{ lv: number; d: string; base: number[] }[]>((acc, lv) => {
     const vals = h.levels[lv];
     const below = acc.at(-1)?.base ?? h.t.map(() => 0);
@@ -213,7 +223,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
               </span>
               {[...levels].reverse().map((lv) => (
                 <span key={lv} className="flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-[2px]" style={{ background: LEVEL_FILL[lv] }} aria-hidden="true" /> Level {lv}
+                  <span className="size-2.5 rounded-[2px]" style={{ background: LEVEL_FILL[lv] }} aria-hidden="true" /> {place.levelNames[lv]}
                 </span>
               ))}
               {hasUsual && (
@@ -224,7 +234,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
               <span className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-[2px] bg-[rgb(23_23_23/0.07)]" aria-hidden="true" /> Night
               </span>
-              <span className="text-pencil">Level 1 has no sensor · Drag across the chart to compare</span>
+              <span className="text-pencil">{place.noSensor && `${place.noSensor} has no sensor · `}Drag across the chart to compare</span>
             </>
           ) : (
             <>
@@ -264,7 +274,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
             width={width}
             height={HEIGHT}
             role="img"
-            aria-label={`Headcount in Hunt Library over the last ${Math.max(1, Math.round(span / 86_400_000))} days. Use the arrow keys to step through readings.`}
+            aria-label={`Headcount in ${place.name} Library over the last ${Math.max(1, Math.round(span / 86_400_000))} days. Use the arrow keys to step through readings.`}
             tabIndex={0}
             onPointerMove={move}
             onPointerDown={down}
@@ -417,7 +427,7 @@ export default function TrendsChart({ h, now }: { h: History; now: number }) {
                     {[...levels].reverse().map((lv) => (
                       <li key={lv} className="flex items-center gap-2 text-[12px] text-sheet/80">
                         <span className="size-2 rounded-[2px]" style={{ background: LEVEL_FILL[lv] }} aria-hidden="true" />
-                        Level {lv}
+                        {place.levelNames[lv]}
                         <span className="plaque ml-auto text-[13px] tabular-nums text-sheet">{h.levels[lv][tip] ?? "–"}</span>
                       </li>
                     ))}

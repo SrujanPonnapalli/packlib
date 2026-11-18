@@ -9,10 +9,10 @@ import type { History } from "./history.ts";
 const URL = process.env.HISTORY_URL ?? "https://wfy7nvbfmkz2weglunienmbp7a0tdwjk.lambda-url.us-east-2.on.aws/";
 
 /** The building and its levels over the last week. */
-export async function recentHistory(): Promise<History> {
+export async function recentHistory(library: "hunt" | "hill"): Promise<History> {
   "use cache";
   cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  const res = await fetch(URL, { cache: "no-store" });
+  const res = await fetch(library === "hunt" ? URL : `${URL}?library=${library}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`history function answered ${res.status}`);
   return res.json();
 }

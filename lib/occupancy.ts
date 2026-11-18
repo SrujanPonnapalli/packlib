@@ -32,6 +32,23 @@ export type Occupancy = {
 export const LEVEL_IDS: Record<number, number> = { 2: 1352, 3: 1353, 4: 1354, 5: 1355 };
 export const BUILDING_ID = 1356;
 
+/** Which drawn spaces (geometry refs) each sensor zone covers. */
+export const ZONE_REFS: Record<number, string[]> = {
+  4402: ["2008"], // Carrel Corridor
+  1342: ["Quiet Reading Room"],
+  1341: ["Rain Garden Reading Lounge", "2302"], // counted together with the Idea Alcove and the floor's edges
+  1343: ["3200"], // Learning Commons
+  1344: ["3201"], // The Landing
+  1345: ["Lake Raleigh Learning Commons"],
+  1348: ["Graduate Student Commons"],
+  5352: ["4401"], // Maker Studio
+  1346: ["4403"], // Esports and Gaming Lab
+  1349: ["Oval View Reading Room"],
+  1347: ["4505"], // Teaching and Visualization Lab
+  1351: ["Faculty Research Commons"],
+  1350: ["Skyline Reading Room"],
+};
+
 /** Which sensors make up a library: the building total and each floor (one sensor, or several added up). */
 export type Sensors = {
   slug: "hunt" | "hill";
@@ -39,6 +56,8 @@ export type Sensors = {
   levels: Record<number, number[]>;
   /** Seats per sensor, for floors made of several sensors. */
   capacity: Record<number, number>;
+  /** Which drawn spaces (geometry refs) each named-area sensor covers. */
+  zones: Record<number, string[]>;
 };
 
 export const HUNT_SENSORS: Sensors = {
@@ -46,6 +65,7 @@ export const HUNT_SENSORS: Sensors = {
   building: BUILDING_ID,
   levels: Object.fromEntries(Object.entries(LEVEL_IDS).map(([n, id]) => [n, [id]])),
   capacity: {},
+  zones: ZONE_REFS,
 };
 
 // Hill nests building → wing (West, Tower, East) → floor → area, so Floors 1
@@ -56,6 +76,27 @@ export const HILL_SENSORS: Sensors = {
   levels: { 0: [280], 1: [266, 4478, 273], 2: [269, 282, 278], 3: [286], 4: [290], 5: [291], 6: [292], 7: [293], 8: [294], 9: [295] },
   // TODO: count ÷ share from one reading on 17 Nov 2026 (shares are rounded to 1%, so ±2%). remeasure if NC State changes a floor
   capacity: { 266: 191, 4478: 76, 273: 493, 269: 144, 282: 282, 278: 27 },
+  // named areas inside the floor sensors (read 17 Nov 2026), mapped to refs in data/hill-geometry.ts
+  zones: {
+    268: ["1328"], // Fishbowl Forum
+    5249: ["1320"], // Hill of Beans Seating Area
+    267: ["1325", "1311"], // Quiet Reading Rooms
+    4476: ["1222"], // Makerspace
+    281: ["1402"], // Mezzanine, where the Game Space is
+    277: ["1133", "1133A"], // Digital Media Lab
+    275: ["1132"], // Graduate Student Commons
+    274: ["Learning Commons", "Armstrong Memorial Popular Reading Lounge"],
+    276: ["1128"], // Special Collections Reading Room
+    271: ["2312"], // Faculty Research Commons
+    270: ["2306", "Study Lounge 2301"], // Floor 2 West Wing general seating
+    4477: ["2317"], // Gaming and VR Studio
+    283: ["2200"], // Academic Success Center
+    284: ["South Study Lounge (Floor 2)"],
+    285: ["2419"], // Innovation Studio
+    287: ["3425"], // Data Experience Lab
+    288: ["South Study Lounge (Floor 3)"],
+    289: ["North Forum"],
+  },
 };
 
 // "Feels like" cut-offs (upper % for not busy, then busy) from NC State's
@@ -77,22 +118,6 @@ export function busyness(id: number, share: number): Busy {
   return pct <= quiet ? "quiet" : pct <= busy ? "busy" : "packed";
 }
 
-/** Which drawn spaces (geometry refs) each sensor zone covers. */
-export const ZONE_REFS: Record<number, string[]> = {
-  4402: ["2008"], // Carrel Corridor
-  1342: ["Quiet Reading Room"],
-  1341: ["Rain Garden Reading Lounge", "2302"], // counted together with the Idea Alcove and the floor's edges
-  1343: ["3200"], // Learning Commons
-  1344: ["3201"], // The Landing
-  1345: ["Lake Raleigh Learning Commons"],
-  1348: ["Graduate Student Commons"],
-  5352: ["4401"], // Maker Studio
-  1346: ["4403"], // Esports and Gaming Lab
-  1349: ["Oval View Reading Room"],
-  1347: ["4505"], // Teaching and Visualization Lab
-  1351: ["Faculty Research Commons"],
-  1350: ["Skyline Reading Room"],
-};
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null);
@@ -135,11 +160,6 @@ export async function readLibrary(s: Sensors): Promise<{ building: unknown; sens
   return { building: building.value, sensors: Object.fromEntries(ids.map((id, i) => [id, rest[i].status === "fulfilled" ? rest[i].value : null])) };
 }
 
-export async function readHunt(): Promise<{ building: unknown; levels: Record<number, unknown> }> {
-  const { building, sensors } = await readLibrary(HUNT_SENSORS);
-  return { building, levels: Object.fromEntries(Object.entries(LEVEL_IDS).map(([n, id]) => [n, sensors[id]])) };
-}
-
 /**
  * A floor made of several sensors: people added up, share against their
  * combined seats. If any part has no reading the whole floor has none, so a
@@ -153,24 +173,35 @@ export function sumLevel(parts: (Reading | null)[], capacity: Record<number, num
   return { count, share: Math.min(count / seats, 1) };
 }
 
-/** Combines the building response and one response per level into what the page shows. */
-export function combine(building: unknown, levels: Record<number, unknown>): Occupancy {
+/** Combines the building response and every floor sensor's response into what the page shows. */
+export function combineLibrary(s: Sensors, building: unknown, sensors: Record<number, unknown>): Occupancy {
   const b = parse(building);
   const out: Occupancy = { at: b.at, building: b.self, levels: {}, zones: [] };
-  for (const [n, id] of Object.entries(LEVEL_IDS)) {
-    const fromBuilding = b.children.find((c) => c.id === id);
-    let level = fromBuilding ?? null;
-    try {
-      const l = parse(levels[Number(n)]);
-      level = l.self;
-      for (const z of l.children) if (ZONE_REFS[z.id]) out.zones.push({ ...z, level: Number(n), refs: ZONE_REFS[z.id] });
-    } catch {
-      // a level that failed still gets its total from the building response
+  for (const [n, ids] of Object.entries(s.levels)) {
+    const parts = ids.map((id) => {
+      try {
+        const r = parse(sensors[id]);
+        for (const z of r.children) if (s.zones[z.id]) out.zones.push({ ...z, level: Number(n), refs: s.zones[z.id] });
+        return r.self;
+      } catch {
+        return b.children.find((c) => c.id === id) ?? null; // a floor that failed keeps its total from the building response
+      }
+    });
+    if (ids.length === 1) {
+      if (parts[0]) out.levels[Number(n)] = parts[0];
+    } else if (parts.some(Boolean)) {
+      const { count, share } = sumLevel(parts, s.capacity);
+      out.levels[Number(n)] = { id: ids[0], name: `Floor ${n}`, count, share, busy: share === null ? null : busyness(0, share) };
     }
-    if (level) out.levels[Number(n)] = level;
   }
   return out;
 }
+
+/** Hunt's building response plus one response per level, keyed by level number. */
+export const combine = (building: unknown, levels: Record<number, unknown>) =>
+  combineLibrary(HUNT_SENSORS, building, Object.fromEntries(Object.entries(LEVEL_IDS).map(([n, id]) => [id, levels[Number(n)]])));
+
+export const SENSORS = { hunt: HUNT_SENSORS, hill: HILL_SENSORS } as const;
 
 /** Zone covering a drawn space, if there is one. */
 export const zoneFor = (o: Occupancy | null | undefined, ref: string) => o?.zones.find((z) => z.refs.includes(ref)) ?? null;

@@ -10,8 +10,7 @@
 
 import type { Floor, Pt, Shape } from "./hunt-geometry.ts";
 
-/** A Hill floor. `extra` holds wings that don't connect to the rest on that floor. */
-export type HillFloor = Floor & { extra?: Pt[][] };
+export type HillFloor = Floor;
 
 const rect = (x0: number, y0: number, x1: number, y1: number): Pt[] => [
   [x0, y0],
@@ -315,7 +314,7 @@ function towerCommon(n: number, lowerStacks: boolean): Shape[] {
     { kind: "stair", poly: rect(780, 845, 882, 898), dir: "up", front: S },
     { kind: "core", poly: rect(775, 898, 882, 950) },
     { kind: "room", ref: "Research Study Rooms", label: `${n}216–${n}222`, poly: rect(265, 57, 545, 128), front: S, fit: "carrels" },
-    // TODO: stacks show as "empty" until lib/furnish.ts has shelving (H4)
+    // TODO: stacks have no furniture. furniture only draws inside an opened space and stacks can't be opened, so add shelving if that changes
     { kind: "zone", ref: `Bookstacks Floor ${n}`, label: "Bookstacks", poly: rect(285, 165, 520, 820), fit: "empty" },
     ...(lowerStacks ? [{ kind: "zone" as const, ref: `Bookstacks Floor ${n}`, poly: rect(245, 850, 520, 1170), fit: "empty" as const }] : []),
     { kind: "zone", ref: `Bookstacks Floor ${n}`, poly: rect(530, 1000, 940, 1170), fit: "empty" },

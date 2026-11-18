@@ -4,9 +4,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject }
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Edges, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { FLOORS, type Floor, type Pt, type Shape } from "@/data/hunt-geometry";
-import { fitoutFor, spaceByRef, spaces } from "@/data/hunt";
-import { inset, fitFloor, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
+import type { Floor, Pt, Shape } from "@/data/hunt-geometry";
+import { levelName, spaceByRef, type LibraryView } from "@/data/libraries";
+import type { Space } from "@/data/kinds";
+import { inset, fitFloor, pointIn, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
+import { useLibrary } from "./LibraryContext";
 import { scatter, seeded } from "@/lib/crowd";
 import { BUSY_LABEL, zoneFor, type Busy, type Occupancy, type Zone } from "@/lib/occupancy";
 
@@ -15,16 +17,14 @@ const U = 20;
 const wx = (x: number) => (x - 1005) / U;
 const wz = (y: number) => (y - 451) / U;
 
-const RISE = 5; // floor-to-floor spacing, exaggerated so the stack is easier to read
 const LIFT = 26; // how far the floors above an open level move away
 const DROP = 9; // and how far the floors below it sink
 // in the whole-building view the floors spread apart (exploded view) so each
 // level's heat shows on its own instead of blending through the glass
 const SPREAD = 1.5;
-const HOME: [number, number, number] = [0, 2 * RISE * SPREAD, 0];
 const ROOM_H = 0.5; // closed room: just a block
 const WALL_H = 0.55; // open room: low cut-away walls so you can see inside
-const STAIR_FULL = RISE; // a stair comes up through the opening in the floor above, flush with it...
+// A stair comes up through the opening in the floor above, flush with it (the library's rise)...
 const STAIR_OPEN = 2.2; // ...and folds down low while a level is open so it doesn't tower over the rooms
 const GLASS = 0.5; // how solid a floor is in the whole-building view
 // Every material can fade, so three.js would sort them all by distance from the
@@ -73,17 +73,60 @@ const CLOTHES = ["#45413b", "#5d5850", "#776d61", "#4c5864", "#8b5b4a", "#6a7461
 const PEOPLE_ZOOM = 14; // closer than this and dots turn into people
 const CROWD_CAP = 220; // per zone, keeps a packed commons readable and cheap to draw
 
-const FITS: Record<string, FloorFit> = Object.fromEntries(Object.entries(FLOORS).map(([n, f]) => [n, fitFloor(f, fitoutFor)]));
+/** Everything the scene needs about a library, computed once per library. */
+type Model = {
+  lib: LibraryView;
+  floors: Record<number, Floor>;
+  fits: Record<number, FloorFit>;
+  /** Floor-to-floor spacing, exaggerated so the stack is easier to read. */
+  rise: number;
+  /** Height of floor `n`, spread apart or not. */
+  y: (n: number, spread?: number) => number;
+  home: [number, number, number];
+  /** Height the match pins float at in the whole-building view (above the top floor). */
+  pinTop: number;
+  /** Scene units the whole building takes up across and down the screen, for the overview zoom. */
+  span: [number, number];
+  /** Floors sorted by height, for staggering the intro. */
+  order: number[];
+  byRef: (ref: string) => Space | undefined;
+};
 
-// geometry and space data are both kept by hand, so warn when they don't match
-if (process.env.NODE_ENV !== "production") {
-  for (const [n, floor] of Object.entries(FLOORS)) {
-    if (!floor.traced) continue;
-    const refs = new Set(floor.shapes.map((s) => s.ref));
-    for (const ref of refs) if (ref && !spaceByRef(ref)) console.warn(`Geometry: no space for "${ref}" on level ${n}`);
-    for (const s of spaces)
-      if (s.level === Number(n) && !refs.has(s.room ?? s.title)) console.warn(`Geometry: level ${n} has no shape for ${s.title}`);
-  }
+function useModel(): Model {
+  const lib = useLibrary();
+  return useMemo(() => {
+    const byRef = (ref: string) => spaceByRef(lib, ref);
+    const order = Object.keys(lib.floors).map(Number).sort((a, b) => a - b);
+    const y = (n: number, spread = 1) => order.indexOf(n) * lib.rise * spread;
+    const top = y(order.at(-1)!, SPREAD);
+    return {
+      lib,
+      floors: lib.floors,
+      fits: Object.fromEntries(Object.entries(lib.floors).map(([n, f]) => [n, fitFloor(f, (ref) => byRef(ref)?.fitout ?? null)])),
+      rise: lib.rise,
+      y,
+      home: [0, top / 2, 0],
+      pinTop: top + ROOM_H + 4,
+      // Hunt's five wide floors are roughly as tall as they are wide on screen, Hill's tower is taller
+      span: [104, Math.max(104, 74 + top)],
+      order,
+      byRef,
+    };
+  }, [lib]);
+}
+
+/** Geometry and space data are both kept by hand, so warn when they don't match. */
+function useDriftWarnings({ floors, lib, byRef }: Model) {
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    for (const [n, floor] of Object.entries(floors)) {
+      if (!floor.traced) continue;
+      const refs = new Set(floor.shapes.map((s) => s.ref));
+      for (const ref of refs) if (ref && !byRef(ref)) console.warn(`Geometry: no space for "${ref}" on level ${n}`);
+      for (const s of lib.spaces)
+        if (s.level === Number(n) && !refs.has(s.room ?? s.title)) console.warn(`Geometry: level ${n} has no shape for ${s.title}`);
+    }
+  }, [floors, lib, byRef]);
 }
 
 function extrude(poly: Pt[], height: number, holes: Pt[][] = []) {
@@ -441,21 +484,20 @@ type Common = {
   highlight?: string | null;
 };
 
-function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy, matches = [], onTip }: Common & { n: number; floor: Floor; onTip?: (ref: string | null) => void }) {
+function FloorModel({ m, n, floor, active, selectedRef, onSelectLevel, onOpenSpace, onClear, occupancy, matches = [], onTip }: Common & { m: Model; n: number; floor: Floor; onTip?: (ref: string | null) => void }) {
   const group = useRef<THREE.Group>(null!);
   const [hover, setHover] = useState<string | null>(null);
   const mats = useMaterials();
-  const fit = FITS[n];
-  // every stair going down gets an opening in the floor so you can see the flight below coming up through it
-  const plate = useMemo(
-    () =>
-      extrude(
-        floor.plate,
-        0.4,
-        floor.shapes.filter((s) => s.kind === "stair" && s.dir === "down").map((s) => inset(s.poly, 2)),
-      ),
-    [floor],
-  );
+  const fit = m.fits[n];
+  const STAIR_FULL = m.rise;
+  // every stair going down gets an opening in the floor so you can see the flight below coming up through it.
+  // a wing that doesn't touch the rest of the floor (Hill) is its own plate with its own openings.
+  const plates = useMemo(() => {
+    const holes = floor.shapes.filter((s) => s.kind === "stair" && s.dir === "down").map((s) => inset(s.poly, 2));
+    const all = [floor.plate, ...(floor.extra ?? [])];
+    const owner = (h: Pt[]) => Math.max(0, all.findIndex((p) => pointIn(p, h[0])));
+    return all.map((poly, i) => extrude(poly, 0.4, holes.filter((h) => owner(h) === i)));
+  }, [floor]);
   const stairs = useMemo(() => fit.stairs.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
   const wells = useMemo(() => fit.wells.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
 
@@ -463,13 +505,15 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   const away = active !== null && n > active;
   const under = active !== null && n < active;
   const opened = open && selectedRef ? fit.detail[selectedRef] : undefined;
-  const targetY = (n - 1) * RISE * (active === null ? SPREAD : 1) + (away ? LIFT : under ? -DROP : 0);
+  const targetY = m.y(n, active === null ? SPREAD : 1) + (away ? LIFT : under ? -DROP : 0);
   // in the whole-building view, untraced floors are glass so you can see through them
   const ghost = active === null && !floor.traced;
-  const targetOpacity = away ? 0 : under ? 0.05 : ghost ? 0.14 : 1;
+  // only show the two floors right below. with Hill's tower, six wide floors would just be clutter
+  const near2 = active !== null && m.order.indexOf(active) - m.order.indexOf(n) <= 2;
+  const targetOpacity = away ? 0 : under ? (near2 ? 0.05 : 0) : ghost ? 0.14 : 1;
   // on the intro each floor starts hidden below its spot. otherwise start assembled so opening a level on page load still animates
-  const [born] = useState(() => (arriving() ? performance.now() + 200 + (n - 1) * 120 : 0));
-  const now = useRef({ y: (n - 1) * RISE * SPREAD - (born ? 4 : 0), opacity: born ? 0 : 1, flat: 1, stair: born ? 0.01 : STAIR_FULL * SPREAD, glass: 1 });
+  const [born] = useState(() => (arriving() ? performance.now() + 200 + m.order.indexOf(n) * Math.min(120, 700 / m.order.length) : 0));
+  const now = useRef({ y: m.y(n, SPREAD) - (born ? 4 : 0), opacity: born ? 0 : 1, flat: 1, stair: born ? 0.01 : STAIR_FULL * SPREAD, glass: 1 });
   // in the whole-building view the floors are glass so you can see every level's rooms and the stairs
   const glassy = active === null;
   const targetGlass = glassy ? GLASS : 1;
@@ -546,12 +590,12 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
       document.body.style.cursor = over ? "pointer" : "";
     };
   const openRef = (ref?: string) => {
-    const space = ref ? spaceByRef(ref) : undefined;
+    const space = ref ? m.byRef(ref) : undefined;
     if (!open) onSelectLevel(n);
     else if (space) onOpenSpace(space.id);
   };
   const look = (ref?: string) => {
-    const linked = ref !== undefined && spaceByRef(ref) !== undefined;
+    const linked = ref !== undefined && m.byRef(ref) !== undefined;
     return {
       picked: linked && ref === selectedRef,
       hot: (open && linked && hover === ref) || (ref !== undefined && matches.includes(ref)),
@@ -560,23 +604,26 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
   };
 
   return (
-    <group ref={group} position-y={(n - 1) * RISE}>
-      <mesh
-        geometry={plate}
-        material={mats.plate}
-        renderOrder={drawOrder(n, "plate")}
-        position-y={-0.4}
-        castShadow
-        receiveShadow
-        onClick={glassy ? undefined : click(() => (open ? selectedRef && onClear() : onSelectLevel(n)))}
-        onPointerOver={open || glassy ? undefined : (e) => point(null)(e, true)}
-        onPointerOut={open || glassy ? undefined : (e) => point(null)(e, false)}
-      >
-        <Edges threshold={20} color={P.edge} transparent renderOrder={drawOrder(n, "plate")} />
-      </mesh>
+    <group ref={group} position-y={m.y(n)}>
+      {plates.map((plate, i) => (
+        <mesh
+          key={i}
+          geometry={plate}
+          material={mats.plate}
+          renderOrder={drawOrder(n, "plate")}
+          position-y={-0.4}
+          castShadow
+          receiveShadow
+          onClick={glassy ? undefined : click(() => (open ? selectedRef && onClear() : onSelectLevel(n)))}
+          onPointerOver={open || glassy ? undefined : (e) => point(null)(e, true)}
+          onPointerOut={open || glassy ? undefined : (e) => point(null)(e, false)}
+        >
+          <Edges threshold={20} color={P.edge} transparent renderOrder={drawOrder(n, "plate")} />
+        </mesh>
+      ))}
 
       {floor.shapes.map((s, i) => {
-        const key = s.ref ?? `${s.kind}-${i}`;
+        const key = `${s.ref ?? s.kind}-${i}`; // Hill draws some spaces as several shapes
         const { picked, hot, onHover } = look(s.ref);
         switch (s.kind) {
           case "zone":
@@ -612,10 +659,10 @@ function FloorModel({ n, floor, active, selectedRef, onSelectLevel, onOpenSpace,
           const onClick = click(() => openRef(r.ref));
           // an open room is just its floor (walls/furniture come from <Inside>), every other room stays a block
           return picked && opened ? (
-            <Slab key={r.ref ?? i} poly={r.poly} height={0.04} color={P.pickWash} order={drawOrder(n, "rooms")} onClick={onClick} onHover={onHover} />
+            <Slab key={`${r.ref}-${i}`} poly={r.poly} height={0.04} color={P.pickWash} order={drawOrder(n, "rooms")} onClick={onClick} onHover={onHover} />
           ) : (
             <Slab
-              key={r.ref ?? i}
+              key={`${r.ref}-${i}`}
               poly={r.poly}
               height={ROOM_H}
               material={picked ? [mats.blockHover[0], mats.block[1]] : hot ? mats.blockHover : mats.block}
@@ -670,35 +717,34 @@ type Label = {
   tag?: string;
 };
 
-// in the whole-building view match pins float above the top floor on a stem down to their own floor,
+// in the whole-building view match pins float above the top floor (Model.pinTop) on a stem down to their own floor,
 // otherwise a pin could be mistaken for a room on whatever floor happens to be underneath it.
-const PIN_TOP = (Math.max(...Object.keys(FLOORS).map(Number)) - 1) * RISE * SPREAD + ROOM_H + 4;
 
 /** Labels for the open level, plus callouts for the open room. */
-function labelsFor(active: number | null, selectedRef: string | null, matches: string[]): Label[] {
+function labelsFor({ floors: FLOORS, fits: FITS, y: yOf, pinTop, lib }: Model, active: number | null, selectedRef: string | null, matches: string[]): Label[] {
   // Study Match pins: on every floor in the whole-building view, otherwise just on the open floor
   const pins: Label[] = matches.flatMap((ref, i) => {
     const n = Number(Object.keys(FLOORS).find((k) => FLOORS[Number(k)].shapes.some((s) => s.ref === ref)));
     const shape = FLOORS[n]?.shapes.find((s) => s.ref === ref);
     if (!shape || (active !== null && n !== active) || ref === selectedRef) return [];
     const [px, py] = shape.at ?? centre(shape.poly);
-    const floorY = (n - 1) * RISE * (active === null ? SPREAD : 1) + (shape.kind === "room" ? ROOM_H : 0.3);
+    const floorY = yOf(n, active === null ? SPREAD : 1) + (shape.kind === "room" ? ROOM_H : 0.3);
     const whole = active === null;
     return [
       {
         key: `match-${ref}`,
         text: String(i + 1),
-        at: new THREE.Vector3(wx(px), whole ? PIN_TOP : floorY + 0.35, wz(py)),
+        at: new THREE.Vector3(wx(px), whole ? pinTop : floorY + 0.35, wz(py)),
         style: "match" as const,
         dim: false,
         picked: i === 0,
         foot: whole ? new THREE.Vector3(wx(px), floorY, wz(py)) : undefined,
-        tag: whole ? `Level ${n}` : undefined,
+        tag: whole ? levelName(lib, n) : undefined,
       },
     ];
   });
   if (active === null) return pins;
-  const y = (active - 1) * RISE;
+  const y = yOf(active);
   const focus = selectedRef ? FLOORS[active].shapes.find((s) => s.ref === selectedRef) : undefined;
   const callouts = focus ? (FITS[active].detail[selectedRef!]?.callouts ?? []) : [];
   const out: Label[] = [...pins];
@@ -841,7 +887,7 @@ const LEVEL_FILL = 0.94; // an open level nearly fills it
 const MAX_FOCUS_ZOOM = 95; // so the smallest rooms don't fill the panel
 
 /** Frames the whole building, the open level, or the open room when the selection changes. */
-function Rig({ active, focus }: { active: number | null; focus: Shape | null }) {
+function Rig({ m, active, focus }: { m: Model; active: number | null; focus: Shape | null }) {
   const size = useThree((s) => s.size);
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls);
@@ -851,13 +897,14 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
   const goal = useMemo(() => {
     if (active === null)
       return {
-        at: new THREE.Vector3(...HOME),
-        zoom: Math.min((size.width - 110) / 104, size.height / 104),
+        at: new THREE.Vector3(...m.home),
+        zoom: Math.min((size.width - 110) / m.span[0], size.height / m.span[1]),
       };
-    const poly = focus?.poly ?? FLOORS[active].plate;
+    const floor = m.floors[active];
+    const poly = focus?.poly ?? [floor.plate, ...(floor.extra ?? [])].flat();
     const xs = poly.map((p) => wx(p[0]));
     const zs = poly.map((p) => wz(p[1]));
-    const y = (active - 1) * RISE;
+    const y = m.y(active);
     const at = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, y, (Math.min(...zs) + Math.max(...zs)) / 2);
     // measure the level or space as it'll look on screen from the current angle, then fit it
     // into a fixed share of the area not covered by the heading, rail and caption
@@ -879,7 +926,7 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
     // center its on-screen outline in that free area, not the whole panel
     at.addScaledVector(right, across.off - FRAME.left / 2 / zoom).addScaledVector(up, tall.off + (FRAME.top - FRAME.bottom) / 2 / zoom);
     return { at, zoom };
-  }, [active, focus, size, camera]);
+  }, [m, active, focus, size, camera]);
 
   useEffect(() => {
     moving.current = true;
@@ -921,18 +968,20 @@ function Rig({ active, focus }: { active: number | null; focus: Shape | null }) 
 
 export default function BuildingScene(props: Common) {
   const { active, selectedRef } = props;
+  const m = useModel();
+  useDriftWarnings(m);
   const matchKey = (props.matches ?? []).join("|");
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the joined refs so a new array with the same matches keeps the labels
-  const labels = useMemo(() => labelsFor(active, selectedRef, props.matches ?? []), [active, selectedRef, matchKey]);
+  const labels = useMemo(() => labelsFor(m, active, selectedRef, props.matches ?? []), [m, active, selectedRef, matchKey]);
   const focus = useMemo(
-    () => (active !== null && selectedRef ? (FLOORS[active].shapes.find((s) => s.ref === selectedRef) ?? null) : null),
-    [active, selectedRef],
+    () => (active !== null && selectedRef ? (m.floors[active].shapes.find((s) => s.ref === selectedRef) ?? null) : null),
+    [m, active, selectedRef],
   );
   const els = useRef<(HTMLElement | null)[]>([]);
   // hovered space's name, live count and seats, follows the pointer (moved directly, no re-render)
   const [tipRef, setTipRef] = useState<string | null>(null);
   const tipEl = useRef<HTMLDivElement>(null);
-  const tipSpace = tipRef && tipRef !== selectedRef ? spaceByRef(tipRef) : undefined;
+  const tipSpace = tipRef && tipRef !== selectedRef ? m.byRef(tipRef) : undefined;
   const tipZone = tipRef ? zoneFor(props.occupancy, tipRef) : null;
 
   return (
@@ -952,15 +1001,15 @@ export default function BuildingScene(props: Common) {
         dpr={[1, 2]}
         camera={{ position: [38, 110, 80], zoom: 6, near: 0.1, far: 600 }}
         onPointerMissed={() => (document.body.style.cursor = "")}
-        aria-label="3D model of Hunt Library. Use the level buttons and the list to explore without it."
+        aria-label={`3D model of ${m.lib.name} Library. Use the ${m.lib.floorWord.toLowerCase()} buttons and the list to explore without it.`}
       >
         <ambientLight intensity={2} />
         <Sun />
-        <OrbitControls makeDefault enablePan={false} minPolarAngle={0.35} maxPolarAngle={1.3} minZoom={3} maxZoom={170} target={HOME} />
-        <Rig active={active} focus={focus} />
+        <OrbitControls makeDefault enablePan={false} minPolarAngle={0.35} maxPolarAngle={1.3} minZoom={3} maxZoom={170} target={m.home} />
+        <Rig m={m} active={active} focus={focus} />
         <LabelSync labels={labels} els={els} />
-        {Object.entries(FLOORS).map(([n, floor]) => (
-          <FloorModel key={n} n={Number(n)} floor={floor} {...props} onTip={setTipRef} />
+        {Object.entries(m.floors).map(([n, floor]) => (
+          <FloorModel key={n} m={m} n={Number(n)} floor={floor} {...props} onTip={setTipRef} />
         ))}
       </Canvas>
 
@@ -1023,7 +1072,7 @@ export default function BuildingScene(props: Common) {
                   type="button"
                   tabIndex={-1}
                   onClick={() => {
-                    const space = spaceByRef(label.key.slice("match-".length));
+                    const space = m.byRef(label.key.slice("match-".length));
                     if (space) props.onOpenSpace(space.id);
                   }}
                   className={`plaque pointer-events-auto absolute left-0 top-0 grid -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full font-semibold leading-none shadow-lift transition-[scale] duration-150 ease-out-quint hover:scale-[1.15] active:scale-95 ${

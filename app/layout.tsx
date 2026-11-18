@@ -10,9 +10,9 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "StudyScape — find a place to study in Hunt Library",
+  title: "StudyScape — find a place to study at NC State",
   description:
-    "An independent NC State study-space explorer: every room and reading space in Hunt Library, by level.",
+    "An independent NC State study-space explorer: every room and reading space in Hunt and Hill libraries, with live headcounts.",
 };
 
 const ARRIVED =
