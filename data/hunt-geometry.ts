@@ -9,7 +9,7 @@ import { pointIn } from "../lib/furnish.ts";
 export type Pt = [number, number];
 
 export type Shape = {
-  kind: "room" | "zone" | "stair" | "core" | "counter";
+  kind: "room" | "zone" | "stair" | "core" | "counter" | "lift";
   poly: Pt[];
   /** Room number, or space title when it has none. Links the shape to a space. */
   ref?: string;
@@ -22,7 +22,9 @@ export type Shape = {
   dir?: "up" | "down";
   /** What to furnish it as. Rooms default to a meeting table. */
   fit?: "meeting" | "lab" | "commons" | "empty" | "quiet" | "lounge" | "carrels" | "alcove" | "theater" | "showcase" | "hall" | "exhibit" | "cafe" | "auditorium";
-  /** Added automatically: the other end of a stair that was traced on the floor above or below. */
+  /** Stairs: the share of the floor-to-floor rise this flight climbs, when a landing splits the stair (default [0, 1]). */
+  span?: [number, number];
+  /** The other end of a stair traced on the floor above or below: added automatically, or set by hand where the two maps draw different parts of one flight. */
   twin?: boolean;
 };
 
@@ -184,7 +186,8 @@ const level3: Floor = {
         [910, 548],
       ],
     },
-    { kind: "stair", dir: "up", front: W, poly: rect(523, 447, 627, 550) }, // a second flight up to Level 4, beside the Monumental Stair
+    // The enclosed stair tower beside the Monumental Stair runs from Level 2 to 5; its flights alternate halves of the shaft.
+    { kind: "stair", dir: "up", front: W, poly: rect(523, 447, 627, 498) },
     { kind: "stair", dir: "down", front: N, poly: rect(125, 225, 180, 305) },
     { kind: "core", poly: rect(527, 157, 588, 287) },
     { kind: "core", poly: rect(673, 447, 780, 550) },
@@ -291,7 +294,6 @@ const level2Shapes: Shape[] = [
   { kind: "counter", ref: "Ask Us", label: "Ask Us", poly: rect(1145, 435, 1212, 500) },
   { kind: "core", poly: rect(498, 220, 552, 252) },
   { kind: "core", poly: rect(1198, 130, 1280, 300) },
-  { kind: "core", poly: rect(492, 405, 590, 500) }, // the enclosed exit stair
   { kind: "core", poly: rect(630, 405, 712, 500) },
   { kind: "core", poly: rect(732, 405, 855, 497) },
   { kind: "core", poly: rect(1090, 372, 1140, 498) },
@@ -310,8 +312,9 @@ const level2Shapes: Shape[] = [
   },
   { kind: "core", poly: rect(505, 133, 552, 220) }, // an exit stair, closed to the floor
   {
-    kind: "stair", // down to Level 1
+    kind: "stair", // down to Level 1: the opening only; the whole flight is traced on Level 1
     dir: "down",
+    twin: true,
     front: S,
     poly: [
       [1288, 230],
@@ -533,14 +536,27 @@ const level4 = aligned(
     },
     { kind: "core", poly: rect(1205, 390, 1353, 525) },
     {
-      kind: "stair", // up to the Skyline Reading Room, starting from the east end
+      kind: "stair", // up to the Skyline Reading Room: from the east end west to a landing...
       dir: "up",
       front: E,
+      span: [0, 0.5],
       poly: [
         [318, 440],
         [440, 405],
         [450, 435],
         [330, 470],
+      ],
+    },
+    {
+      kind: "stair", // ...then south-west, arriving on Level 5 by the terrace
+      dir: "up",
+      front: N,
+      span: [0.5, 1],
+      poly: [
+        [305, 450],
+        [334, 461],
+        [321, 516],
+        [291, 503],
       ],
     },
   ],
@@ -607,7 +623,6 @@ const level5 = aligned(
     ...strip(["5210", "5211"], 792, 606, 824, 666, E),
     ...strip(["5222", "5223", "5224"], 1100, 606, 1172, 690, W),
     { kind: "counter", ref: "5302", label: "Vending", poly: rect(446, 490, 524, 530) },
-    { kind: "core", poly: rect(532, 483, 632, 535) },
     { kind: "core", poly: rect(678, 435, 712, 515) },
     { kind: "core", poly: rect(765, 435, 888, 518) },
   ],
@@ -701,7 +716,18 @@ const level1 = aligned(
     { kind: "room", ref: "1202", label: "Lactation Room", front: N, fit: "empty", poly: rect(1336, 800, 1400, 842) },
     { kind: "room", ref: "1203", label: "Restroom", front: N, fit: "empty", poly: rect(1262, 800, 1306, 842) },
     { kind: "core", poly: rect(1150, 716, 1258, 845) },
-    { kind: "core", poly: rect(1260, 716, 1298, 798) },
+    {
+      kind: "stair", // up to the Level 2 lobby: Level 1's map draws its foot, Level 2's the opening it rises through
+      dir: "up",
+      twin: true,
+      front: N,
+      poly: [
+        [1308, 482],
+        [1335, 487],
+        [1351, 642],
+        [1316, 647],
+      ],
+    },
   ],
 );
 
@@ -713,10 +739,19 @@ function link(floors: Record<number, Floor>) {
       const other = floors[Number(n) + (s.dir === "up" ? 1 : -1)];
       if (!other || !s.poly.every((p) => pointIn(other.plate, p))) continue;
       // The far end is entered from the opposite edge: where one flight starts, the other arrives.
-      other.shapes.push({ kind: "stair", twin: true, dir: s.dir === "up" ? "down" : "up", front: ((s.front ?? 0) + 2) % s.poly.length, poly: s.poly });
+      other.shapes.push({ kind: "stair", twin: true, dir: s.dir === "up" ? "down" : "up", front: ((s.front ?? 0) + 2) % s.poly.length, span: s.span, poly: s.poly });
     }
   return floors;
 }
+
+// Shared shafts, in Level 3's coordinates so they line up exactly from floor to floor (checked on every map).
+const towerSouth: Shape = { kind: "stair", dir: "up", front: W, poly: rect(523, 498, 627, 550) };
+level2.shapes.push(towerSouth);
+level4.shapes.push(towerSouth);
+// Elevators: the west bank by the Monumental Stair (Levels 2–5) and the east bank by the lobby (1–4; on 5 it opens into the University Centers suite).
+const lift = (poly: Pt[]): Shape => ({ kind: "lift", label: "Elevators", poly });
+for (const f of [level2, level3, level4, level5]) f.shapes.push(lift(rect(672, 447, 702, 550)));
+for (const f of [level1, level2, level3, level4]) f.shapes.push(lift(rect(1312, 450, 1347, 535)));
 
 export const FLOORS: Record<number, Floor> = link({
   1: level1,

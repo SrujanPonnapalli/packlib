@@ -534,6 +534,11 @@ function FloorModel({ m, n, floor, active, selectedRef, onSelectLevel, onOpenSpa
   const P = usePalette();
   const stairs = useMemo(() => fit.stairs.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit, P]);
   const wells = useMemo(() => fit.wells.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit, P]);
+  // An elevator with a stop on the floor above rises to it as a glass shaft, the way the stairs reach up.
+  const shafts = useMemo(() => {
+    const above = m.floors[m.order[m.order.indexOf(n) + 1]];
+    return floor.shapes.filter((s) => s.kind === "lift" && above?.shapes.some((a) => a.kind === "lift" && pointIn(a.poly, centre(s.poly)))).map((s) => inset(s.poly, 3));
+  }, [m, n, floor]);
 
   const open = active === n;
   const away = active !== null && n > active;
@@ -683,6 +688,8 @@ function FloorModel({ m, n, floor, active, selectedRef, onSelectLevel, onOpenSpa
             );
           case "core":
             return <Slab key={key} poly={s.poly} height={0.7} material={mats.core} cast edges />;
+          case "lift":
+            return <Slab key={key} poly={s.poly} height={0.9} material={mats.core} cast edges />;
           case "counter":
             return <Slab key={key} poly={s.poly} height={0.28} material={mats.counter} cast onClick={click(() => openRef(s.ref))} onHover={onHover} />;
           case "stair":
@@ -720,6 +727,9 @@ function FloorModel({ m, n, floor, active, selectedRef, onSelectLevel, onOpenSpa
 
       <group ref={flights} scale-y={STAIR_FULL * SPREAD}>
         <Blocks geometry={BOX} material={mats.piece} items={stairs} />
+        {shafts.map((poly, i) => (
+          <Slab key={i} poly={poly} height={1} material={mats.glass} />
+        ))}
       </group>
       {/* Seen from this floor, the stairs going down. Only while it is the open level: otherwise the floor below shows the same flights. */}
       <group visible={open} scale-y={STAIR_OPEN}>
@@ -806,7 +816,7 @@ function labelsFor({ floors: FLOORS, fits: FITS, y: yOf, pinTop, lib }: Model, a
       dim: focus !== undefined && !mine,
       picked: mine,
       within: s.poly.map(([x, z]) => new THREE.Vector3(wx(x), y, wz(z))),
-      core: s.kind === "core",
+      core: s.kind === "core" || s.kind === "lift",
     });
   }
   callouts.forEach((c) =>

@@ -238,24 +238,24 @@ function flight(poly: Pt[], entry: number) {
 }
 
 /**
- * One straight flight up to the next floor, starting at the `entry` edge and arriving at the far side.
- * Heights are fractions of the floor-to-floor rise (1 = the floor above), so the scene sets the scale.
+ * One straight flight up, starting at the `entry` edge and arriving at the far side. It climbs the share `span` of the
+ * floor-to-floor rise (a landing splits a stair into two). Heights are fractions of the rise (1 = the floor above), so the scene sets the scale.
  */
-export function steps(poly: Pt[], entry = 0): Piece[] {
+export function steps(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1]): Piece[] {
   const f = flight(poly, entry);
   const T = 0.14; // tread thickness
   return Array.from({ length: f.n }, (_, i) => {
-    const top = (i + 1) / f.n;
+    const top = lo + ((hi - lo) * (i + 1)) / f.n;
     return { ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: Math.min(T, top), base: Math.max(0, top - T), tone: "stair" as const };
   });
 }
 
 /** The same flight seen from the floor above: treads dropping away from the `entry` edge, through the opening in the floor. */
-export function well(poly: Pt[], entry = 0): Piece[] {
+export function well(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1]): Piece[] {
   const f = flight(poly, entry);
   const T = 0.14;
   return Array.from({ length: f.n }, (_, i) => ({
-    ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: T, base: -(i + 1) / f.n - T, tone: "stair" as const,
+    ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: T, base: hi - 1 - ((hi - lo) * (i + 1)) / f.n - T, tone: "stair" as const,
   }));
 }
 
@@ -359,7 +359,7 @@ export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null)
       const m = fit === "meeting" ? meetingRoom(room, front, f) : { pieces: special(fit, room, front, []), callouts: [] };
       out.detail[s.ref] = { walls: roomWalls(room, front, f.window !== null), ...m };
     } else if (s.kind === "zone" && s.fit && s.ref) out.detail[s.ref] = { walls: [], pieces: special(s.fit, s.poly, 0, solids), callouts: [] };
-    else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.dir === "down" ? well : steps)(s.poly, s.front));
+    else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.dir === "down" ? well : steps)(s.poly, s.front, s.span));
   }
   return out;
 }
