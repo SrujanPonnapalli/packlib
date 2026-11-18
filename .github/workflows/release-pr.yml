@@ -1,0 +1,28 @@
+name: Release PR
+
+# keeps one development -> main pull request open whenever development has unreleased commits.
+# an open PR picks up new commits by itself, so this only opens one after the last release was merged.
+on:
+  push:
+    branches: [development]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: release-pr
+
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          open=$(gh pr list --base main --head development --state open --json number --jq 'length')
+          ahead=$(gh api "repos/$GH_REPO/compare/main...development" --jq .ahead_by)
+          if [ "$open" -gt 0 ] || [ "$ahead" -eq 0 ]; then exit 0; fi
+          gh pr create --base main --head development --title "Release" \
+            --body "Everything on development that isn't on main yet. Check the preview, then merge with a merge commit."
