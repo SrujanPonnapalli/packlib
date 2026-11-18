@@ -223,7 +223,7 @@ function commons(zone: Pt[], avoid: Pt[][]): Piece[] {
 }
 
 /** A frame on the edge you step onto a stair from: `u` runs along that edge, `v` away from it across the stair. */
-function flight(poly: Pt[], entry: number) {
+function flight(poly: Pt[], entry: number, tread = 7) {
   const a = poly[entry % poly.length];
   const ex = norm(sub(poly[(entry + 1) % poly.length], a));
   let into: Pt = [-ex[1], ex[0]];
@@ -233,7 +233,7 @@ function flight(poly: Pt[], entry: number) {
   // Slightly inside the outline, so a slanted edge never pushes a tread off the floor.
   const W = (Math.max(...us) - Math.min(...us)) * 0.88;
   const D = Math.max(...poly.map((q) => dot(sub(q, a), into))) * 0.92;
-  const n = Math.max(5, Math.round(D / 7));
+  const n = Math.max(tread > 7 ? 2 : 5, Math.round(D / tread));
   return { W, D, n, pitch: D / n, rot: Math.atan2(ex[1], ex[0]), place: (v: number, u = 0) => at(add(a, add(mul(ex, mid + u), mul(into, v + D * 0.04)))) };
 }
 
@@ -241,8 +241,8 @@ function flight(poly: Pt[], entry: number) {
  * One straight flight up, starting at the `entry` edge and arriving at the far side. It climbs the share `span` of the
  * floor-to-floor rise (a landing splits a stair into two). Heights are fractions of the rise (1 = the floor above), so the scene sets the scale.
  */
-export function steps(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1]): Piece[] {
-  const f = flight(poly, entry);
+export function steps(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1], tread?: number): Piece[] {
+  const f = flight(poly, entry, tread);
   const T = 0.14; // tread thickness
   return Array.from({ length: f.n }, (_, i) => {
     const top = lo + ((hi - lo) * (i + 1)) / f.n;
@@ -251,8 +251,8 @@ export function steps(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1]
 }
 
 /** The same flight seen from the floor above: treads dropping away from the `entry` edge, through the opening in the floor. */
-export function well(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1]): Piece[] {
-  const f = flight(poly, entry);
+export function well(poly: Pt[], entry = 0, [lo, hi]: [number, number] = [0, 1], tread?: number): Piece[] {
+  const f = flight(poly, entry, tread);
   const T = 0.14;
   return Array.from({ length: f.n }, (_, i) => ({
     ...f.place((i + 0.5) * f.pitch), w: f.W, d: f.pitch, rot: f.rot, h: T, base: hi - 1 - ((hi - lo) * (i + 1)) / f.n - T, tone: "stair" as const,
@@ -359,7 +359,7 @@ export function fitFloor(floor: Floor, fitoutOf: (ref: string) => Fitout | null)
       const m = fit === "meeting" ? meetingRoom(room, front, f) : { pieces: special(fit, room, front, []), callouts: [] };
       out.detail[s.ref] = { walls: roomWalls(room, front, f.window !== null), ...m };
     } else if (s.kind === "zone" && s.fit && s.ref) out.detail[s.ref] = { walls: [], pieces: special(s.fit, s.poly, 0, solids), callouts: [] };
-    else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.dir === "down" ? well : steps)(s.poly, s.front, s.span));
+    else if (s.kind === "stair") (s.dir === "down" ? out.wells : out.stairs).push(...(s.dir === "down" ? well : steps)(s.poly, s.front, s.span, s.tread));
   }
   return out;
 }
