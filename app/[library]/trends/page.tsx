@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<"/[library]/trends"
   const { library } = await params;
   const name = isLibrary(library) ? LIBRARIES[library].name : "the library";
   return {
-    title: `${name} trends — StudyScape`,
+    title: `${name} trends — PackLib`,
     description: `How busy ${name} Library has been over the last week, from NC State's own sensors.`,
   };
 }
@@ -41,7 +41,7 @@ export default async function TrendsPage({ params }: PageProps<"/[library]/trend
           <p className="annot text-pencil">{LIBRARIES[library].full}</p>
           <h1 className="mt-2 text-[30px] [text-wrap:balance] font-semibold leading-tight tracking-[-0.02em]">How busy {LIBRARIES[library].name} gets</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-graphite [text-wrap:pretty]">
-            StudyScape saves NC State&apos;s sensor headcounts every 5 minutes. Here is the last week, for the whole building and each {library === "hunt" ? "level" : "floor"}.
+            PackLib saves NC State&apos;s sensor headcounts every 5 minutes. Here is the last week, for the whole building and each {library === "hunt" ? "level" : "floor"}.
           </p>
           <Suspense fallback={<TrendsSkeleton />}>
             <Trends library={library} />
@@ -129,7 +129,7 @@ async function Trends({ library }: { library: LibrarySlug }) {
         {forecastFrom && forecastFrom > now
           ? `Forecasts start once there are ${FORECAST_AFTER_DAYS} days of readings, around ${date.format(forecastFrom)}. `
           : ""}
-        Counts come from NC State Libraries&apos; sensors; a sensor reading zero doesn&apos;t mean a space is empty. Gaps are times the sensors or StudyScape&apos;s collector didn&apos;t report.
+        Counts come from NC State Libraries&apos; sensors; a sensor reading zero doesn&apos;t mean a space is empty. Gaps are times the sensors or PackLib&apos;s collector didn&apos;t report.
       </p>
     </>
   );

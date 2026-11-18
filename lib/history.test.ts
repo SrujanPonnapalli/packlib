@@ -15,7 +15,7 @@ const level2 = {
   id: 1352, name: "Level 2", count: 61, percentage: 0.11, timestamp: at, isActive: true,
   childCounts: [
     { id: 4402, name: "Carrel Corridor", count: 4, percentage: 0.05, isActive: true },
-    { id: 5000, name: "A zone StudyScape doesn't draw", count: 3, percentage: 0.1, isActive: true },
+    { id: 5000, name: "A zone PackLib doesn't draw", count: 3, percentage: 0.1, isActive: true },
     { id: 1342, name: "Quiet Reading Room", count: 9, percentage: 0.2, isActive: false },
   ],
 };

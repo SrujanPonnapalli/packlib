@@ -4,8 +4,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   devIndicators: false,
-  // Hunt used to be the whole site, so its old trends URL still works.
+  // The site opens on Hill. Hunt used to be the whole site, so its old trends URL still works.
   redirects: async () => [
+    { source: "/", destination: "/hill", permanent: false },
     { source: "/trends", destination: "/hunt/trends", permanent: false },
   ],
   images: {

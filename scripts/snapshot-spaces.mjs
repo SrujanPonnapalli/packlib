@@ -18,7 +18,7 @@ const text = (html) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const res = await fetch(API, { headers: { "user-agent": "studyscape-snapshot" } });
+const res = await fetch(API, { headers: { "user-agent": "packlib-snapshot" } });
 if (!res.ok) throw new Error(`Spaces API responded ${res.status}`);
 const all = await res.json();
 if (!Array.isArray(all)) throw new Error("Spaces API did not return a list");

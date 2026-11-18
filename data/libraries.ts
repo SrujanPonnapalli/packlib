@@ -1,12 +1,13 @@
-// The libraries StudyScape covers (by URL slug) and the shape of the data a page
+// The libraries PackLib covers (by URL slug) and the shape of the data a page
 // gets for one. Safe for the browser: the actual data is built on the server
 // (data/library-view.ts) and passed down, so a page only loads its own library.
 import type { Floor } from "./hunt-geometry";
 import type { Space } from "./kinds";
 
+// Hill first since the site opens on it, and it's first in the header switch
 export const LIBRARIES = {
-  hunt: { name: "Hunt", full: "James B. Hunt Jr. Library" },
   hill: { name: "Hill", full: "D. H. Hill Jr. Library" },
+  hunt: { name: "Hunt", full: "James B. Hunt Jr. Library" },
 } as const;
 
 export type LibrarySlug = keyof typeof LIBRARIES;
