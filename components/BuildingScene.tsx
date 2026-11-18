@@ -370,7 +370,8 @@ type Crowd = {
 
 function crowdsFor(n: number, floor: Floor, fit: FloorFit, zones: Zone[]): Crowd[] {
   return zones.flatMap((zone) => {
-    const shapes = zone.refs.map((ref) => floor.shapes.find((s) => s.ref === ref)).filter((s): s is Shape => s !== undefined);
+    // Every shape, not the first: Hill draws one space (the stacks, a floor's carrels) as several.
+    const shapes = floor.shapes.filter((s) => s.ref !== undefined && zone.refs.includes(s.ref));
     if (!shapes.length || zone.count === null) return [];
     const room = shapes[0].kind === "room";
     const polys = shapes.map((s) => (room ? (fit.rooms.find((r) => r.ref === s.ref)?.poly ?? s.poly) : s.poly));

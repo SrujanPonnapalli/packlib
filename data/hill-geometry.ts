@@ -256,7 +256,7 @@ const floorG: HillFloor = {
   traced: true,
   plate: [[288, 68], [658, 68], [658, 90], [920, 90], [920, 207], [1175, 207], [1175, 300], [1143, 300], [1143, 463], [220, 463], [220, 207], [288, 207]],
   shapes: [
-    { kind: "zone", label: "Study & lounge seating", fit: "lounge", poly: [[305, 85], [380, 85], [380, 245], [345, 245], [345, 365], [235, 365], [235, 228], [305, 228]] },
+    { kind: "zone", ref: "Seating Floor 0", label: "Study & lounge seating", fit: "lounge", poly: [[305, 85], [380, 85], [380, 245], [345, 245], [345, 365], [235, 365], [235, 228], [305, 228]] },
     { kind: "stair", poly: rect(400, 68, 460, 215), dir: "up", front: S },
     { kind: "core", poly: rect(495, 75, 655, 245) },
     { kind: "core", poly: rect(700, 100, 775, 230), label: "South tower elevators" },
@@ -319,8 +319,8 @@ function towerCommon(n: number, lowerStacks: boolean): Shape[] {
     { kind: "zone", ref: `Bookstacks Floor ${n}`, label: "Bookstacks", poly: rect(285, 165, 520, 820), fit: "empty" },
     ...(lowerStacks ? [{ kind: "zone" as const, ref: `Bookstacks Floor ${n}`, poly: rect(245, 850, 520, 1170), fit: "empty" as const }] : []),
     { kind: "zone", ref: `Bookstacks Floor ${n}`, poly: rect(530, 1000, 940, 1170), fit: "empty" },
-    { kind: "zone", label: "Carrels", poly: rect(158, 275, 190, 645), fit: "carrels" },
-    { kind: "zone", label: "Carrels", poly: rect(748, 965, 950, 995), fit: "carrels" },
+    { kind: "zone", ref: `Seating Floor ${n}`, label: "Carrels", poly: rect(158, 275, 190, 645), fit: "carrels" },
+    { kind: "zone", ref: `Seating Floor ${n}`, label: "Carrels", poly: rect(748, 965, 950, 995), fit: "carrels" },
   ];
 }
 
@@ -331,11 +331,11 @@ function tower(n: number): HillFloor {
   const shapes: Shape[] = [...towerCommon(n, !lounge)];
   if (lounge)
     shapes.push(
-      { kind: "zone", label: "Study lounge", poly: rect(285, 846, 515, 990), fit: "lounge" },
+      { kind: "zone", ref: `Seating Floor ${n}`, label: "Study lounge", poly: rect(285, 846, 515, 990), fit: "lounge" },
       { kind: "zone", ref: `Bookstacks Floor ${n}`, poly: rect(300, 1000, 520, 1170), fit: "empty" },
     );
-  shapes.push({ kind: "zone", label: "Carrels", poly: rect(628, 1175, 935, 1205), fit: "carrels" });
-  if (n !== 4) shapes.push({ kind: "zone", label: "Carrels", poly: rect(618, 290, 650, 640), fit: "carrels" });
+  shapes.push({ kind: "zone", ref: `Seating Floor ${n}`, label: "Carrels", poly: rect(628, 1175, 935, 1205), fit: "carrels" });
+  if (n !== 4) shapes.push({ kind: "zone", ref: `Seating Floor ${n}`, label: "Carrels", poly: rect(618, 290, 650, 640), fit: "carrels" });
   if (wing) {
     shapes.push(
       { kind: "room", ref: `${n}400`, label: `${n}400`, poly: rect(62, 1198, 188, 1310), front: E },
@@ -348,7 +348,7 @@ function tower(n: number): HillFloor {
   if (n === 4) {
     shapes.push(
       { kind: "core", poly: rect(528, 266, 650, 572), label: "Staff" },
-      { kind: "zone", label: "Carrels", poly: rect(490, 284, 520, 589), fit: "carrels" },
+      { kind: "zone", ref: `Seating Floor ${n}`, label: "Carrels", poly: rect(490, 284, 520, 589), fit: "carrels" },
       { kind: "core", poly: rect(192, 959, 290, 1126) },
       { kind: "core", poly: rect(950, 962, 1145, 1204) },
     );

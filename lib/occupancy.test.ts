@@ -91,5 +91,6 @@ test("Hill: a floor of three sensors is added up, its areas link to drawn spaces
   assert.equal(o.levels[1].share, 360 / (191 + 76 + 493));
   assert.equal(o.levels[2].count, null); // the tower part failed and the building lists only wings
   assert.equal(o.levels[4].count, 63);
-  assert.deepEqual(o.zones.map((z) => [z.level, z.refs[0], z.busy]), [[1, "1328", "quiet"], [1, "Learning Commons", "packed"]]);
+  // Floor 4 has no named areas, so its own sensor shades its seating (30% is quiet on a carrel floor).
+  assert.deepEqual(o.zones.map((z) => [z.level, z.refs[0], z.busy]), [[1, "1328", "quiet"], [1, "Learning Commons", "packed"], [4, "Seating Floor 4", "quiet"]]);
 });
