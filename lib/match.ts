@@ -83,7 +83,7 @@ export function score(c: Candidate, a: Ask): Omit<Match, "similar"> {
     else add(0);
     if (c.bookable && c.display) add(1, "A wall display to share a laptop");
   } else if (a.work === "present") {
-    add(3, "A wall display to practise on");
+    add(3, "A wall display to practice on");
     if (c.whiteboard) add(0.5);
   } else {
     if (c.vibe === "lounge") add(3, "Soft seating and a relaxed feel");
