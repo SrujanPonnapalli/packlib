@@ -17,6 +17,8 @@
   --color-accent: #1ec7b1;
   --color-accent-deep: #0e8f7f;
   --color-accent-wash: #d3eee7;
+  /* NC State's Wolfpack Red: logo only, so it never meets the map's "packed" red. */
+  --color-wolfpack: #cc0000;
   /* Busyness: one warm ramp, pale to strong, so it reads as "more people"
      and never competes with the teal that marks a selection. */
   /* Busyness reads like a traffic light: green has room, amber is filling, red is packed. */
