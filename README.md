@@ -49,6 +49,8 @@ Then open [localhost:3000](http://localhost:3000). The site reads live occupancy
 
 Set `HISTORY_URL` to use your own history API. Deploying the collector takes an AWS account and the AWS CLI; `scripts/deploy-collector.sh` does the rest.
 
+`main` is what's live. Work goes into `development` first, and pull requests should target it. Every push to `development` gets a Vercel preview, and it's merged into `main` to release.
+
 ## Project layout
 
 ```
