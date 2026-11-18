@@ -71,3 +71,4 @@ Next.js, React, TypeScript, Tailwind CSS, Three.js with React Three Fiber, Verce
 - A reading of zero may just mean a sensor is offline.
 - Booking availability isn't public, so PackLib can't tell you whether a room is free.
 - The floor models are traced by eye and aren't to scale.
+- The live site counts page views with Vercel Web Analytics, which doesn't use cookies or track you across sites.
