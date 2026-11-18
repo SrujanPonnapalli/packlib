@@ -44,7 +44,7 @@ export default function BookingHandoff({ space: s }: { space: Space }) {
         Book {s.room ? `room ${s.room}` : s.title} on NC State
       </h3>
       <p className="mt-1 text-[13px] leading-relaxed text-graphite">
-        Bookings happen on the Libraries&apos; own site, which shows what&apos;s free. StudyScape can&apos;t see that.
+        Bookings happen on the Libraries&apos; own site, which shows what&apos;s free. PackLib can&apos;t see that.
       </p>
 
       <ol className="mt-3 flex flex-col gap-2 text-[13px] leading-snug text-graphite">

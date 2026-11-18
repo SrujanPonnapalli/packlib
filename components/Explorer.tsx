@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { KINDS, type Kind } from "@/data/kinds";
 import { levelName, type LibraryView } from "@/data/libraries";
 import { LibraryProvider } from "./LibraryContext";
-import { rememberLibrary } from "./LibraryPicker";
 import LevelRail from "./LevelRail";
 import LevelStack from "./LevelStack";
 import SpaceList from "./SpaceList";
@@ -40,8 +39,6 @@ const WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight
 
 function Inner({ lib }: { lib: LibraryView }) {
   const { spaces, levels } = lib;
-  // The last library looked at is where `/` sends you next time.
-  useEffect(() => rememberLibrary(lib.slug), [lib.slug]);
   const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
   // Level and open space live in the URL so a view can be shared and Back works.
   const params = useSearchParams();

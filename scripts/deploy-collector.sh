@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates or updates the StudyScape collector on AWS, then uploads its code.
+# Creates or updates the PackLib collector on AWS (its AWS resources keep their original studyscape names), then uploads its code.
 # Usage: scripts/deploy-collector.sh [you@example.com]   (where alerts go; needed the first time only)
 # Needs the AWS CLI, signed in. The AWS project only allows US East (Ohio).
 set -euo pipefail

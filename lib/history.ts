@@ -43,7 +43,7 @@ export type History = {
   total: (number | null)[];
   share: (number | null)[];
   levels: Record<number, (number | null)[]>;
-  /** First day StudyScape has readings for. */
+  /** First day PackLib has readings for. */
   since: string | null;
   /** When this was read from storage; "now" for everything shown with it. */
   readAt: number;

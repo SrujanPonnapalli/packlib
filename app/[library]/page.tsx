@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: PageProps<"/[library]">): Pro
   if (!isLibrary(library)) return {};
   const { name, full } = LIBRARIES[library];
   return {
-    title: `StudyScape — find a place to study in ${name} Library`,
+    title: `PackLib — find a place to study in ${name} Library`,
     description: `An independent NC State study-space explorer: every room and reading space in ${full}, with live headcounts.`,
   };
 }

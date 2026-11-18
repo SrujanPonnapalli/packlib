@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LIBRARIES, type LibrarySlug } from "@/data/libraries";
+import Logo from "./Logo";
 
 const PAGES = [
   { id: "find", path: "", label: "Find a place" },
@@ -9,20 +10,15 @@ const PAGES = [
 
 type Page = (typeof PAGES)[number]["id"];
 
-/** Without a library (the picker at `/`), just the mark. */
+/** Without a library (the loading fallback), just the mark. */
 export default function SiteHeader({ library, current }: { library?: LibrarySlug; current?: Page }) {
   const path = PAGES.find((p) => p.id === current)?.path ?? "";
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-rule px-5 sm:gap-4 sm:px-10">
-      <Link href="/" aria-label="StudyScape: choose a library" className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.02em]">
-        {/* Three stacked plates, one picked out: the site's whole idea in a mark. */}
-        <svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true">
-          <path d="M9 1.5 16.5 4.5 9 7.5 1.5 4.5Z" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
-          <path d="M9 5 16.5 8 9 11 1.5 8Z" fill="var(--color-accent)" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
-          <path d="M1.5 11.5 9 14.5l7.5-3" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <Link href={library ? `/${library}` : "/"} aria-label="PackLib home" className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.02em]">
+        <Logo />
         {/* On phones the switch and pages need the room; the mark stays. */}
-        <span className={library ? "hidden sm:inline" : undefined}>StudyScape</span>
+        <span className={library ? "hidden sm:inline" : undefined}>PackLib</span>
       </Link>
       {library && (
         <>
