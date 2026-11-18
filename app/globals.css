@@ -18,6 +18,7 @@ the darker teal is for thin lines and text where the bright one is too faint. */
   --color-accent-wash: #d3eee7;
   /* Wolfpack Red, only for the logo so it doesn't get mixed up with the "packed" red */
   --color-wolfpack: #cc0000;
+  --color-wolfpack-deep: #8a0000;
   /* busyness: one warm ramp from pale to strong so it doesn't clash with the teal used for selection */
   /* busyness colors: green = room, amber = filling up, red = packed */
   --color-quiet: #9dd08a;
