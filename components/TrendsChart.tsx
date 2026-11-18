@@ -232,7 +232,7 @@ export default function TrendsChart({ h, now, place }: { h: History; now: number
                 </span>
               )}
               <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-[2px] bg-[rgb(23_23_23/0.07)]" aria-hidden="true" /> Night
+                <span className="size-2.5 rounded-[2px] bg-rule-soft" aria-hidden="true" /> Night
               </span>
               <span className="text-pencil">{place.noSensor && `${place.noSensor} has no sensor · `}Drag across the chart to compare</span>
             </>
@@ -303,7 +303,7 @@ export default function TrendsChart({ h, now, place }: { h: History; now: number
             </defs>
 
             {nights.map(([a, b]) => (
-              <rect key={a} x={x(Math.max(a, t0))} width={Math.max(0, x(Math.min(b, t1)) - x(Math.max(a, t0)))} y={PAD.top} height={innerH} fill="rgb(23 23 23 / 0.045)" />
+              <rect key={a} x={x(Math.max(a, t0))} width={Math.max(0, x(Math.min(b, t1)) - x(Math.max(a, t0)))} y={PAD.top} height={innerH} fill="var(--color-rule-soft)" />
             ))}
             <g key={mode} className="animate-fade">
               {mode === "percent" &&

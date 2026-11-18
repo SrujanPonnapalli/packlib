@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { HILL_SENSORS, ago, busyness, combine, combineLibrary, parse, people, sumLevel } from "./occupancy.ts";
+import { HILL_SENSORS, ago, busyness, combine, combineLibrary, parse, people, sumLevel, zoneFor } from "./occupancy.ts";
 
 const at = "2026-11-17T05:14:46.292Z";
 const building = {
@@ -93,4 +93,7 @@ test("Hill: a floor of three sensors is added up, its areas link to drawn spaces
   assert.equal(o.levels[4].count, 63);
   // Floor 4 has no named areas, so its own sensor shades its seating (30% is quiet on a carrel floor).
   assert.deepEqual(o.zones.map((z) => [z.level, z.refs[0], z.busy]), [[1, "1328", "quiet"], [1, "Learning Commons", "packed"], [4, "Seating Floor 4", "quiet"]]);
+  // ...but no space takes the whole floor's count as its own.
+  assert.equal(zoneFor(o, "Seating Floor 4"), null);
+  assert.equal(zoneFor(o, "1328")?.count, 11);
 });

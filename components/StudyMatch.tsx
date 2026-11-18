@@ -252,7 +252,7 @@ function Result({ rank, m, live, onOpen, onHover }: { rank: number; m: Match; li
         <div className="flex items-start gap-3">
           <span
             className={`plaque grid shrink-0 place-items-center rounded-[5px] font-semibold leading-none ${
-              first ? "size-10 bg-accent text-[23px] text-ink" : "mt-0.5 ml-1 size-8 text-[18px] text-ink shadow-[inset_0_0_0_1.5px_var(--color-accent-deep)]"
+              first ? "size-10 bg-accent text-[23px] text-on-accent" : "mt-0.5 ml-1 size-8 text-[18px] text-ink shadow-[inset_0_0_0_1.5px_var(--color-accent-deep)]"
             }`}
             aria-label={`Match ${rank}`}
           >
@@ -277,7 +277,7 @@ function Result({ rank, m, live, onOpen, onHover }: { rank: number; m: Match; li
             )}
           </span>
           {s.photo && (
-            <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-vellum outline outline-1 -outline-offset-1 outline-black/10">
+            <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-vellum outline outline-1 -outline-offset-1 outline-rule">
               <Image src={s.photo.thumb} alt="" fill sizes="80px" className="object-cover transition-transform duration-300 ease-out-quint group-hover:scale-[1.04]" />
             </span>
           )}

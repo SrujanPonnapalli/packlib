@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { KINDS, type Kind } from "@/data/kinds";
@@ -15,6 +15,7 @@ import { useOccupancy } from "./useOccupancy";
 import StudyMatch, { CHIP, DEFAULT_ASK, chipState, findMatches } from "./StudyMatch";
 import { BUSY_LABEL } from "@/lib/occupancy";
 import type { Ask } from "@/lib/match";
+import { forPage } from "@/lib/keys";
 
 // three.js is only fetched where the 3D model is shown.
 const BuildingScene = dynamic(() => import("./BuildingScene"), { ssr: false });
@@ -34,6 +35,15 @@ export default function Explorer({ lib }: { lib: LibraryView }) {
     </LibraryProvider>
   );
 }
+
+// Shown under the model; the keys themselves are handled in Inner and in BuildingScene.
+const KEY_HINTS: [string[], string][] = [
+  [["↑", "↓"], "floors"],
+  [["←", "→"], "or drag to turn"],
+  [["+", "−"], "or scroll to zoom"],
+  [["Esc"], "back"],
+  [["/"], "search"],
+];
 
 const WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven"];
 
@@ -95,6 +105,41 @@ function Inner({ lib }: { lib: LibraryView }) {
   const stackLevel = selected ? selected.level : level;
   // Picking a level while a space is open leaves the space.
   const selectLevel = (n: number | null) => go({ level: n, space: null }, selected !== null);
+
+  // Keyboard: ↑ ↓ step through floors (from the whole building, ↓ enters at the top), a floor's own
+  // label (1–9, G, B) opens it, Esc steps back out (space → floor → building), / searches.
+  const search = useRef<HTMLInputElement>(null);
+  const [focusSearch, setFocusSearch] = useState(false);
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (!forPage(e)) return;
+    const ns = levels.map((l) => l.n).sort((a, b) => a - b);
+    const at = stackLevel === null ? -1 : ns.indexOf(stackLevel);
+    let to: number | null | undefined;
+    if (e.key === "ArrowUp") to = at < 0 ? ns[0] : ns[Math.min(ns.length - 1, at + 1)];
+    else if (e.key === "ArrowDown") to = at < 0 ? ns.at(-1) : ns[Math.max(0, at - 1)];
+    else if (e.key === "Escape") {
+      if (selected) go({ space: null }, true);
+      else if (level !== null) selectLevel(null);
+      else return;
+    } else if (e.key === "/") {
+      if (search.current) search.current.focus();
+      else {
+        setFocusSearch(true); // the input takes focus as it mounts
+        setMode("browse");
+        if (selected) go({ space: null }, true);
+      }
+    } else {
+      const hit = levels.find((l) => l.label.toLowerCase() === e.key.toLowerCase());
+      if (!hit) return;
+      to = stackLevel === hit.n && !selected ? null : hit.n;
+    }
+    e.preventDefault();
+    if (to !== undefined && (to !== stackLevel || selected)) selectLevel(to);
+  });
+  useEffect(() => {
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]">
@@ -174,8 +219,22 @@ function Inner({ lib }: { lib: LibraryView }) {
         )}
 
         <div data-cover="bottom" className="pointer-events-none relative z-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-          <p className="max-w-[60ch] text-[12px] leading-relaxed text-pencil">
-            Not to scale.{wide && " Drag to turn, scroll to zoom."}
+          <p className="max-w-[60ch] text-[12px] leading-relaxed text-pencil lg:max-w-none">
+            Not to scale.
+            {wide && (
+              <span className="ml-2 inline-flex flex-wrap items-center gap-x-2.5 gap-y-1 align-middle">
+                {KEY_HINTS.map(([keys, what]) => (
+                  <span key={what} className="inline-flex items-center gap-1">
+                    {keys.map((k) => (
+                      <kbd key={k} className="plaque grid h-[18px] min-w-[18px] place-items-center rounded-[4px] bg-sheet px-1 text-[11px] leading-none text-graphite shadow-[inset_0_0_0_1px_var(--color-rule-strong)]">
+                        {k}
+                      </kbd>
+                    ))}
+                    {what}
+                  </span>
+                ))}
+              </span>
+            )}
           </p>
           {wide && live.data && <BusyKey />}
         </div>
@@ -199,11 +258,15 @@ function Inner({ lib }: { lib: LibraryView }) {
                   <path d="m10.25 10.25 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 <input
+                  ref={search}
+                  autoFocus={focusSearch}
+                  onBlur={() => setFocusSearch(false)}
+                  aria-keyshortcuts="/"
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search by name or room number"
-                  className="h-10 w-full rounded-lg bg-sheet pl-9 pr-3 text-[14px] shadow-[inset_0_0_0_1px_var(--color-rule-strong)] transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_rgb(23_23_23/0.35)] placeholder:text-pencil focus-visible:outline-offset-0"
+                  className="h-10 w-full rounded-lg bg-sheet pl-9 pr-3 text-[14px] shadow-[inset_0_0_0_1px_var(--color-rule-strong)] transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_var(--color-faint)] placeholder:text-pencil focus-visible:outline-offset-0"
                 />
               </label>
               <div className="-mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5 pb-1 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] [scrollbar-width:none] sm:-mx-7 sm:px-7" role="group" aria-label="Filter by type">

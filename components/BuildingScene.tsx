@@ -10,6 +10,8 @@ import type { Space } from "@/data/kinds";
 import { inset, fitFloor, pointIn, type Detail, type FloorFit, type Piece, type Wall } from "@/lib/furnish";
 import { useLibrary } from "./LibraryContext";
 import { scatter, seeded } from "@/lib/crowd";
+import { useTheme } from "@/lib/theme";
+import { forPage } from "@/lib/keys";
 import { BUSY_LABEL, zoneFor, type Busy, type Occupancy, type Zone } from "@/lib/occupancy";
 
 // Map pixels -> scene units, centred on the building envelope.
@@ -39,7 +41,7 @@ const WALL_T = 2.5; // px
 // Two levels of detail. From a distance the floor is a white foam massing
 // model: rooms are plain blocks, nothing inside them. Opening a room lifts its
 // roof: walls, glass and furniture grow up inside, outlined in teal.
-const P = {
+const LIGHT = {
   plate: "#ebebeb",
   plateSide: "#878787",
   zone: "#f4f4f4",
@@ -65,9 +67,41 @@ const P = {
   stair: "#d4d4d4",
   edge: "#999999",
 };
+// Dark: the same neutral massing model at night. Floors sit just above the page, rooms a step lighter, nothing warm.
+const DARK: typeof LIGHT = {
+  plate: "#242424",
+  plateSide: "#0c0c0c",
+  zone: "#2a2a2a",
+  overlook: "#303030",
+  block: "#383838",
+  blockSide: "#2c2c2c",
+  blockEdge: "#5a5a5a",
+  hover: "#1c3c37",
+  pick: "#1ec7b1",
+  pickDeep: "#3cd3bf",
+  pickWash: "#174540",
+  wall: "#3a3a3a",
+  glass: "#2b4a45",
+  core: "#454545",
+  coreTop: "#3d3d3d",
+  counter: "#4a4a4a",
+  counterSide: "#3a3a3a",
+  table: "#5a5a5a",
+  chair: "#8c8c8c",
+  soft: "#505050",
+  screen: "#0e0e0e",
+  desk: "#525252",
+  stair: "#404040",
+  edge: "#575757",
+};
 
 // Busyness, pale to strong (same ramp as the page). The floor's wash carries it.
-const HEAT: Record<Busy, string> = { quiet: "#9dd08a", busy: "#f2b84b", packed: "#d9533a" };
+const HEAT_LIGHT: Record<Busy, string> = { quiet: "#9dd08a", busy: "#f2b84b", packed: "#d9533a" };
+const HEAT_DARK: Record<Busy, string> = { quiet: "#82bb6f", busy: "#e3aa43", packed: "#d45a40" };
+const PALETTES = { light: { ...LIGHT, heat: HEAT_LIGHT }, dark: { ...DARK, heat: HEAT_DARK } };
+type Palette = (typeof PALETTES)["light"];
+/** The scene's colours for the current theme. A switch recolours the model in place: no rebuild, the camera stays put. */
+const usePalette = (): Palette => PALETTES[useTheme()];
 const CLOTHES = ["#45413b", "#5d5850", "#776d61", "#4c5864", "#8b5b4a", "#6a7461"];
 const PEOPLE_ZOOM = 14; // closer than this, dots become little people
 const CROWD_CAP = 220; // per zone, so a packed commons stays readable and cheap
@@ -197,7 +231,7 @@ function Blocks({
     });
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [items]);
+  }, [items, material, geometry]); // a new material (theme switch) means a new mesh, which needs its colours again
   if (items.length === 0) return null;
   return (
     <instancedMesh
@@ -223,6 +257,7 @@ function lambert(color: string, base = 1, glass = false) {
 }
 
 function useMaterials() {
+  const P = usePalette();
   return useMemo(() => {
     const wall = lambert(P.wall);
     const rim = lambert(P.pickDeep);
@@ -238,19 +273,19 @@ function useMaterials() {
       core: [lambert(P.coreTop), lambert(P.core)],
       counter: [lambert(P.counter), lambert(P.counterSide)],
       hit: lambert("#ffffff", 0), // invisible, but catches clicks
-      heat: Object.fromEntries((Object.keys(HEAT) as Busy[]).map((b) => [b, hatched(b)])) as Record<Busy, THREE.MeshLambertMaterial>,
+      heat: Object.fromEntries((Object.keys(P.heat) as Busy[]).map((b) => [b, hatched(b, P.heat[b])])) as Record<Busy, THREE.MeshLambertMaterial>,
       // On the open level, just a pale wash: the labels and people on top must stay readable.
-      wash: Object.fromEntries((Object.keys(HEAT) as Busy[]).map((b) => [b, lambert(HEAT[b], 0.3, true)])) as Record<Busy, THREE.MeshLambertMaterial>,
+      wash: Object.fromEntries((Object.keys(P.heat) as Busy[]).map((b) => [b, lambert(P.heat[b], 0.3, true)])) as Record<Busy, THREE.MeshLambertMaterial>,
     };
-  }, []);
+  }, [P]);
 }
 
 // Hatch spacing in scene units (about 6, 4 and 3 px at the overview zoom): denser means more people, as in the page's swatches.
 const HATCH: Record<Busy, { pitch: number; cross: boolean }> = { quiet: { pitch: 1, cross: false }, busy: { pitch: 0.6, cross: false }, packed: { pitch: 0.55, cross: true } };
 
 /** A heat material: the ramp colour with drafting hatch over it. Cap UVs are scene units, so the hatch is even across rooms. */
-function hatched(b: Busy) {
-  const m = lambert(HEAT[b], 0.8, true);
+function hatched(b: Busy, color: string) {
+  const m = lambert(color, 0.8, true);
   if (typeof document === "undefined") return m;
   const size = 32;
   const c = document.createElement("canvas");
@@ -307,6 +342,7 @@ function Slab({
   onHover?: Hover;
 }) {
   const geo = useMemo(() => extrude(poly, height), [poly, height]);
+  const P = usePalette();
   return (
     <mesh
       geometry={geo}
@@ -328,6 +364,7 @@ function Slab({
 function Inside({ detail, mats }: { detail: Detail; mats: ReturnType<typeof useMaterials> }) {
   const group = useRef<THREE.Group>(null!);
   const grow = useRef(0.001);
+  const P = usePalette();
   const items = useMemo(
     () => ({
       walls: detail.walls.filter((w) => !w.glass).map((w) => ({ m: wallMatrix(w) })),
@@ -335,7 +372,7 @@ function Inside({ detail, mats }: { detail: Detail; mats: ReturnType<typeof useM
       boxes: detail.pieces.filter((p) => !isRound(p)).map((p) => ({ m: pieceMatrix(p), color: P[p.tone] })),
       discs: detail.pieces.filter(isRound).map((p) => ({ m: pieceMatrix(p), color: P[p.tone] })),
     }),
-    [detail],
+    [detail, P],
   );
   useFrame((state, dt) => {
     if (grow.current === 1) return;
@@ -416,7 +453,7 @@ function Walkers({ crowd, base, count, mats }: { crowd: Crowd; base: number; cou
       body.current?.setColorAt(w.k, c.set(tint(w.k + 3)));
       head.current?.setColorAt(w.k, c.set(tint(w.k + 3)));
     });
-  }, [walkers]);
+  }, [walkers, mats]); // a theme switch rebuilds the meshes, which need their colours again
   useFrame((state, dt) => {
     if (!body.current || !head.current) return;
     const step = Math.min(dt, 1 / 20);
@@ -494,8 +531,9 @@ function FloorModel({ m, n, floor, active, selectedRef, onSelectLevel, onOpenSpa
     const owner = (h: Pt[]) => Math.max(0, all.findIndex((p) => pointIn(p, h[0])));
     return all.map((poly, i) => extrude(poly, 0.4, holes.filter((h) => owner(h) === i)));
   }, [floor]);
-  const stairs = useMemo(() => fit.stairs.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
-  const wells = useMemo(() => fit.wells.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit]);
+  const P = usePalette();
+  const stairs = useMemo(() => fit.stairs.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit, P]);
+  const wells = useMemo(() => fit.wells.map((p) => ({ m: pieceMatrix(p), color: P.stair })), [fit, P]);
 
   const open = active === n;
   const away = active !== null && n > active;
@@ -517,6 +555,13 @@ function FloorModel({ m, n, floor, active, selectedRef, onSelectLevel, onOpenSpa
   const targetStair = active === null ? STAIR_FULL * SPREAD : STAIR_OPEN; // still reaching the spread-out floor above
   const blocks = useRef<THREE.Group>(null!);
   const targetFlat = opened ? FLAT : 1;
+  // New materials (a theme switch) start fully opaque, so the floor's fade is applied to them once more.
+  const refade = useRef(false);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    refade.current = true;
+    invalidate();
+  }, [mats, invalidate]);
 
   const crowds = useMemo(() => crowdsFor(n, floor, fit, occupancy?.zones.filter((z) => z.level === n) ?? []), [n, floor, fit, occupancy]);
   // Dots turn into people once you are close enough to tell them apart, or as soon as a space is opened.
@@ -543,7 +588,8 @@ function FloorModel({ m, n, floor, active, selectedRef, onSelectLevel, onOpenSpa
       else state.invalidate();
       if (flights.current) flights.current.scale.y = s.stair;
     }
-    if (s.y === targetY && s.opacity === targetOpacity && s.glass === targetGlass) return;
+    if (s.y === targetY && s.opacity === targetOpacity && s.glass === targetGlass && !refade.current) return;
+    refade.current = false;
     const k = reduceMotion() ? 1 : ease(dt, 0.11);
     s.y += (targetY - s.y) * k;
     s.opacity += (targetOpacity - s.opacity) * k;
@@ -901,7 +947,9 @@ type Cover = { left: number; top: number; bottom: number };
 const GUTTER = 24; // clear space kept between the model and anything covering it
 const FILL = 0.62; // share of the free area an opened space fills; the rest is floor to click off onto
 const LEVEL_FILL = 0.94; // an open level nearly fills it
-const MAX_FOCUS_ZOOM = 95; // so the smallest rooms don't fill the panel
+const MAX_FOCUS_ZOOM = 95;
+const MIN_ZOOM = 3;
+const MAX_ZOOM = 170; // so the smallest rooms don't fill the panel
 
 /**
  * Measures what floats over the model: elements in the same panel marked
@@ -951,12 +999,10 @@ function Rig({ m, active, focus, cover, pins }: { m: Model; active: number | nul
     const at3 = (poly: Pt[], ys: number[]) => poly.flatMap(([x, z]) => ys.map((y) => new THREE.Vector3(wx(x), y, wz(z))));
     const pts =
       active === null
-        ? m.order.flatMap((n) => {
-            const y = m.y(n, SPREAD);
-            // Study Match pins float above the stack, over any floor's spaces.
-            return at3(footprint(m.floors[n]), pins ? [y, y + ROOM_H, m.pinTop] : [y, y + ROOM_H]);
-          })
+        ? m.order.flatMap((n) => at3(footprint(m.floors[n]), [m.y(n, SPREAD), m.y(n, SPREAD) + ROOM_H]))
         : at3(focus?.poly ?? footprint(m.floors[active]), [m.y(active), m.y(active) + WALL_H]);
+    // Study Match pins float above the stack, over any floor's spaces: they must fit, but the building is what gets centred.
+    const pinPts = active === null && pins ? m.order.flatMap((n) => at3(footprint(m.floors[n]), [m.pinTop])) : [];
     const at = new THREE.Box3().setFromPoints(pts).getCenter(new THREE.Vector3());
     // Measure it as it will appear on screen from the current viewing angle,
     // then let it fill a share of the area the heading, rail and caption leave free.
@@ -964,20 +1010,22 @@ function Rig({ m, active, focus, cover, pins }: { m: Model; active: number | nul
     const up = new THREE.Vector3();
     camera.updateMatrixWorld(); // not yet current on a page that opens straight onto a space
     camera.matrixWorld.extractBasis(right, up, new THREE.Vector3());
-    const extent = (axis: THREE.Vector3) => {
-      const ds = pts.map((p) => axis.dot(p));
-      const lo = Math.min(...ds);
-      const hi = Math.max(...ds);
-      return { size: hi - lo, off: (lo + hi) / 2 - axis.dot(at) }; // `off`: how far its on-screen middle is from `at`
+    const extent = (axis: THREE.Vector3, of: THREE.Vector3[]) => {
+      const ds = of.map((p) => axis.dot(p) - axis.dot(at));
+      return { lo: Math.min(...ds), hi: Math.max(...ds) }; // relative to `at`, in scene units along the screen axis
     };
-    const across = extent(right);
-    const tall = extent(up);
+    const across = extent(right, [...pts, ...pinPts]);
+    const tall = extent(up, pts);
+    const tallAll = extent(up, [...pts, ...pinPts]);
     const edge = { left: cover.left + GUTTER, right: GUTTER, top: cover.top + GUTTER, bottom: cover.bottom + GUTTER };
     const free = { w: Math.max(120, size.width - edge.left - edge.right), h: Math.max(120, size.height - edge.top - edge.bottom) };
-    const fit = Math.min(free.w / across.size, free.h / tall.size);
+    const fit = Math.min(free.w / (across.hi - across.lo), free.h / (tallAll.hi - tallAll.lo));
     const zoom = focus ? Math.min(MAX_FOCUS_ZOOM, FILL * fit) : LEVEL_FILL * fit;
-    // Centre its on-screen outline in that free area, not in the whole panel.
-    at.addScaledVector(right, across.off - (edge.left - edge.right) / 2 / zoom).addScaledVector(up, tall.off + (edge.top - edge.bottom) / 2 / zoom);
+    // Centre the building's own outline in the free area (not the whole panel), then nudge it down only as far as the pins need.
+    const halfH = free.h / 2 / zoom;
+    const mid = (tall.lo + tall.hi) / 2;
+    const up_ = Math.max(mid, tallAll.hi - halfH); // screen-up offset of the free area's middle from `at`
+    at.addScaledVector(right, (across.lo + across.hi) / 2 - (edge.left - edge.right) / 2 / zoom).addScaledVector(up, up_ + (edge.top - edge.bottom) / 2 / zoom);
     return { at, zoom };
   }, [m, active, focus, size, camera, cover, pins]);
 
@@ -1016,6 +1064,50 @@ function Rig({ m, active, focus, cover, pins }: { m: Model; active: number | nul
     else state.invalidate();
   });
 
+  return null;
+}
+
+type Orbit = THREE.EventDispatcher<{ start: object }> & { target: THREE.Vector3; update: () => void };
+const TURN = Math.PI / 8; // one ← or → press
+const ZOOM_STEP = 1.25; // one + or − press
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+/** ← → turn the model and + − zoom, eased like a drag or a scroll; either one lets go of the automatic framing. */
+function KeyControls() {
+  const controls = useThree((s) => s.controls) as unknown as Orbit | null;
+  const invalidate = useThree((s) => s.invalidate);
+  const left = useRef({ turn: 0, zoom: 1 }); // still to apply: radians, and a zoom factor
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!controls || !forPage(e)) return;
+      const l = left.current;
+      if (e.key === "ArrowLeft") l.turn += TURN;
+      else if (e.key === "ArrowRight") l.turn -= TURN;
+      else if (e.key === "+" || e.key === "=") l.zoom *= ZOOM_STEP;
+      else if (e.key === "-" || e.key === "_") l.zoom /= ZOOM_STEP;
+      else return;
+      e.preventDefault();
+      controls.dispatchEvent({ type: "start" });
+      invalidate();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [controls, invalidate]);
+  useFrame((state, dt) => {
+    const l = left.current;
+    if (!controls || (l.turn === 0 && l.zoom === 1)) return;
+    const k = reduceMotion() ? 1 : ease(dt, 0.12);
+    const turn = Math.abs(l.turn) < 1e-3 ? l.turn : l.turn * k;
+    const zoom = Math.abs(Math.log(l.zoom)) < 1e-3 ? l.zoom : Math.exp(Math.log(l.zoom) * k);
+    l.turn -= turn;
+    l.zoom /= zoom;
+    const cam = state.camera;
+    cam.position.sub(controls.target).applyAxisAngle(Y_AXIS, turn).add(controls.target);
+    cam.zoom = THREE.MathUtils.clamp(cam.zoom * zoom, MIN_ZOOM, MAX_ZOOM);
+    cam.updateProjectionMatrix();
+    controls.update();
+    state.invalidate();
+  });
   return null;
 }
 
@@ -1061,7 +1153,8 @@ export default function BuildingScene(props: Common) {
       >
         <ambientLight intensity={2} />
         <Sun />
-        <OrbitControls makeDefault enablePan={false} minPolarAngle={0.35} maxPolarAngle={1.3} minZoom={3} maxZoom={170} target={m.home} />
+        <OrbitControls makeDefault enablePan={false} minPolarAngle={0.35} maxPolarAngle={1.3} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} target={m.home} />
+        <KeyControls />
         <Rig m={m} active={active} focus={focus} cover={cover} pins={active === null && (props.matches ?? []).length > 0} />
         <LabelSync labels={labels} els={els} />
         {Object.entries(m.floors).map(([n, floor]) => (
@@ -1132,7 +1225,7 @@ export default function BuildingScene(props: Common) {
                     if (space) props.onOpenSpace(space.id);
                   }}
                   className={`plaque pointer-events-auto absolute left-0 top-0 grid -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full font-semibold leading-none shadow-lift transition-[scale] duration-150 ease-out-quint hover:scale-[1.15] active:scale-95 ${
-                    label.picked ? "size-8 bg-accent text-[17px] text-ink ring-2 ring-sheet" : "size-6 bg-sheet text-[14px] text-ink ring-2 ring-accent-deep"
+                    label.picked ? "size-8 bg-accent text-[17px] text-on-accent ring-2 ring-sheet" : "size-6 bg-sheet text-[14px] text-ink ring-2 ring-accent-deep"
                   } ${props.highlight && label.key === `match-${props.highlight}` ? "scale-[1.2]" : ""}`}
                 >
                   {label.text}
@@ -1149,7 +1242,7 @@ export default function BuildingScene(props: Common) {
                   label.style === "name"
                     ? // Sentence case with a paper halo: reads over grey blocks and the busyness wash alike, as on a printed map.
                       `map-label w-max max-w-[16ch] text-center text-[11px] font-medium leading-[1.2] tracking-[-0.005em] ${label.core ? "text-pencil" : "text-ink"}`
-                    : `plaque whitespace-nowrap text-[10px] font-medium leading-[1.5] ${label.picked ? "bg-accent font-semibold text-ink" : "map-label text-graphite"}`
+                    : `plaque whitespace-nowrap text-[10px] font-medium leading-[1.5] ${label.picked ? "bg-accent font-semibold text-on-accent" : "map-label text-graphite"}`
                 }`}
               >
                 {label.text}

@@ -71,7 +71,7 @@ export default function LevelStack({ active, counts, busy, onSelect }: Props) {
         </defs>
         <polygon
           points={[iso(8, 8, -16), iso(238, 8, -16), iso(238, 108, -16), iso(8, 108, -16)].join(" ")}
-          fill="rgb(23 23 23 / 0.07)"
+          fill="var(--color-rule-soft)"
           style={{ filter: "blur(7px)" }}
         />
         {slabs.map(({ l: { n }, i, s }) => {

@@ -17,12 +17,16 @@ export const metadata: Metadata = {
 
 const ARRIVED =
   "try{var d=document.documentElement,s=sessionStorage;if(s.arrived)d.dataset.arrived='1';else{s.arrived='1';setTimeout(function(){d.dataset.arrived='1'},3000)}}catch(e){}";
+// Before first paint: the theme the toggle saved, else the system's. Kept in step with lib/theme.ts.
+const THEME =
+  "(function(){var t=null;try{t=localStorage.getItem('theme')}catch(e){}if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t})()";
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // The script marks a session's later page loads so the arrival animation plays only once.
     <html lang="en" className={`${archivo.variable} h-full`} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME }} />
         <script dangerouslySetInnerHTML={{ __html: ARRIVED }} />
       </head>
       <body className="flex min-h-full flex-col lg:h-dvh lg:overflow-hidden">

@@ -29,6 +29,7 @@ export function LevelButton({ n, label, word, landmark, count, on, dim, onClick,
       aria-pressed={on}
       title={compact ? `${landmark} · ${spacesText}${now}` : undefined}
       aria-label={`${word} ${label}, ${landmark}, ${spacesText}${now.replace(" ·", ",")}`}
+      aria-keyshortcuts={label}
       onClick={onClick}
       onPointerEnter={() => onHover?.(n)}
       onPointerLeave={() => onHover?.(null)}
@@ -36,7 +37,7 @@ export function LevelButton({ n, label, word, landmark, count, on, dim, onClick,
     >
       <span
         className={`plaque relative grid size-10 shrink-0 place-items-center rounded-[5px] text-[21px] font-semibold leading-none transition-colors duration-200 sm:size-9 sm:text-[22px] ${
-          on ? "bg-accent text-ink" : "text-ink group-hover:bg-vellum"
+          on ? "bg-accent text-on-accent" : "text-ink group-hover:bg-vellum"
         }`}
       >
         {label}

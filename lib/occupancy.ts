@@ -18,7 +18,8 @@ export type Reading = {
   busy: Busy | null;
 };
 
-export type Zone = Reading & { level: number; refs: string[] };
+/** `floor`: a whole floor's sensor standing in for areas NC State doesn't break out. It only places people on the model; no space claims it as its own count. */
+export type Zone = Reading & { level: number; refs: string[]; floor?: boolean };
 
 export type Occupancy = {
   /** When NC State's sensors were read (ISO time). */
@@ -96,8 +97,8 @@ export const HILL_SENSORS: Sensors = {
     287: ["3425"], // Data Experience Lab
     288: ["South Study Lounge (Floor 3)"],
     289: ["North Forum"],
-    // Floors with no named areas: the floor sensor itself covers the open seating and stacks (never a bookable room, which would wrongly show the whole floor's count).
-    280: ["Seating Floor 0"],
+    // Floors with no named areas: the floor sensor itself covers the seating and stacks, where its people are drawn.
+    280: ["G410", "Seating Floor 0"], // most of Floor G's people are in the Ground Floor Reading Room
     290: ["Seating Floor 4", "Bookstacks Floor 4"],
     291: ["Seating Floor 5", "Bookstacks Floor 5"],
     292: ["Seating Floor 6", "Bookstacks Floor 6"],
@@ -189,7 +190,7 @@ export function combineLibrary(s: Sensors, building: unknown, sensors: Record<nu
     const parts = ids.map((id) => {
       try {
         const r = parse(sensors[id]);
-        if (s.zones[id]) out.zones.push({ ...r.self, level: Number(n), refs: s.zones[id] });
+        if (s.zones[id]) out.zones.push({ ...r.self, level: Number(n), refs: s.zones[id], floor: true });
         for (const z of r.children) if (s.zones[z.id]) out.zones.push({ ...z, level: Number(n), refs: s.zones[z.id] });
         return r.self;
       } catch {
@@ -212,8 +213,8 @@ export const combine = (building: unknown, levels: Record<number, unknown>) =>
 
 export const SENSORS = { hunt: HUNT_SENSORS, hill: HILL_SENSORS } as const;
 
-/** Zone covering a drawn space, if any. */
-export const zoneFor = (o: Occupancy | null | undefined, ref: string) => o?.zones.find((z) => z.refs.includes(ref)) ?? null;
+/** The sensor zone that counts a drawn space as its own, if any (never a whole floor's). */
+export const zoneFor = (o: Occupancy | null | undefined, ref: string) => o?.zones.find((z) => !z.floor && z.refs.includes(ref)) ?? null;
 
 /** "about 35 people", never "0 people": a sensor reading zero does not mean the room is empty. */
 export function people(count: number | null) {

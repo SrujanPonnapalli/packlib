@@ -43,7 +43,7 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
 
       {s.photo && (
         <figure className="mt-3">
-          <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-vellum outline outline-1 -outline-offset-1 outline-black/10">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-vellum outline outline-1 -outline-offset-1 outline-rule">
             <Image
               src={s.photo.src}
               alt={isCaption(s.photo.alt) ? s.photo.alt : s.title}
@@ -61,7 +61,7 @@ export default function SpaceDetail({ space: s, live, onBack }: Props) {
 
       <header className="mt-6 flex items-start gap-4">
         {s.room && (
-          <span className="plaque mt-0.5 rounded-lg bg-accent px-2.5 py-1.5 text-[26px] font-semibold leading-none">
+          <span className="plaque mt-0.5 rounded-lg bg-accent text-on-accent px-2.5 py-1.5 text-[26px] font-semibold leading-none">
             {s.room}
           </span>
         )}
