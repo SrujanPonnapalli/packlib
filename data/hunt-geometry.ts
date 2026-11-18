@@ -24,6 +24,8 @@ export type Shape = {
   fit?: "meeting" | "lab" | "commons" | "empty" | "quiet" | "lounge" | "carrels" | "alcove" | "theater" | "showcase" | "hall" | "exhibit" | "cafe" | "auditorium";
   /** Stairs: how much of the floor-to-floor rise this flight climbs, if a landing splits the stair (default [0, 1]). */
   span?: [number, number];
+  /** Stairs: step depth in map px, for steps that aren't normal (Roman seating). */
+  tread?: number;
   /** The other end of a stair traced on the floor above or below. Added automatically, or set by hand where the two maps show different parts of the same flight. */
   twin?: boolean;
 };
@@ -164,7 +166,9 @@ const level3: Floor = {
         [1025, 300],
       ],
     },
-    { kind: "stair", ref: "Monumental Stair with Roman Seating", dir: "up", front: E, poly: rect(545, 360, 612, 447) },
+    // one flight, entered from the east and going up to the west. deep seating tiers on the north half, normal steps next to them
+    { kind: "stair", ref: "Monumental Stair with Roman Seating", dir: "up", front: E, tread: 14, poly: rect(545, 360, 612, 407) },
+    { kind: "stair", ref: "Monumental Stair with Roman Seating", dir: "up", front: E, poly: rect(545, 407, 612, 447) },
     {
       kind: "stair",
       dir: "down", // to Level 2, heading south
@@ -176,8 +180,6 @@ const level3: Floor = {
         [910, 548],
       ],
     },
-    // the enclosed stair tower next to the Monumental Stair goes from Level 2 to 5, flights alternate sides of the shaft
-    { kind: "stair", dir: "up", front: W, poly: rect(523, 447, 627, 498) },
     { kind: "stair", dir: "down", front: N, poly: rect(125, 225, 180, 305) },
     { kind: "core", poly: rect(527, 157, 588, 287) },
     { kind: "core", poly: rect(673, 447, 780, 550) },
@@ -729,15 +731,17 @@ function link(floors: Record<number, Floor>) {
       const other = floors[Number(n) + (s.dir === "up" ? 1 : -1)];
       if (!other || !s.poly.every((p) => pointIn(other.plate, p))) continue;
       // the other end is entered from the opposite edge: where one flight starts, the other one arrives
-      other.shapes.push({ kind: "stair", twin: true, dir: s.dir === "up" ? "down" : "up", front: ((s.front ?? 0) + 2) % s.poly.length, span: s.span, poly: s.poly });
+      other.shapes.push({ kind: "stair", twin: true, dir: s.dir === "up" ? "down" : "up", front: ((s.front ?? 0) + 2) % s.poly.length, span: s.span, tread: s.tread, poly: s.poly });
     }
   return floors;
 }
 
 // shared shafts, in Level 3's coordinates so they line up exactly between floors (checked on every map).
-const towerSouth: Shape = { kind: "stair", dir: "up", front: W, poly: rect(523, 498, 627, 550) };
-level2.shapes.push(towerSouth);
-level4.shapes.push(towerSouth);
+// the enclosed stair tower next to the Monumental Stair (Levels 2–5): every map shows the same flight on each floor,
+// going east along the south half, with the core in the north-east corner. enclosed, so no opening in the floor above (twin).
+for (const f of [level2, level3, level4]) f.shapes.push({ kind: "stair", dir: "up", twin: true, front: W, poly: rect(545, 498, 612, 528) });
+for (const f of [level2, level3, level4]) f.shapes.push({ kind: "core", poly: rect(573, 450, 627, 497) });
+level5.shapes.push({ kind: "core", poly: rect(523, 498, 627, 550) }); // top of the tower, where it comes out
 // elevators: the west bank by the Monumental Stair (Levels 2–5) and the east bank by the lobby (1–4, on 5 it opens into the University Centers suite)
 const lift = (poly: Pt[]): Shape => ({ kind: "lift", label: "Elevators", poly });
 for (const f of [level2, level3, level4, level5]) f.shapes.push(lift(rect(672, 447, 702, 550)));
