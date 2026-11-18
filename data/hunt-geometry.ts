@@ -750,11 +750,9 @@ function link(floors: Record<number, Floor>) {
 }
 
 // shared shafts, in Level 3's coordinates so they line up exactly between floors (checked on every map).
-// the enclosed stair tower next to the Monumental Stair (Levels 2–5): every map shows the same flight on each floor,
-// going east along the south half, with the core in the north-east corner. no public flight up from Level 4. enclosed, so no opening in the floor above (twin).
-for (const f of [level2, level3]) f.shapes.push({ kind: "stair", dir: "up", twin: true, front: W, poly: rect(545, 498, 612, 528) });
-for (const f of [level2, level3, level4]) f.shapes.push({ kind: "core", poly: rect(573, 450, 627, 497) });
-level5.shapes.push({ kind: "core", poly: rect(523, 498, 627, 550) }); // top of the tower, where it comes out
+// the enclosed stair tower next to the Monumental Stair is a closed shaft on every floor, not a public stair.
+for (const f of [level2, level3, level4]) f.shapes.push({ kind: "core", poly: rect(523, 447, 627, 550) });
+level5.shapes.push({ kind: "core", poly: rect(523, 498, 627, 550) });
 // elevators: the west bank by the Monumental Stair (Levels 2–5) and the east bank by the lobby (1–4, on 5 it opens into the University Centers suite)
 const lift = (poly: Pt[]): Shape => ({ kind: "lift", label: "Elevators", poly });
 for (const f of [level2, level3, level4, level5]) f.shapes.push(lift(rect(672, 447, 702, 550)));
