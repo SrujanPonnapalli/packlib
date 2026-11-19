@@ -279,3 +279,22 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* graphics that settle in the first time they scroll into view (components/Reveal.tsx).
+--d staggers the pieces */
+[data-reveal] .reveal-x {
+  transform-origin: left;
+  transition: transform 900ms var(--ease-out-quint) var(--d, 0ms);
+}
+[data-reveal="pending"] .reveal-x {
+  transform: scaleX(0);
+}
+[data-reveal] .reveal-up {
+  transition:
+    opacity 450ms var(--ease-out-quint) var(--d, 0ms),
+    transform 450ms var(--ease-out-quint) var(--d, 0ms);
+}
+[data-reveal="pending"] .reveal-up {
+  opacity: 0;
+  transform: translateY(4px);
+}
