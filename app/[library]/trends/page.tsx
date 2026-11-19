@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { isLibrary, levelName, libraryParams, LIBRARIES, type LibrarySlug } from "@/data/libraries";
 import { libraryView } from "@/data/library-view";
 import SiteHeader from "@/components/SiteHeader";
+import Arrow from "@/components/Arrow";
 import TrendsChart from "@/components/TrendsChart";
 import { BusyDot, Ticker } from "@/components/Busy";
 import { summary, instant as instantOf, slot } from "@/lib/history";
@@ -43,6 +45,13 @@ export default async function TrendsPage({ params }: PageProps<"/[library]/trend
           <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-graphite [text-wrap:pretty]">
             PackLib saves NC State&apos;s sensor headcounts every 5 minutes. Here is the last week, for the whole building and each {library === "hunt" ? "level" : "floor"}.
           </p>
+          <Link
+            href="/about"
+            className="group mt-3 inline-flex items-center gap-1.5 rounded-md bg-vellum px-3 py-1.5 text-[13px] font-medium text-graphite transition-colors duration-150 hover:text-ink active:scale-[0.98]"
+          >
+            How PackLib works
+            <Arrow />
+          </Link>
           <Suspense fallback={<TrendsSkeleton />}>
             <Trends library={library} />
           </Suspense>

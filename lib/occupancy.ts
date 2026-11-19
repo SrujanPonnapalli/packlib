@@ -121,8 +121,11 @@ const THRESHOLDS: Record<number, [number, number]> = {
   290: CARRELS, 291: CARRELS, 292: CARRELS, 293: CARRELS, 294: CARRELS, 295: CARRELS,
 };
 
+/** Upper % for "not busy" and for "busy" on a sensor, above that it's "very busy". */
+export const cutoffs = (id: number): [number, number] => THRESHOLDS[id] ?? STANDARD;
+
 export function busyness(id: number, share: number): Busy {
-  const [quiet, busy] = THRESHOLDS[id] ?? STANDARD;
+  const [quiet, busy] = cutoffs(id);
   const pct = share * 100;
   return pct <= quiet ? "quiet" : pct <= busy ? "busy" : "packed";
 }
