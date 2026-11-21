@@ -76,9 +76,9 @@ export default function AboutPage() {
                   last week of them for the whole building and each floor.
                 </p>
                 <p>
-                  The dashed &ldquo;typical&rdquo; line is the median headcount at the same time of day over up to seven earlier days. It appears once at
-                  least three of those days have a reading, so it gets steadier as more history builds up. PackLib doesn&apos;t forecast future busyness
-                  yet.
+                  The dashed &ldquo;typical&rdquo; line is the median headcount at the same time on the same weekday over the last four weeks, since a
+                  Saturday afternoon looks nothing like a Tuesday one. Until three of those weeks have a reading, it uses the same time of day over the
+                  last seven days instead. PackLib doesn&apos;t forecast future busyness yet.
                 </p>
               </Section>
 
