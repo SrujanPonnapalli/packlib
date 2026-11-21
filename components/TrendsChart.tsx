@@ -74,7 +74,7 @@ export default function TrendsChart({ h, now, place }: { h: History; now: number
   // press and drag: the reading you pressed on and the one you dragged to
   const [press, setPress] = useState<{ a: number; x0: number } | null>(null);
   const [to, setTo] = useState<number | null>(null);
-  const usual = useMemo(() => typical(h), [h]);
+  const usual = useMemo(() => h.usual ?? typical(h), [h]);
   const hasUsual = usual.some((v) => v !== null);
 
   useEffect(() => {

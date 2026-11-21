@@ -46,6 +46,8 @@ export type History = {
   since: string | null;
   /** When this was read from storage. Used as "now" for everything shown with it. */
   readAt: number;
+  /** typical() for each reading, worked out by the history function from a month of readings. Older deploys of it don't send this. */
+  usual?: (number | null)[];
 };
 
 export function lineUp(days: Record<Series, { day: string; r: Entry[] }[]>, since: string | null, readAt: number): History {
@@ -72,33 +74,58 @@ export function nearest(h: History, time: number, within = 15 * 60_000): number 
   return best;
 }
 
+type Headcounts = Pick<History, "t" | "total">;
+
+const median = (xs: number[]) => {
+  xs.sort((a, b) => a - b);
+  const m = xs.length >> 1;
+  return xs.length % 2 ? xs[m] : Math.round((xs[m - 1] + xs[m]) / 2);
+};
+
 /**
- * What's typical at each reading's time of day: the median headcount at the same
- * time on up to 7 earlier days, once at least 3 of those days have a reading.
+ * What's typical at each reading's time of day. Libraries run on a weekly rhythm, so it's
+ * the median at the same time on the same weekday over the last 4 weeks, once 3 of those
+ * weeks have a reading. Until then it's the median over the last 7 days (at least 3 of them).
+ * `past` is where to look those up: a longer stretch of the same building's readings.
  */
-export function typical(h: History, within = 15 * 60_000): (number | null)[] {
+export function typical(h: Headcounts, past: Headcounts = h, within = 15 * 60_000): (number | null)[] {
+  const day = 86_400_000;
+  // New York's offset from UTC. clocks only change on the hour, so it's worked out once per hour
+  const offsets = new Map<number, number>();
+  const offset = (time: number) => {
+    const hour = Math.floor(time / 3_600_000) * 3_600_000;
+    let o = offsets.get(hour);
+    if (o === undefined) {
+      const s = slot(new Date(hour).toISOString());
+      const [y, m, d] = s.day.split("-").map(Number);
+      o = Date.UTC(y, m - 1, d, 0, s.minute) - hour; // the clock on the wall, read as if it were UTC
+      offsets.set(hour, o);
+    }
+    return o;
+  };
   // index of the first reading at or after `time` (readings are sorted)
   const from = (time: number) => {
-    let lo = 0, hi = h.t.length;
+    let lo = 0, hi = past.t.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (h.t[mid] < time) lo = mid + 1;
+      if (past.t[mid] < time) lo = mid + 1;
       else hi = mid;
     }
     return lo;
   };
+  // headcount at the same New York clock time `days` earlier, so a week back still lines up across a DST change
+  const back = (t: number, days: number) => {
+    const at = t - days * day + offset(t) - offset(t - days * day);
+    const i = from(at);
+    const best = [i - 1, i].filter((j) => j >= 0 && j < past.t.length && past.total[j] !== null && Math.abs(past.t[j] - at) <= within).sort((a, b) => Math.abs(past.t[a] - at) - Math.abs(past.t[b] - at))[0];
+    return best === undefined ? null : past.total[best]!;
+  };
+  const found = (t: number, days: number[]) => days.map((d) => back(t, d)).filter((c) => c !== null);
   return h.t.map((t) => {
-    const seen: number[] = [];
-    for (let k = 1; k <= 7; k++) {
-      const at = t - k * 86_400_000;
-      const i = from(at);
-      const best = [i - 1, i].filter((j) => j >= 0 && j < h.t.length && h.total[j] !== null && Math.abs(h.t[j] - at) <= within).sort((a, b) => Math.abs(h.t[a] - at) - Math.abs(h.t[b] - at))[0];
-      if (best !== undefined) seen.push(h.total[best]!);
-    }
-    if (seen.length < 3) return null;
-    seen.sort((a, b) => a - b);
-    const m = seen.length >> 1;
-    return seen.length % 2 ? seen[m] : Math.round((seen[m - 1] + seen[m]) / 2);
+    const weekly = found(t, [7, 14, 21, 28]);
+    if (weekly.length >= 3) return median(weekly);
+    const daily = found(t, [1, 2, 3, 4, 5, 6, 7]);
+    return daily.length >= 3 ? median(daily) : null;
   });
 }
 

@@ -108,3 +108,25 @@ test("typical is the median of the same time on earlier days, once 3 days exist"
   assert.equal(out[4], 600, "median of 300, 900 and 600");
   assert.equal(out[2], null, "only two earlier days");
 });
+
+test("typical uses the same weekday once 3 of the last 4 weeks have a reading", () => {
+  const day = 86_400_000;
+  const t0 = Date.parse("2026-11-28T20:00:00Z"); // a Saturday, 3 pm in Raleigh
+  // quiet Saturdays 1, 2 and 3 weeks back, busy weekdays all through the last week
+  const weekdays = [1, 2, 3, 4, 5, 6].map((k) => t0 - k * day);
+  const past = { t: [t0 - 21 * day, t0 - 14 * day, t0 - 7 * day, ...weekdays.reverse(), t0].sort((a, b) => a - b), total: [] as number[] };
+  past.total = past.t.map((t) => (t === t0 ? 250 : (t0 - t) % (7 * day) === 0 ? [200, 300, 240][(t0 - t) / (7 * day) - 1] : 900));
+  const now = { t: [t0], total: [250] };
+  assert.deepEqual(typical(now, past), [240], "median of the three Saturdays, not the weekday crowds");
+  const twoWeeks = { t: past.t.filter((t) => t !== t0 - 21 * day), total: [] as number[] };
+  twoWeeks.total = twoWeeks.t.map((t) => past.total[past.t.indexOf(t)]);
+  assert.deepEqual(typical(now, twoWeeks), [900], "only two Saturdays yet, so it falls back to the last 7 days");
+});
+
+test("typical lines up the same clock time across a DST change", () => {
+  const week = 7 * 86_400_000;
+  const t0 = Date.parse("2026-10-31T19:00:00Z"); // Saturday 3 pm EDT, the day before clocks go back
+  const after = Date.parse("2026-11-21T20:00:00Z"); // Saturday 3 pm EST, three weeks later and an hour further in UTC
+  const past = { t: [t0, t0 + week + 3600_000, t0 + 2 * week + 3600_000, after], total: [100, 200, 300, 999] };
+  assert.deepEqual(typical({ t: [after], total: [999] }, past), [200], "3 pm on the three Saturdays before, even though one was EDT");
+});
