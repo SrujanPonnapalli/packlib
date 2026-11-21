@@ -11,13 +11,12 @@ export type Entry = [number, number | null, number | null];
 
 const entry = (minute: number, r: Pick<Reading, "count" | "share">): Entry => [minute, r.count, r.share === null ? null : Math.round(r.share * 1000) / 1000];
 
+// one shared formatter. making these is slow and slot() runs for every reading, which was timing out the history function
+const NEW_YORK = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+
 /** New York calendar day and minute of the day, so days split at local midnight even across DST. */
 export function slot(at: string): { day: string; minute: number } {
-  const p = Object.fromEntries(
-    new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-      .formatToParts(new Date(at))
-      .map((x) => [x.type, x.value]),
-  );
+  const p = Object.fromEntries(NEW_YORK.formatToParts(new Date(at)).map((x) => [x.type, x.value]));
   return { day: `${p.year}-${p.month}-${p.day}`, minute: Number(p.hour) * 60 + Number(p.minute) };
 }
 
