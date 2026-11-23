@@ -151,15 +151,28 @@ export default function TrendsChart({ h, now, place }: { h: History; now: number
     setAt(i);
     setLast(i);
   };
-  const indexAt = (e: PointerEvent<SVGSVGElement>) => {
-    const px = e.clientX - e.currentTarget.getBoundingClientRect().left;
+  const indexAt = (e: PointerEvent<SVGSVGElement>, clientX = e.clientX) => {
+    const px = clientX - e.currentTarget.getBoundingClientRect().left;
     let best = 0;
     xs.forEach((v, i) => Math.abs(v - px) < Math.abs(xs[best] - px) && (best = i));
     return best;
   };
+  // on touch, one finger scrubs (so it can slide freely) and two fingers compare the readings under each
+  const fingers = useRef(new Map<number, number>());
+  const pinch = (e: PointerEvent<SVGSVGElement>) => {
+    const [a, b] = [...fingers.current.values()];
+    setPress({ a: indexAt(e, a), x0: a });
+    setTo(indexAt(e, b));
+  };
   const down = (e: PointerEvent<SVGSVGElement>) => {
     if (!n) return;
     const i = indexAt(e);
+    if (e.pointerType === "touch") {
+      fingers.current.set(e.pointerId, e.clientX);
+      if (fingers.current.size === 2) pinch(e);
+      else if (fingers.current.size === 1) show(i);
+      return;
+    }
     e.currentTarget.setPointerCapture(e.pointerId);
     setPress({ a: i, x0: e.clientX });
     setTo(null);
@@ -167,12 +180,18 @@ export default function TrendsChart({ h, now, place }: { h: History; now: number
   };
   const move = (e: PointerEvent<SVGSVGElement>) => {
     if (!n) return;
+    if (fingers.current.has(e.pointerId)) {
+      fingers.current.set(e.pointerId, e.clientX);
+      if (fingers.current.size >= 2) return pinch(e);
+    }
     const i = indexAt(e);
     // a few pixels of movement turns a press into a comparison, so a tap still just shows the reading
-    if (press && (to !== null || Math.abs(e.clientX - press.x0) > 6)) setTo(i);
+    if (press && e.pointerType !== "touch" && (to !== null || Math.abs(e.clientX - press.x0) > 6)) setTo(i);
     else show(i, e.timeStamp);
   };
-  const up = () => {
+  const up = (e: PointerEvent<SVGSVGElement>) => {
+    fingers.current.delete(e.pointerId);
+    if (fingers.current.size >= 2) return;
     setPress(null);
     setTo(null);
   };
@@ -234,7 +253,7 @@ export default function TrendsChart({ h, now, place }: { h: History; now: number
               <span className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-[2px] bg-rule-soft" aria-hidden="true" /> Night
               </span>
-              <span className="text-pencil">{place.noSensor && `${place.noSensor} has no sensor · `}Drag across the chart to compare</span>
+              <span className="text-pencil">{place.noSensor && `${place.noSensor} has no sensor · `}<span className="[@media(hover:none)]:hidden">Drag across the chart to compare</span><span className="hidden [@media(hover:none)]:inline">Drag with two fingers to compare</span></span>
             </>
           ) : (
             <>
@@ -243,7 +262,7 @@ export default function TrendsChart({ h, now, place }: { h: History; now: number
                   <BusyDot busy={b} /> {BUSY_LABEL[b]}
                 </span>
               ))}
-              <span className="text-pencil">Drag across the chart to compare</span>
+              <span className="text-pencil"><span className="[@media(hover:none)]:hidden">Drag across the chart to compare</span><span className="hidden [@media(hover:none)]:inline">Drag with two fingers to compare</span></span>
             </>
           )}
         </figcaption>
